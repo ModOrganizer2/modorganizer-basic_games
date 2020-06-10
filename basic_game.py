@@ -8,6 +8,46 @@ from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 import mobase
 
 
+class BasicGameMapping:
+
+    # Name of the attribute for exposure:
+    exposed_name: str
+
+    # Name of the internal method:
+    internal_method_name: str
+
+    # Name of the internal attribute:
+    internal_attribute_name: str
+
+    # Required:
+    required: bool
+
+    # Default value (if not required):
+    default: typing.Any
+
+    # Function to apply to the value:
+    apply_fn: typing.Callable
+
+    def __init__(
+        self,
+        exposed_name,
+        internal_method,
+        internal_attribute=None,
+        required: bool = True,
+        default=None,
+        apply_fn: typing.Callable = lambda x: x,
+    ):
+        self.exposed_name = exposed_name
+        self.internal_method_name = internal_method
+        if internal_attribute is None:
+            self.internal_attribute_name = "_" + internal_method
+        else:
+            self.internal_attribute_name = internal_attribute
+        self.required = required
+        self.default = default
+        self.apply_fn = apply_fn  # type: ignore
+
+
 class BasicGame(mobase.IPluginGame):
 
     """ This class implements some methods from mobase.IPluginGame
@@ -18,6 +58,7 @@ class BasicGame(mobase.IPluginGame):
     Name: str
     Author: str
     Version: str
+    Description: str
 
     GameName: str
     GameShortName: str
@@ -42,6 +83,7 @@ class BasicGame(mobase.IPluginGame):
     _name: str
     _author: str
     _version: mobase.VersionInfo
+    _description: typing.Optional[str]
     _gameName: str
     _gameShortName: str
     _binaryName: str
@@ -51,14 +93,35 @@ class BasicGame(mobase.IPluginGame):
     # Match the name of the public attribute (from child class), to the
     # name of the protected attribute and the corresponding function:
     NAME_MAPPING = [
-        ["Name", "name"],
-        ["Author", "author"],
-        ["Version", "version"],
-        ["GameName", "gameName"],
-        ["GameShortName", "gameShortName"],
-        ["GameBinary", "binaryName"],
-        ["GameDataPath", "dataDirectory"],
-        ["GameSaveExtension", "savegameExtension"],
+        BasicGameMapping("Name", "name"),
+        BasicGameMapping("Author", "author"),
+        BasicGameMapping(
+            "Version",
+            "version",
+            apply_fn=lambda s: mobase.VersionInfo(s) if isinstance(s, str) else s,
+        ),
+        BasicGameMapping("Description", "description", required=False),
+        BasicGameMapping("GameName", "gameName"),
+        BasicGameMapping("GameShortName", "gameShortName"),
+        BasicGameMapping(
+            "GameNexusName", "gameNexusName", required=False, default=None
+        ),
+        BasicGameMapping(
+            "GameNexusId", "nexusGameID", required=False, default=0, apply_fn=int
+        ),
+        BasicGameMapping("GameBinary", "binaryName"),
+        BasicGameMapping(
+            "GameLauncher",
+            "getLauncherName",
+            "_launcherName",
+            required=False,
+            default="",
+        ),
+        BasicGameMapping("GameDataPath", "dataDirectory"),
+        BasicGameMapping("GameSaveExtension", "savegameExtension"),
+        BasicGameMapping(
+            "GameSteamId", "steamAPPId", required=False, default="", apply_fn=str
+        ),
     ]
 
     def __init__(self):
@@ -68,16 +131,31 @@ class BasicGame(mobase.IPluginGame):
         self._fromName = self.__class__.__name__
 
         # We init the member and check that everything is provided:
-        for pub, prt in self.NAME_MAPPING:
-            if hasattr(self, pub):
-                value = getattr(self, pub)
-                if pub == "Version":
-                    value = mobase.VersionInfo(value)
-                setattr(self, "_" + prt, value)
-            elif getattr(self, prt) is getattr(BasicGame, prt):
+        for basic_mapping in self.NAME_MAPPING:
+            if hasattr(self, basic_mapping.exposed_name):
+                try:
+                    value = basic_mapping.apply_fn(
+                        getattr(self, basic_mapping.exposed_name)
+                    )
+                except:  # noqa
+                    print(
+                        "Basic game plugin from {} has an invalid {} property.".format(
+                            self._fromName, basic_mapping.exposed_name
+                        ),
+                        file=sys.stderr,
+                    )
+                    continue
+                setattr(self, basic_mapping.internal_attribute_name, value)
+            elif not basic_mapping.required:
+                setattr(
+                    self, basic_mapping.internal_attribute_name, basic_mapping.default
+                )
+            elif getattr(self, basic_mapping.internal_method_name) is getattr(
+                BasicGame, basic_mapping.internal_method_name
+            ):
                 print(
                     "Basic game plugin from {} is missing {} property.".format(
-                        self._fromName, pub
+                        self._fromName, basic_mapping.exposed_name
                     ),
                     file=sys.stderr,
                 )
@@ -97,7 +175,9 @@ class BasicGame(mobase.IPluginGame):
         return self._author
 
     def description(self):
-        return "Adds basic support for game {}.".format(self.gameName())
+        if self._description is None:
+            return "Adds basic support for game {}.".format(self.gameName())
+        return self._description
 
     def version(self):
         return self._version
@@ -123,7 +203,9 @@ class BasicGame(mobase.IPluginGame):
         return []
 
     def gameNexusName(self):
-        return ""
+        if self._gameNexusName is None:
+            return self.gameShortName()
+        return self._gameNexusName
 
     def nexusModOrganizerID(self):
         return 0
@@ -132,13 +214,13 @@ class BasicGame(mobase.IPluginGame):
         return 0
 
     def steamAPPId(self):
-        return ""
+        return self._steamAPPId
 
     def binaryName(self):
         return self._binaryName
 
     def getLauncherName(self):
-        return ""
+        return self._launcherName
 
     def executables(self):
         return [
@@ -170,14 +252,9 @@ class BasicGame(mobase.IPluginGame):
         pass
 
     def gameVersion(self):
-        pversion = mobase.getProductVersion(
+        return mobase.getFileVersion(
             self.gameDirectory().absoluteFilePath(self.binaryName())
         )
-        if not pversion:
-            pversion = mobase.getFileVersion(
-                self.gameDirectory().absoluteFilePath(self.binaryName())
-            )
-        return pversion
 
     def iniFiles(self):
         return []
