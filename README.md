@@ -10,7 +10,33 @@ but the interface contains a lot of things that most games do not require.
 The goal of this meta-plugin is to load create plugins for "simple" games by simply
 providing a `.ini` file or a very simply python class.
 
-## How to?
+## How to install?
+
+Download [the archive](https://github.com/Holt59/modorganizer-basic_games/archive/master.zip)
+and extract it directly into your MO2 `plugins` folder.
+
+**Important:** Extract the *folder* in your `plugins` folder, not the individual files. Your
+`plugins` folder should look like this:
+
+```
+dlls/
+plugins/
+  data/
+  modorganizer-basic_games-master/
+    games/
+      __init__.py
+      ...
+    __init__.py
+    basic_game.py
+    ...
+  bsa_extractor.dll
+  ...
+ModOrganizer.exe
+```
+
+You can rename `modorganizer-basic_games-master` to whatever you want (e.g., `basic_games`).
+
+## How to add a new game?
 
 You can either provide a python class or a `.ini` file.
 
