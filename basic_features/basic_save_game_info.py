@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import os
+import sys
 
 from typing import Callable
 
@@ -64,9 +65,26 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self.setPalette(palette)
 
     def setSave(self, filename):
-        pixmap = QPixmap(self._get_preview(filename))
+        # Resize the label to (0, 0) to hide it:
+        self._label.resize(0, 0)
+
+        # Retrieve the pixmap:
+        value = self._get_preview(filename)
+        if isinstance(value, str):
+            pixmap = QPixmap(value)
+        elif isinstance(value, QPixmap):
+            pixmap = value
+        else:
+            print(
+                "Failed to retrieve the preview, bad return type: {}.".format(
+                    type(value)
+                ),
+                file=sys.stderr,
+            )
+            return
+
+        # Scale the pixmap and show it:
         pixmap = pixmap.scaledToWidth(320)
-        self.setWindowTitle("The Title: {}".format(filename))
         self._label.setPixmap(pixmap)
         self.resize(pixmap.width(), pixmap.height())
 
