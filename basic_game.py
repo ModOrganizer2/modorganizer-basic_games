@@ -166,8 +166,6 @@ class BasicGame(mobase.IPluginGame):
     # The feature map:
     _featureMap: Dict
 
-    mapping: BasicGameMappings
-
     def __init__(self):
         super(BasicGame, self).__init__()
 
@@ -175,7 +173,7 @@ class BasicGame(mobase.IPluginGame):
             self._fromName = self.__class__.__name__
         self._featureMap = {}
 
-        self.mappings = BasicGameMappings(self)
+        self.mappings: BasicGameMappings = BasicGameMappings(self)
 
     """
     Here IPlugin interface stuff.
