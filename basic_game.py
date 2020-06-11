@@ -2,6 +2,7 @@
 
 from typing import List, Union, Optional, TypeVar, Callable, Generic, Dict
 
+
 from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 from PyQt5.QtGui import QIcon
 
@@ -82,6 +83,15 @@ class BasicGame(mobase.IPluginGame):
     """ This class implements some methods from mobase.IPluginGame
     to make it easier to create game plugins without having to implement
     all the methods of mobase.IPluginGame. """
+
+    # List of steam games:
+    steam_games: Dict[str, str]
+
+    @staticmethod
+    def setup():
+        from .steam_utils import find_games
+
+        BasicGame.steam_games = find_games()
 
     # File containing the plugin:
     _fromName: str
@@ -274,6 +284,10 @@ class BasicGame(mobase.IPluginGame):
         return aQDir.exists(self.binaryName())
 
     def isInstalled(self) -> bool:
+        if self.steamAPPId() in BasicGame.steam_games:
+            self.setGamePath(BasicGame.steam_games[self.steamAPPId()])
+            return True
+
         return False
 
     def gameDirectory(self) -> QDir:

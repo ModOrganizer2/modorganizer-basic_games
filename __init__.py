@@ -8,6 +8,8 @@ import typing
 from .basic_game import BasicGame
 from .basic_game_ini import BasicIniGame
 
+BasicGame.setup()
+
 # List of game class from python:
 game_plugins: typing.List[BasicGame] = []
 
