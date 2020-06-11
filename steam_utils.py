@@ -1,5 +1,7 @@
 # -*- encoding: utf-8 -*-
 
+# Code greatly inspired by https://github.com/LostDragonist/steam-library-setup-tool
+
 import os
 import winreg  # type: ignore
 
@@ -37,9 +39,9 @@ class LibraryFolder:
 
                         if i is not None and n is not None:
                             break
-                    if i is None or n is None:
-                        continue
-                    self.games.append(SteamGame(i, n))
+                if i is None or n is None:
+                    continue
+                self.games.append(SteamGame(i, n))
 
     def __repr__(self):
         return str(self)
@@ -54,7 +56,7 @@ def parse_library_info(library_vdf_path):
 
     with open(library_vdf_path, "r") as f:
 
-        # Find the line containing "LibnraryFolders" (quoted):
+        # Find the line containing "LibraryFolders" (quoted):
         it = iter(f)
         for line in it:
 
@@ -102,10 +104,11 @@ def find_games() -> Dict[str, str]:
         return {}
 
     library_vdf_path = os.path.join(
-        os.path.split(steam_path)[0], "steamapps", "libraryfolders.vdf"
+        os.path.dirname(steam_path), "steamapps", "libraryfolders.vdf"
     )
 
     library_folders = parse_library_info(library_vdf_path)
+    library_folders.append(LibraryFolder(os.path.dirname(steam_path)))
 
     games: Dict[str, str] = {}
     for library in library_folders:
