@@ -71,7 +71,6 @@ GameDataPath=mods
 GameSaveExtension=sav
 ```
 
-
 ### Using a Python file
 
 You need to create a class that inherits `BasicGame` and put it in a `.py` file in `games`. Below is
@@ -132,3 +131,23 @@ class Witcher3Game(BasicGame):
     def savesDirectory(self):
         return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))
 ```
+
+### List of valid keys
+
+| Name | `IPluginGame` method | Python | Ini |
+|------|----------------------|--------|-----|
+| Name | `name` | `str` | |
+| Author | `author` | `str` | |
+| Version | `version` | `str` or `mobase.VersionInfo` | |
+| Description (Optional) | `description` | `str` | `str` |
+| GameName | `gameName` | `str` | |
+| GameShortName | `gameShortName` | `str` | |
+| GameNexusName (Optional) | `gameNexusName` | `str` | |
+| GameValidShortNames (Optional) | `validShortNames` | `List[str]` or comma-separated list of values | comma-separated list of values |
+| GameNexusId (Optional) | `nexusGameID` | `str` or `int` | |
+| GameBinary | `binaryName` | `str` | |
+| GameLauncher (Optional) | `getLauncherName` | `str` | |
+| GameDataPath - Relative to game folder| `dataDirectory` | | |
+| GameSaveExtension (Optional) | `savegameExtension` | `str` | |
+| GameSteamId (Optional) | `steamAPPId` | `str` | |
+|------|----------------------|--------|-----|

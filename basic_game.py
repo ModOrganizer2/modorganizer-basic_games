@@ -1,51 +1,80 @@
 # -*- encoding: utf-8 -*-
 
-import sys
-import typing
+from typing import List, Union, Optional, TypeVar, Callable, Generic, Dict
 
 from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt5.QtGui import QIcon
 
 import mobase
 
 
-class BasicGameMapping:
+T = TypeVar("T")
+
+
+class BasicGameMapping(Generic[T]):
+
+    # The game:
+    _game: "BasicGame"
 
     # Name of the attribute for exposure:
-    exposed_name: str
+    _exposed_name: str
 
     # Name of the internal method:
-    internal_method_name: str
-
-    # Name of the internal attribute:
-    internal_attribute_name: str
+    _internal_method_name: str
 
     # Required:
-    required: bool
+    _required: bool
 
-    # Default value (if not required):
-    default: typing.Any
+    # Callable returning a default value (if not required):
+    _default: Optional[Callable[["BasicGame"], T]]
 
     # Function to apply to the value:
-    apply_fn: typing.Callable
+    _apply_fn: Optional[Callable[[Union[T, str]], T]]
 
     def __init__(
         self,
         exposed_name,
         internal_method,
-        internal_attribute=None,
-        required: bool = True,
-        default=None,
-        apply_fn: typing.Callable = lambda x: x,
+        default: Optional[Callable[["BasicGame"], T]] = None,
+        apply_fn: Optional[Callable[[Union[T, str]], T]] = None,
     ):
-        self.exposed_name = exposed_name
-        self.internal_method_name = internal_method
-        if internal_attribute is None:
-            self.internal_attribute_name = "_" + internal_method
-        else:
-            self.internal_attribute_name = internal_attribute
-        self.required = required
-        self.default = default
-        self.apply_fn = apply_fn  # type: ignore
+        self._exposed_name = exposed_name
+        self._internal_method_name = internal_method
+        self._default = default
+        self._apply_fn = apply_fn
+
+    def init(self, game: "BasicGame"):
+        BasicGame.__class__
+
+        self._game = game
+
+        if hasattr(game, self._exposed_name):
+            value = getattr(game, self._exposed_name)
+            if self._apply_fn is not None:
+                try:
+                    value = self._apply_fn(value)
+                except:  # noqa
+                    raise ValueError(
+                        "Basic game plugin from {} has an invalid {} property.".format(
+                            game._fromName, self._exposed_name
+                        )
+                    )
+            self._default = lambda game: value  # type: ignore
+        elif self._default is not None:
+            # Not required, ok!
+            pass
+        elif getattr(game.__class__, self._internal_method_name) is getattr(
+            BasicGame, self._internal_method_name
+        ):
+            raise ValueError(
+                "Basic game plugin from {} is missing {} property.".format(
+                    game._fromName, self._exposed_name
+                )
+            )
+
+    def get(self) -> T:
+        """ Return the value of this mapping. """
+        return self._default(self._game)  # type: ignore
 
 
 class BasicGame(mobase.IPluginGame):
@@ -53,18 +82,6 @@ class BasicGame(mobase.IPluginGame):
     """ This class implements some methods from mobase.IPluginGame
     to make it easier to create game plugins without having to implement
     all the methods of mobase.IPluginGame. """
-
-    # List of fields that can be provided by child class:
-    Name: str
-    Author: str
-    Version: str
-    Description: str
-
-    GameName: str
-    GameShortName: str
-    GameBinary: str
-    GameDataPath: str
-    GameSaveExtension: str
 
     # File containing the plugin:
     _fromName: str
@@ -76,53 +93,52 @@ class BasicGame(mobase.IPluginGame):
     _gamePath: str
 
     # The feature map:
-    _featureMap: typing.Dict = {}
+    _featureMap: Dict = {}
 
-    # List of attributes - These should be the same as function with a
-    # _ prefix:
-    _name: str
-    _author: str
-    _version: mobase.VersionInfo
-    _description: typing.Optional[str]
-    _gameName: str
-    _gameShortName: str
-    _binaryName: str
-    _dataDirectory: str
-    _savegameExtension: str
-
-    # Match the name of the public attribute (from child class), to the
-    # name of the protected attribute and the corresponding function:
-    NAME_MAPPING = [
-        BasicGameMapping("Name", "name"),
-        BasicGameMapping("Author", "author"),
-        BasicGameMapping(
-            "Version",
-            "version",
-            apply_fn=lambda s: mobase.VersionInfo(s) if isinstance(s, str) else s,
-        ),
-        BasicGameMapping("Description", "description", required=False),
-        BasicGameMapping("GameName", "gameName"),
-        BasicGameMapping("GameShortName", "gameShortName"),
-        BasicGameMapping(
-            "GameNexusName", "gameNexusName", required=False, default=None
-        ),
-        BasicGameMapping(
-            "GameNexusId", "nexusGameID", required=False, default=0, apply_fn=int
-        ),
-        BasicGameMapping("GameBinary", "binaryName"),
-        BasicGameMapping(
-            "GameLauncher",
-            "getLauncherName",
-            "_launcherName",
-            required=False,
-            default="",
-        ),
-        BasicGameMapping("GameDataPath", "dataDirectory"),
-        BasicGameMapping("GameSaveExtension", "savegameExtension"),
-        BasicGameMapping(
-            "GameSteamId", "steamAPPId", required=False, default="", apply_fn=str
-        ),
-    ]
+    # Game mappings:
+    _name: BasicGameMapping[str] = BasicGameMapping("Name", "name")
+    _author: BasicGameMapping[str] = BasicGameMapping("Author", "author")
+    _version: BasicGameMapping[mobase.VersionInfo] = BasicGameMapping(
+        "Version",
+        "version",
+        apply_fn=lambda s: mobase.VersionInfo(s) if isinstance(s, str) else s,
+    )
+    _description: BasicGameMapping[str] = BasicGameMapping(
+        "Description",
+        "description",
+        lambda g: "Adds basic support for game {}.".format(g.gameName()),
+    )
+    _gameName: BasicGameMapping[str] = BasicGameMapping("GameName", "gameName")
+    _gameShortName: BasicGameMapping[str] = BasicGameMapping(
+        "GameShortName", "gameShortName"
+    )
+    _gameNexusName: BasicGameMapping[str] = BasicGameMapping(
+        "GameNexusName", "gameNexusName", default=lambda g: g.gameShortName(),
+    )
+    _validShortNames: BasicGameMapping[List[str]] = BasicGameMapping(
+        "GameValidShortNames",
+        "validShortNames",
+        default=lambda g: [],
+        apply_fn=lambda value: [c.strip() for c in value.split(",")]
+        if isinstance(value, str)
+        else value,
+    )
+    _nexusGameId: BasicGameMapping[int] = BasicGameMapping(
+        "GameNexusId", "nexusGameID", default=lambda g: 0, apply_fn=int
+    )
+    _binaryName: BasicGameMapping[str] = BasicGameMapping("GameBinary", "binaryName")
+    _launcherName: BasicGameMapping[str] = BasicGameMapping(
+        "GameLauncher", "getLauncherName", default=lambda g: "",
+    )
+    _dataDirectory: BasicGameMapping[str] = BasicGameMapping(
+        "GameDataPath", "dataDirectory"
+    )
+    _savegameExtension: BasicGameMapping[str] = BasicGameMapping(
+        "GameSaveExtension", "savegameExtension", default=lambda g: "save"
+    )
+    _steamAPPId: BasicGameMapping[str] = BasicGameMapping(
+        "GameSteamId", "steamAPPId", default=lambda g: "", apply_fn=str
+    )
 
     def __init__(self):
         super(BasicGame, self).__init__()
@@ -131,112 +147,95 @@ class BasicGame(mobase.IPluginGame):
         self._fromName = self.__class__.__name__
 
         # We init the member and check that everything is provided:
-        for basic_mapping in self.NAME_MAPPING:
-            if hasattr(self, basic_mapping.exposed_name):
-                try:
-                    value = basic_mapping.apply_fn(
-                        getattr(self, basic_mapping.exposed_name)
-                    )
-                except:  # noqa
-                    print(
-                        "Basic game plugin from {} has an invalid {} property.".format(
-                            self._fromName, basic_mapping.exposed_name
-                        ),
-                        file=sys.stderr,
-                    )
-                    continue
-                setattr(self, basic_mapping.internal_attribute_name, value)
-            elif not basic_mapping.required:
-                setattr(
-                    self, basic_mapping.internal_attribute_name, basic_mapping.default
-                )
-            elif getattr(self, basic_mapping.internal_method_name) is getattr(
-                BasicGame, basic_mapping.internal_method_name
-            ):
-                print(
-                    "Basic game plugin from {} is missing {} property.".format(
-                        self._fromName, basic_mapping.exposed_name
-                    ),
-                    file=sys.stderr,
-                )
+        for name in dir(self):
+            attr = getattr(self, name)
+            if isinstance(attr, BasicGameMapping):
+                attr.init(self)
 
     """
     Here IPlugin interface stuff.
     """
 
-    def init(self, organizer):
+    def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
         return True
 
-    def name(self):
-        return self._name
+    def name(self) -> str:
+        return self._name.get()
 
-    def author(self):
-        return self._author
+    def author(self) -> str:
+        return self._author.get()
 
-    def description(self):
-        if self._description is None:
-            return "Adds basic support for game {}.".format(self.gameName())
-        return self._description
+    def description(self) -> str:
+        return self._description.get()
 
-    def version(self):
-        return self._version
+    def version(self) -> mobase.VersionInfo:
+        return self._version.get()
 
-    def isActive(self):
+    def isActive(self) -> bool:
         return True
 
-    def settings(self):
+    def settings(self) -> List[mobase.PluginSetting]:
         return []
 
-    def gameName(self):
-        return self._gameName
+    def gameName(self) -> str:
+        return self._gameName.get()
 
-    def gameShortName(self):
-        return self._gameShortName
+    def gameShortName(self) -> str:
+        return self._gameShortName.get()
 
-    def gameIcon(self):
+    def gameIcon(self) -> QIcon:
         return mobase.getIconForExecutable(
             self.gameDirectory().absoluteFilePath(self.binaryName())
         )
 
-    def validShortNames(self):
-        return []
+    def validShortNames(self) -> List[str]:
+        return self._validShortNames.get()
 
-    def gameNexusName(self):
-        if self._gameNexusName is None:
-            return self.gameShortName()
-        return self._gameNexusName
+    def gameNexusName(self) -> str:
+        return self._gameNexusName.get()
 
-    def nexusModOrganizerID(self):
+    def nexusModOrganizerID(self) -> int:
         return 0
 
-    def nexusGameID(self):
-        return 0
+    def nexusGameID(self) -> int:
+        return self._nexusGameId.get()
 
-    def steamAPPId(self):
-        return self._steamAPPId
+    def steamAPPId(self) -> str:
+        return self._steamAPPId.get()
 
-    def binaryName(self):
-        return self._binaryName
+    def binaryName(self) -> str:
+        return self._binaryName.get()
 
-    def getLauncherName(self):
-        return self._launcherName
+    def getLauncherName(self) -> str:
+        return self._launcherName.get()
 
-    def executables(self):
-        return [
+    def executables(self) -> List[mobase.ExecutableInfo]:
+        execs = []
+        if self.getLauncherName():
+            execs.append(
+                mobase.ExecutableInfo(
+                    self.gameName(),
+                    QFileInfo(
+                        self.gameDirectory().absoluteFilePath(self.getLauncherName())
+                    ),
+                )
+            )
+        execs.append(
             mobase.ExecutableInfo(
                 self.gameName(),
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
-        ]
+        )
+        return execs
 
-    def savegameExtension(self):
-        return self._savegameExtension
+    def savegameExtension(self) -> str:
+        return self._savegameExtension.get()
 
-    def savegameSEExtension(self):
+    def savegameSEExtension(self) -> str:
         return ""
 
-    def initializeProfile(self, path, settings):
+    def initializeProfile(self, path: QDir, settings: int):
         pass
 
     def primarySources(self):
@@ -251,7 +250,7 @@ class BasicGame(mobase.IPluginGame):
     def setGameVariant(self, variantStr):
         pass
 
-    def gameVersion(self):
+    def gameVersion(self) -> str:
         return mobase.getFileVersion(
             self.gameDirectory().absoluteFilePath(self.binaryName())
         )
@@ -274,22 +273,22 @@ class BasicGame(mobase.IPluginGame):
     def looksValid(self, aQDir: QDir):
         return aQDir.exists(self.binaryName())
 
-    def isInstalled(self):
+    def isInstalled(self) -> bool:
         return False
 
-    def gameDirectory(self):
+    def gameDirectory(self) -> QDir:
         """
         @return directory (QDir) to the game installation.
         """
         return QDir(self._gamePath)
 
-    def dataDirectory(self):
-        return QDir(self.gameDirectory().absoluteFilePath(self._dataDirectory))
+    def dataDirectory(self) -> QDir:
+        return QDir(self.gameDirectory().absoluteFilePath(self._dataDirectory.get()))
 
-    def setGamePath(self, pathStr):
+    def setGamePath(self, pathStr: str):
         self._gamePath = pathStr
 
-    def documentsDirectory(self):
+    def documentsDirectory(self) -> QDir:
         folders = [
             "{}/My Games/{}".format(
                 QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
@@ -305,9 +304,9 @@ class BasicGame(mobase.IPluginGame):
             if qdir.exists():
                 return qdir
 
-        return None
+        return QDir()
 
-    def savesDirectory(self):
+    def savesDirectory(self) -> QDir:
         return self.documentsDirectory()
 
     def _featureList(self):
