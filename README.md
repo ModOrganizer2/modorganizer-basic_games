@@ -134,6 +134,8 @@ class Witcher3Game(BasicGame):
 
 ### List of valid keys
 
+If the column `Ini` is empty, it means it only accepts a basic string.
+
 | Name | `IPluginGame` method | Python | Ini |
 |------|----------------------|--------|-----|
 | Name | `name` | `str` | |
@@ -150,4 +152,3 @@ class Witcher3Game(BasicGame):
 | GameDataPath - Relative to game folder| `dataDirectory` | | |
 | GameSaveExtension (Optional) | `savegameExtension` | `str` | |
 | GameSteamId (Optional) | `steamAPPId` | `str` | |
-|------|----------------------|--------|-----|
