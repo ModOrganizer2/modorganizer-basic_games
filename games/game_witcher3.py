@@ -2,8 +2,11 @@
 
 from PyQt5.QtCore import QDir
 
+import mobase
+
 
 from ..basic_game import BasicGame
+from ..basic_features.basic_save_game_info import BasicGameSaveGameInfo
 
 
 class Witcher3Game(BasicGame):
@@ -19,6 +22,13 @@ class Witcher3Game(BasicGame):
     GameDataPath: str = "Mods"
     GameSaveExtension: str = "sav"
     GameSteamId = 292030
+
+    def init(self, organizer: mobase.IOrganizer):
+        super().init(organizer)
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
+            lambda s: s.replace(".sav", ".png")
+        )
+        return True
 
     def savesDirectory(self):
         return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))
