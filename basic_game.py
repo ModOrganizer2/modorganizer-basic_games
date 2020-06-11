@@ -34,20 +34,18 @@ class BasicGameMapping(Generic[T]):
 
     def __init__(
         self,
+        game,
         exposed_name,
         internal_method,
         default: Optional[Callable[["BasicGame"], T]] = None,
         apply_fn: Optional[Callable[[Union[T, str]], T]] = None,
     ):
+
+        self._game = game
         self._exposed_name = exposed_name
         self._internal_method_name = internal_method
         self._default = default
         self._apply_fn = apply_fn
-
-    def init(self, game: "BasicGame"):
-        BasicGame.__class__
-
-        self._game = game
 
         if hasattr(game, self._exposed_name):
             value = getattr(game, self._exposed_name)
@@ -78,6 +76,69 @@ class BasicGameMapping(Generic[T]):
         return self._default(self._game)  # type: ignore
 
 
+class BasicGameMappings:
+
+    name: BasicGameMapping[str]
+    author: BasicGameMapping[str]
+    version: BasicGameMapping[mobase.VersionInfo]
+    description: BasicGameMapping[str]
+    gameName: BasicGameMapping[str]
+    gameShortName: BasicGameMapping[str]
+    gameNexusName: BasicGameMapping[str]
+    validShortNames: BasicGameMapping[List[str]]
+    nexusGameId: BasicGameMapping[int]
+    binaryName: BasicGameMapping[str]
+    launcherName: BasicGameMapping[str]
+    dataDirectory: BasicGameMapping[str]
+    savegameExtension: BasicGameMapping[str]
+    steamAPPId: BasicGameMapping[str]
+
+    # Game mappings:
+    def __init__(self, game: "BasicGame"):
+        self.name = BasicGameMapping(game, "Name", "name")
+        self.author = BasicGameMapping(game, "Author", "author")
+        self.version = BasicGameMapping(
+            game,
+            "Version",
+            "version",
+            apply_fn=lambda s: mobase.VersionInfo(s) if isinstance(s, str) else s,
+        )
+        self.description = BasicGameMapping(
+            game,
+            "Description",
+            "description",
+            lambda g: "Adds basic support for game {}.".format(g.gameName()),
+        )
+        self.gameName = BasicGameMapping(game, "GameName", "gameName")
+        self.gameShortName = BasicGameMapping(game, "GameShortName", "gameShortName")
+        self.gameNexusName = BasicGameMapping(
+            game, "GameNexusName", "gameNexusName", default=lambda g: g.gameShortName(),
+        )
+        self.validShortNames = BasicGameMapping(
+            game,
+            "GameValidShortNames",
+            "validShortNames",
+            default=lambda g: [],
+            apply_fn=lambda value: [c.strip() for c in value.split(",")]  # type: ignore
+            if isinstance(value, str)
+            else value,
+        )
+        self.nexusGameId = BasicGameMapping(
+            game, "GameNexusId", "nexusGameID", default=lambda g: 0, apply_fn=int
+        )
+        self.binaryName = BasicGameMapping(game, "GameBinary", "binaryName")
+        self.launcherName = BasicGameMapping(
+            game, "GameLauncher", "getLauncherName", default=lambda g: "",
+        )
+        self.dataDirectory = BasicGameMapping(game, "GameDataPath", "dataDirectory")
+        self.savegameExtension = BasicGameMapping(
+            game, "GameSaveExtension", "savegameExtension", default=lambda g: "save"
+        )
+        self.steamAPPId = BasicGameMapping(
+            game, "GameSteamId", "steamAPPId", default=lambda g: "", apply_fn=str
+        )
+
+
 class BasicGame(mobase.IPluginGame):
 
     """ This class implements some methods from mobase.IPluginGame
@@ -103,64 +164,18 @@ class BasicGame(mobase.IPluginGame):
     _gamePath: str
 
     # The feature map:
-    _featureMap: Dict = {}
+    _featureMap: Dict
 
-    # Game mappings:
-    _name: BasicGameMapping[str] = BasicGameMapping("Name", "name")
-    _author: BasicGameMapping[str] = BasicGameMapping("Author", "author")
-    _version: BasicGameMapping[mobase.VersionInfo] = BasicGameMapping(
-        "Version",
-        "version",
-        apply_fn=lambda s: mobase.VersionInfo(s) if isinstance(s, str) else s,
-    )
-    _description: BasicGameMapping[str] = BasicGameMapping(
-        "Description",
-        "description",
-        lambda g: "Adds basic support for game {}.".format(g.gameName()),
-    )
-    _gameName: BasicGameMapping[str] = BasicGameMapping("GameName", "gameName")
-    _gameShortName: BasicGameMapping[str] = BasicGameMapping(
-        "GameShortName", "gameShortName"
-    )
-    _gameNexusName: BasicGameMapping[str] = BasicGameMapping(
-        "GameNexusName", "gameNexusName", default=lambda g: g.gameShortName(),
-    )
-    _validShortNames: BasicGameMapping[List[str]] = BasicGameMapping(
-        "GameValidShortNames",
-        "validShortNames",
-        default=lambda g: [],
-        apply_fn=lambda value: [c.strip() for c in value.split(",")]
-        if isinstance(value, str)
-        else value,
-    )
-    _nexusGameId: BasicGameMapping[int] = BasicGameMapping(
-        "GameNexusId", "nexusGameID", default=lambda g: 0, apply_fn=int
-    )
-    _binaryName: BasicGameMapping[str] = BasicGameMapping("GameBinary", "binaryName")
-    _launcherName: BasicGameMapping[str] = BasicGameMapping(
-        "GameLauncher", "getLauncherName", default=lambda g: "",
-    )
-    _dataDirectory: BasicGameMapping[str] = BasicGameMapping(
-        "GameDataPath", "dataDirectory"
-    )
-    _savegameExtension: BasicGameMapping[str] = BasicGameMapping(
-        "GameSaveExtension", "savegameExtension", default=lambda g: "save"
-    )
-    _steamAPPId: BasicGameMapping[str] = BasicGameMapping(
-        "GameSteamId", "steamAPPId", default=lambda g: "", apply_fn=str
-    )
+    mapping: BasicGameMappings
 
     def __init__(self):
         super(BasicGame, self).__init__()
 
-        #         if not hasattr(self, "_fromName"):
-        self._fromName = self.__class__.__name__
+        if not hasattr(self, "_fromName"):
+            self._fromName = self.__class__.__name__
+        self._featureMap = {}
 
-        # We init the member and check that everything is provided:
-        for name in dir(self):
-            attr = getattr(self, name)
-            if isinstance(attr, BasicGameMapping):
-                attr.init(self)
+        self.mappings = BasicGameMappings(self)
 
     """
     Here IPlugin interface stuff.
@@ -171,16 +186,16 @@ class BasicGame(mobase.IPluginGame):
         return True
 
     def name(self) -> str:
-        return self._name.get()
+        return self.mappings.name.get()
 
     def author(self) -> str:
-        return self._author.get()
+        return self.mappings.author.get()
 
     def description(self) -> str:
-        return self._description.get()
+        return self.mappings.description.get()
 
     def version(self) -> mobase.VersionInfo:
-        return self._version.get()
+        return self.mappings.version.get()
 
     def isActive(self) -> bool:
         return True
@@ -189,10 +204,10 @@ class BasicGame(mobase.IPluginGame):
         return []
 
     def gameName(self) -> str:
-        return self._gameName.get()
+        return self.mappings.gameName.get()
 
     def gameShortName(self) -> str:
-        return self._gameShortName.get()
+        return self.mappings.gameShortName.get()
 
     def gameIcon(self) -> QIcon:
         return mobase.getIconForExecutable(
@@ -200,25 +215,25 @@ class BasicGame(mobase.IPluginGame):
         )
 
     def validShortNames(self) -> List[str]:
-        return self._validShortNames.get()
+        return self.mappings.validShortNames.get()
 
     def gameNexusName(self) -> str:
-        return self._gameNexusName.get()
+        return self.mappings.gameNexusName.get()
 
     def nexusModOrganizerID(self) -> int:
         return 0
 
     def nexusGameID(self) -> int:
-        return self._nexusGameId.get()
+        return self.mappings.nexusGameId.get()
 
     def steamAPPId(self) -> str:
-        return self._steamAPPId.get()
+        return self.mappings.steamAPPId.get()
 
     def binaryName(self) -> str:
-        return self._binaryName.get()
+        return self.mappings.binaryName.get()
 
     def getLauncherName(self) -> str:
-        return self._launcherName.get()
+        return self.mappings.launcherName.get()
 
     def executables(self) -> List[mobase.ExecutableInfo]:
         execs = []
@@ -240,7 +255,7 @@ class BasicGame(mobase.IPluginGame):
         return execs
 
     def savegameExtension(self) -> str:
-        return self._savegameExtension.get()
+        return self.mappings.savegameExtension.get()
 
     def savegameSEExtension(self) -> str:
         return ""
@@ -297,7 +312,9 @@ class BasicGame(mobase.IPluginGame):
         return QDir(self._gamePath)
 
     def dataDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absoluteFilePath(self._dataDirectory.get()))
+        return QDir(
+            self.gameDirectory().absoluteFilePath(self.mappings.dataDirectory.get())
+        )
 
     def setGamePath(self, pathStr: str):
         self._gamePath = pathStr
