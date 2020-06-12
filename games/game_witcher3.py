@@ -6,7 +6,7 @@ import mobase
 
 
 from ..basic_game import BasicGame
-from ..basic_features.basic_save_game_info import BasicGameSaveGameInfo
+from ..basic_features import BasicGameSaveGameInfo
 
 
 class Witcher3Game(BasicGame):

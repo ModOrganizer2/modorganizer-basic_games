@@ -3,7 +3,7 @@
 import os
 import sys
 
-from typing import Callable
+from typing import Callable, Optional
 
 from PyQt5.QtCore import QDateTime, Qt
 from PyQt5.QtGui import QPixmap
@@ -34,18 +34,6 @@ class BasicGameSaveGame(mobase.ISaveGame):
 
 
 class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
-    #     self._label = QLabel(parent)
-
-    # def setSave(self, filename):
-    #     print("setSave")
-    #     pixmap = QPixmap(
-    #         r"D:\Documents\The Witcher 3\gamesaves\AutoSave_54bde_7e22c000_5af7dca.png"
-    #     )
-    #     print(pixmap)
-    #     self._label.setPixmap(pixmap)
-    #     self.resize(250, 250)
-    #     return self._label
-
     def __init__(self, parent: QWidget, get_preview: Callable[[str], str]):
         super().__init__(parent)
 
@@ -90,7 +78,7 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
 
 
 class BasicGameSaveGameInfo(mobase.SaveGameInfo):
-    def __init__(self, get_preview: Callable[[str], str]):
+    def __init__(self, get_preview: Optional[Callable[[str], str]] = None):
         super().__init__()
         self._get_preview = get_preview
 
@@ -101,7 +89,9 @@ class BasicGameSaveGameInfo(mobase.SaveGameInfo):
         return {}
 
     def getSaveGameWidget(self, parent=None):
-        return BasicGameSaveGameInfoWidget(parent, self._get_preview)
+        if self._get_preview is not None:
+            return BasicGameSaveGameInfoWidget(parent, self._get_preview)
+        return None
 
     def hasScriptExtenderSave(self, filename):
         return False
