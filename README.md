@@ -4,11 +4,12 @@ Mod Organizer 2 meta-plugin to make creating game plugins easier and faster.
 
 ## Why?
 
-In order to create a MO2 game plugin, one must implements the `IPluginGame` interface,
-but the interface contains a lot of things that most games do not require.
+In order to create a MO2 game plugin, one must implements the `IPluginGame` interface.
+This interface was initially designed for Bethesda games such as the Elder Scrolls or
+Fallout series and thus contains a lot of things that are irrelevant for most games.
 
-The goal of this meta-plugin is to load create plugins for "simple" games by simply
-providing a `.ini` file or a very simply python class.
+The goal of this meta-plugin is to allow creating game plugins for "basic" games by
+providing a very simple `.ini` file or a very simple python class.
 
 ## How to install?
 
@@ -36,69 +37,70 @@ ModOrganizer.exe
 
 You can rename `modorganizer-basic_games-master` to whatever you want (e.g., `basic_games`).
 
+**Note:** You can also clone this repository in your `plugins/` folder:
+```
+cd $MO2_PATH/plugins
+git clone https://github.com/Holt59/modorganizer-basic_games basic_games
+```
+
+## Supported games
+
+| Game | File | Extras |
+|------|------|--------|
+| The Witcher 3 | [`game_witcher3.py`](games/game_witcher3.py) | <ul><li>steam detection</li><li>save game preview</li></ul> |
+| Stardew Valley | [`game_stardew_valley.py`](games/game_stardew_valley.py) | <ul><li>steam detection</li><li>mod data checker</li></ul> |
+
 ## How to add a new game?
 
-You can either provide a python class or a `.ini` file.
+You can create a plugin by providing a python class or a `.ini` file in the `games`
+folder.
+
+**Note:** If your game plugin does not load properly, you should set the log level
+to debug and look at the `mo_interface.log` file.
 
 ### Using a `.ini` file
 
-You simply need to put your `.ini` file in games with the following content:
+You simply need to createa your `game_XX.ini` file in the `games` folder with the following
+content (see below for the full list of supported attributes):
 
 ```ini
 [DEFAULT]
-# Name of the plugin (avoid space, whatever, ...):
+# Plugin details - this is the name of the plugin, not the name of the game!
 Name=Witcher 3 Support Plugin
-
-# Your name or username:
 Author=Holt59
-
-# Version of the plugin - Does not really make sense for .ini:
 Version=1.0.0
 
-# Name of the game, as you want it displayed by MO2:
+# Game details:
 GameName=The Witcher 3
-
-# Short name of the game, used, e.g., for nexus:
 GameShortName=witcher3
-
-# Path to the executable, relative to the game folder:
 GameBinary=bin/x64/witcher3.exe
-
-# Name of the folder containing the data, relative to the game folder:
 GameDataPath=mods
-
-# Savegame extensions for the game:
 GameSaveExtension=sav
+GameSteamId=292030
 ```
 
 ### Using a Python file
 
-You need to create a class that inherits `BasicGame` and put it in a `.py` file in `games`. Below is
-an example for The Witcher 3:
+You need to create a class that inherits `BasicGame` and put it in a `game_XX.py` in `games`.
+Below is an example for The Witcher 3 (see also [games/game_witcher3.py](games/game_witcher3.py)):
 
 ```python
-# -*- encoding: utf-8 -*-
-
 from PyQt5.QtCore import QDir
-
-
 from ..basic_game import BasicGame
 
 
 class Witcher3Game(BasicGame):
 
-    Name: str = "Witcher 3 Support Plugin"
-    Author: str = "Holt59"
-    Version: str = "1.0.0a"
+    Name = "Witcher 3 Support Plugin"
+    Author = "Holt59"
+    Version = "1.0.0a"
 
-    GameName: str = "The Witcher 3"
-    GameShortName: str = "witcher3"
-    GameBinary: str = "bin/x64/witcher3.exe"
-    GameDataPath: str = "Mods"
-    GameSaveExtension: str = "sav"
-
-    def steamAPPId(self):
-        return "292030"
+    GameName = "The Witcher 3"
+    GameShortName = "witcher3"
+    GameBinary = "bin/x64/witcher3.exe"
+    GameDataPath = "Mods"
+    GameSaveExtension = "sav"
+    GameSteamId = 292030
 
     def savesDirectory(self):
         return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))
@@ -106,27 +108,31 @@ class Witcher3Game(BasicGame):
 
 `BasicGame` inherits `IPluginGame` so you can override methods if you need to.
 Each attribute you provide corresponds to a method (e.g., `Version` corresponds
-to the `version` method). If you override the method, you do not have to provide
-the attribute:
+to the `version` method, see the table below). If you override the method, you do
+not have to provide the attribute:
 
 ```python
+from PyQt5.QtCore import QDir
+from ..basic_game import BasicGame
+
+import mobase
+
+
 class Witcher3Game(BasicGame):
 
-    Name: str = "Witcher 3 Support Plugin"
-    Author: str = "Holt59"
+    Name = "Witcher 3 Support Plugin"
+    Author = "Holt59"
 
-    GameName: str = "The Witcher 3"
-    GameShortName: str = "witcher3"
-    GameBinary: str = "bin/x64/witcher3.exe"
-    GameDataPath: str = "Mods"
-    GameSaveExtension: str = "sav"
+    GameName = "The Witcher 3"
+    GameShortName = "witcher3"
+    GameBinary = "bin/x64/witcher3.exe"
+    GameDataPath = "Mods"
+    GameSaveExtension = "sav"
+    GameSteamId = 292030
 
     def version(self):
         # Don't forget to import mobase!
         return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.final)
-
-    def steamAPPId(self):
-        return "292030"
 
     def savesDirectory(self):
         return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))
@@ -136,19 +142,38 @@ class Witcher3Game(BasicGame):
 
 If the column `Ini` is empty, it means it only accepts a basic string.
 
-| Name | `IPluginGame` method | Python | Ini |
-|------|----------------------|--------|-----|
-| Name | `name` | `str` | |
-| Author | `author` | `str` | |
-| Version | `version` | `str` or `mobase.VersionInfo` | |
-| Description (Optional) | `description` | `str` | `str` |
-| GameName | `gameName` | `str` | |
-| GameShortName | `gameShortName` | `str` | |
-| GameNexusName (Optional) | `gameNexusName` | `str` | |
-| GameValidShortNames (Optional) | `validShortNames` | `List[str]` or comma-separated list of values | comma-separated list of values |
-| GameNexusId (Optional) | `nexusGameID` | `str` or `int` | |
-| GameBinary | `binaryName` | `str` | |
-| GameLauncher (Optional) | `getLauncherName` | `str` | |
-| GameDataPath - Relative to game folder| `dataDirectory` | | |
-| GameSaveExtension (Optional) | `savegameExtension` | `str` | |
-| GameSteamId (Optional) | `steamAPPId` | `str` | |
+| Name | Description | `IPluginGame` method | Python | Ini |
+|------|-------------|----------------------|--------|-----|
+| Name | Name of the plugin | `name` | `str` | |
+| Author | Author of the plugin | `author` | `str` | |
+| Version | Version of the plugin | `version` | `str` or `mobase.VersionInfo` | |
+| Description| Description (Optional) | `description` | `str` | `str` |
+| GameName | Name of the game, as displayed by MO2 | `gameName` | `str` | |
+| GameShortName | Short name of the game | `gameShortName` | `str` | |
+| GameNexusName| Nexus name of the game (Optional, default to `GameShortName`) | `gameNexusName` | `str` | |
+| GameValidShortNames | Other valid short names (Optional) | `validShortNames` | `List[str]` or comma-separated list of values | comma-separated list of values |
+| GameNexusId | Nexus ID of the game (Optional) | `nexusGameID` | `str` or `int` | |
+| GameBinary | Name of the game executable, relative to the game path | `binaryName` | `str` | |
+| GameLauncher | Name of the game launcher, relative to the game path  (Optional) | `getLauncherName` | `str` | |
+| GameDataPath | Name of the folder containing mods, relative to game folder| `dataDirectory` | | |
+| GameDocumentsDirectory | Documents directory (Optional) | `documentsDirectory` | `str` or `QDir` | |
+| GameSavesDirectory | Directory containing saves (Optional, default to `GameDocumentsDirectory`) | `savesDirectory` | `str` or `QDir` | |
+| GameSaveExtension | Save file extension (Optional) `savegameExtension` | `str` | |
+| GameSteamId | Steam ID of the game (Optional) | `steamAPPId` | `str` | |
+
+You can use the following variables for `str`:
+
+- `%DOCUMENTS%` will be replaced by the standard *Documents* folder.
+- `%GAME_PATH%` will be replaced by the path to the game folder.
+- `%GAME_DOCUMENTS%` will be replaced by the value of `GameDocumentsDirectory`.
+
+## Extra features
+
+The meta-plugin provides some useful extra feature:
+
+1. **Automatic Steam game detection:** If you provide a Steam ID for the game (via `GameSteamId` or by
+  overriding `steamAPPId()`), the game will be listed in the list of available games when creating a new
+  MO2 instance (if the game is installed via Steam).
+2. **Basic save game preview:** If you use the Python version, and if you can easily obtain a picture (file)
+  for any saves, you can provide basic save-game preview by using the `BasicGameSaveGameInfo`.
+  See [games/game_witcher3.py](games/game_witcher3.py) for  more details.
