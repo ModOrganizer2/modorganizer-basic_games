@@ -7,6 +7,21 @@ import mobase
 from ..basic_game import BasicGame
 
 
+class StardewValleyModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+
+    def getDataFolderName(self) -> str:
+        return "mods"
+
+    def dataLooksValid(self, tree: mobase.IFileTree) -> bool:
+        count_ok = 0
+        for e in tree:
+            if e.isDir():
+                count_ok = e.exists("manifest.json", mobase.IFileTree.FILE)  # type: ignore
+        return count_ok > 0
+
+
 class StardewValleyGame(BasicGame):
     Name = "StardewValley"
     Author = "Syer10"
@@ -21,6 +36,11 @@ class StardewValleyGame(BasicGame):
     GameDataPath = "mods"
     GameDocumentsDirectory = "%DOCUMENTS%/StardewValley"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Saves"
+
+    def init(self, organizer: mobase.IOrganizer):
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = StardewValleyModDataChecker()
+        return True
 
     def executables(self):
         return [
