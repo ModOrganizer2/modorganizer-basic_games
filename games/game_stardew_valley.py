@@ -19,6 +19,8 @@ class StardewValleyGame(BasicGame):
     GameSteamId = 413150
     GameBinary = "Stardew Valley.exe"
     GameDataPath = "mods"
+    GameDocumentsDirectory = "%DOCUMENTS%/StardewValley"
+    GameSavesDirectory = "%GAME_DOCUMENTS%/Saves"
 
     def executables(self):
         return [
@@ -29,13 +31,3 @@ class StardewValleyGame(BasicGame):
                 "Stardew Valley", QFileInfo(self.gameDirectory(), "Stardew Valley.exe")
             ),
         ]
-
-    def documentsDirectory(self):
-        return QDir(
-            "{}/StardewValley".format(
-                QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-            )
-        )
-
-    def savesDirectory(self):
-        return QDir(self.documentsDirectory().absoluteFilePath("Saves"))
