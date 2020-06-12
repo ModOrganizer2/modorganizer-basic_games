@@ -118,3 +118,9 @@ def find_games() -> Dict[str, str]:
             )
 
     return games
+
+
+if __name__ == "__main__":
+    games = find_games()
+    for k, v in games.items():
+        print("Found game with id {} at {}.".format(k, v))

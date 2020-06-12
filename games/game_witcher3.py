@@ -21,7 +21,9 @@ class Witcher3Game(BasicGame):
     GameBinary: str = "bin/x64/witcher3.exe"
     GameDataPath: str = "Mods"
     GameSaveExtension: str = "sav"
-    GameSteamId = 292030
+    GameSteamId: int = 292030
+    GameDocumentsDirectory: str = "%DOCUMENTS%/The Witcher 3"
+    GameSavesDirectory: str = "%GAME_DOCUMENTS%/gamesaves"
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
@@ -29,6 +31,3 @@ class Witcher3Game(BasicGame):
             lambda s: s.replace(".sav", ".png")
         )
         return True
-
-    def savesDirectory(self):
-        return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))

@@ -9,6 +9,24 @@ from PyQt5.QtGui import QIcon
 import mobase
 
 
+def replace_variables(value: str, game: "BasicGame") -> str:
+    """ Replace special paths in the given value. """
+
+    if value.find("%DOCUMENTS%") != -1:
+        value = value.replace(
+            "%DOCUMENTS%",
+            QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+        )
+    if value.find("%GAME_DOCUMENTS%") != -1:
+        value = value.replace(
+            "%GAME_DOCUMENTS%", game.documentsDirectory().absolutePath()
+        )
+    if value.find("%GAME_PATH%") != -1:
+        value = value.replace("%GAME_PATH%", game.gameDirectory().absolutePath())
+
+    return value
+
+
 T = TypeVar("T")
 
 
@@ -49,6 +67,7 @@ class BasicGameMapping(Generic[T]):
 
         if hasattr(game, self._exposed_name):
             value = getattr(game, self._exposed_name)
+
             if self._apply_fn is not None:
                 try:
                     value = self._apply_fn(value)
@@ -73,7 +92,14 @@ class BasicGameMapping(Generic[T]):
 
     def get(self) -> T:
         """ Return the value of this mapping. """
-        return self._default(self._game)  # type: ignore
+        value = self._default(self._game)  # type: ignore
+
+        if isinstance(value, str):
+            return replace_variables(value, self._game)  # type: ignore
+        elif isinstance(value, QDir):
+            return QDir(replace_variables(value.path(), self._game))  # type: ignore
+
+        return value
 
 
 class BasicGameMappings:
@@ -90,11 +116,35 @@ class BasicGameMappings:
     binaryName: BasicGameMapping[str]
     launcherName: BasicGameMapping[str]
     dataDirectory: BasicGameMapping[str]
+    documentsDirectory: BasicGameMapping[QDir]
+    savesDirectory: BasicGameMapping[QDir]
     savegameExtension: BasicGameMapping[str]
     steamAPPId: BasicGameMapping[str]
 
+    @staticmethod
+    def _default_documents_directory(game):
+
+        folders = [
+            "{}/My Games/{}".format(
+                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+                game.gameName(),
+            ),
+            "{}/{}".format(
+                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+                game.gameName(),
+            ),
+        ]
+        for folder in folders:
+            qdir = QDir(folder)
+            if qdir.exists():
+                return qdir
+
+        return QDir()
+
     # Game mappings:
     def __init__(self, game: "BasicGame"):
+        self._game = game
+
         self.name = BasicGameMapping(game, "Name", "name")
         self.author = BasicGameMapping(game, "Author", "author")
         self.version = BasicGameMapping(
@@ -131,6 +181,20 @@ class BasicGameMappings:
             game, "GameLauncher", "getLauncherName", default=lambda g: "",
         )
         self.dataDirectory = BasicGameMapping(game, "GameDataPath", "dataDirectory")
+        self.documentsDirectory = BasicGameMapping(
+            game,
+            "GameDocumentsDirectory",
+            "documentsDirectory",
+            apply_fn=lambda s: QDir(s) if isinstance(s, str) else s,
+            default=BasicGameMappings._default_documents_directory,
+        )
+        self.savesDirectory = BasicGameMapping(
+            game,
+            "GameSavesDirectory",
+            "savesDirectory",
+            apply_fn=lambda s: QDir(s) if isinstance(s, str) else s,
+            default=lambda g: g.documentsDirectory(),
+        )
         self.savegameExtension = BasicGameMapping(
             game, "GameSaveExtension", "savegameExtension", default=lambda g: "save"
         )
@@ -171,6 +235,8 @@ class BasicGame(mobase.IPluginGame):
 
         if not hasattr(self, "_fromName"):
             self._fromName = self.__class__.__name__
+
+        self._gamePath = ""
         self._featureMap = {}
 
         self.mappings: BasicGameMappings = BasicGameMappings(self)
@@ -318,25 +384,10 @@ class BasicGame(mobase.IPluginGame):
         self._gamePath = pathStr
 
     def documentsDirectory(self) -> QDir:
-        folders = [
-            "{}/My Games/{}".format(
-                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
-                self.gameName(),
-            ),
-            "{}/{}".format(
-                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
-                self.gameName(),
-            ),
-        ]
-        for folder in folders:
-            qdir = QDir(folder)
-            if qdir.exists():
-                return qdir
-
-        return QDir()
+        return self.mappings.documentsDirectory.get()
 
     def savesDirectory(self) -> QDir:
-        return self.documentsDirectory()
+        return self.mappings.savesDirectory.get()
 
     def _featureList(self):
         return self._featureMap
