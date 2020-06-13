@@ -14,7 +14,7 @@ class Witcher3Game(BasicGame):
     Version = "1.0.0a"
     Description = "The Description Of The Dead"
 
-    GameName = "The Witcher 3"
+    GameName = "The Witcher 3: Wild Hunt"
     GameShortName = "witcher3"
     GaneNexusHame = "witcher3"
     GameNexusId = 952
