@@ -23,7 +23,7 @@ class StardewValleyModDataChecker(mobase.ModDataChecker):
 
 
 class StardewValleyGame(BasicGame):
-    Name = "StardewValley"
+    Name = "Stardew Valley Support Plugin"
     Author = "Syer10"
     Version = "0.1.0a"
 

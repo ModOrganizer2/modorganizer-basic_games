@@ -6,7 +6,7 @@ import sys
 from typing import Callable, Optional
 
 from PyQt5.QtCore import QDateTime, Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QLabel, QWidget, QVBoxLayout
 
 import mobase
@@ -58,10 +58,16 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
 
         # Retrieve the pixmap:
         value = self._get_preview(filename)
+
+        if value is None:
+            return
+
         if isinstance(value, str):
             pixmap = QPixmap(value)
         elif isinstance(value, QPixmap):
             pixmap = value
+        elif isinstance(value, QImage):
+            pixmap = QPixmap.fromImage(value)
         else:
             print(
                 "Failed to retrieve the preview, bad return type: {}.".format(
