@@ -45,10 +45,12 @@ git clone https://github.com/Holt59/modorganizer-basic_games basic_games
 
 ## Supported games
 
-| Game | File | Extras |
-|------|------|--------|
-| The Witcher 3 | [`game_witcher3.py`](games/game_witcher3.py) | <ul><li>steam detection</li><li>save game preview</li></ul> |
-| Stardew Valley | [`game_stardew_valley.py`](games/game_stardew_valley.py) | <ul><li>steam detection</li><li>mod data checker</li></ul> |
+| Game | Author | File | Extras |
+|------|--------|------|--------|
+| [Dark Messiah of Might & Magic](https://store.steampowered.com/app/2100/Dark_Messiah_of_Might__Magic/) | Holt59 | [`game_darkmessiah[...].py`](games/game_darkmessiahofmightandmagic.py) | <ul><li>steam detection</li><li>save game preview</li></ul> |
+| [Darkest Dungeon](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [`game_darkestdungeon.py`](games/game_darkestdungeon.py) | <ul><li>steam detection</li></ul> |
+| [Stardew Valley](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), Holt59 | [`game_stardewvalley.py`](games/game_stardew_valley.py) | <ul><li>steam detection</li><li>mod data checker</li></ul> |
+| [The Witcher 3: Wild Hunt](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | Holt59 | [`game_witcher3.py`](games/game_witcher3.py) | <ul><li>steam detection</li><li>save game preview</li></ul> |
 
 ## How to add a new game?
 
