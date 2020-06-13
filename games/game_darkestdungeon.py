@@ -23,7 +23,8 @@ class DarkestDungeonGame(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Darkest Dungeon", QFileInfo(self.gameDirectory(), "_windows//darkest.exe")
+                "Darkest Dungeon",
+                QFileInfo(self.gameDirectory(), "_windows//darkest.exe"),
             ),
         ]
 
