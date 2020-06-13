@@ -42,12 +42,7 @@ for file in glob.glob(os.path.join(curpath, "games", "*.py")):
                 and issubclass(obj, BasicGame)
                 and obj is not BasicGame
             ):
-                try:
-                    game_plugins.append(obj())
-                except Exception as e:
-                    print(
-                        "Failed to instantiate {}: {}".format(name, e), file=sys.stderr
-                    )
+                game_plugins.append(obj())
 
 
 def createPlugins():
