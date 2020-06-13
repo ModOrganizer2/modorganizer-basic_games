@@ -1,5 +1,7 @@
 # -*- encoding: utf-8 -*-
 
+import shutil
+
 from typing import List, Union, Optional, TypeVar, Callable, Generic, Dict
 
 
@@ -325,7 +327,12 @@ class BasicGame(mobase.IPluginGame):
         return ""
 
     def initializeProfile(self, path: QDir, settings: int):
-        pass
+        if settings & mobase.ProfileSetting.CONFIGURATION:
+            for iniFile in self.iniFiles():
+                shutil.copyfile(
+                    self.documentsDirectory().absoluteFilePath(iniFile),
+                    path.absoluteFilePath(iniFile),
+                )
 
     def primarySources(self):
         return []
