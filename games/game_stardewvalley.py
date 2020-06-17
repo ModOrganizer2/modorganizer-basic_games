@@ -11,15 +11,17 @@ class StardewValleyModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
 
-    def getDataFolderName(self) -> str:
-        return "mods"
-
-    def dataLooksValid(self, tree: mobase.IFileTree) -> bool:
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         count_ok = 0
         for e in tree:
             if e.isDir():
                 count_ok = e.exists("manifest.json", mobase.IFileTree.FILE)  # type: ignore
-        return count_ok > 0
+
+        if count_ok > 0:
+            return mobase.ModDataChecker.VALID
+        return mobase.ModDataChecker.INVALID
 
 
 class StardewValleyGame(BasicGame):
