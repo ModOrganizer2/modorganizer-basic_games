@@ -207,9 +207,9 @@ class BasicGameMappings:
 
 class BasicGame(mobase.IPluginGame):
 
-    """ This class implements some methods from mobase.IPluginGame
+    """This class implements some methods from mobase.IPluginGame
     to make it easier to create game plugins without having to implement
-    all the methods of mobase.IPluginGame. """
+    all the methods of mobase.IPluginGame."""
 
     # List of steam games:
     steam_games: Dict[str, str]
