@@ -320,6 +320,9 @@ class BasicGame(mobase.IPluginGame):
         )
         return execs
 
+    def executableForcedLoads(self) -> List[mobase.ExecutableForcedLoadSetting]:
+        return []
+
     def savegameExtension(self) -> str:
         return self.mappings.savegameExtension.get()
 
