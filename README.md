@@ -13,7 +13,7 @@ providing a very simple `.ini` file or a very simple python class.
 
 ## How to install?
 
-Download [the archive](https://github.com/Holt59/modorganizer-basic_games/archive/master.zip)
+Download [the archive](https://github.com/ModOrganizer2/modorganizer-basic_games/archive/master.zip)
 and extract it directly into your MO2 `plugins` folder.
 
 **Important:** Extract the *folder* in your `plugins` folder, not the individual files. Your
@@ -40,7 +40,7 @@ You can rename `modorganizer-basic_games-master` to whatever you want (e.g., `ba
 **Note:** You can also clone this repository in your `plugins/` folder:
 ```
 cd $MO2_PATH/plugins
-git clone https://github.com/Holt59/modorganizer-basic_games basic_games
+git clone https://github.com/ModOrganizer2/modorganizer-basic_games basic_games
 ```
 
 ## Supported games
