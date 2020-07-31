@@ -27,7 +27,7 @@ class LibraryFolder:
         self.games = []
         for filename in os.listdir(os.path.join(path, "steamapps")):
             if filename.startswith("appmanifest"):
-                with open(os.path.join(path, "steamapps", filename), "r") as fp:
+                with open(os.path.join(path, "steamapps", filename), "r", encoding="utf-8") as fp:
                     i, n = None, None
                     for line in fp:
                         line = line.strip()
