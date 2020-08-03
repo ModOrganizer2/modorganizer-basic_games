@@ -16,7 +16,7 @@ class Witcher3Game(BasicGame):
 
     GameName = "The Witcher 3: Wild Hunt"
     GameShortName = "witcher3"
-    GaneNexusHame = "witcher3"
+    GameNexusName = "witcher3"
     GameNexusId = 952
     GameSteamId = 292030
     GameBinary = "bin/x64/witcher3.exe"
