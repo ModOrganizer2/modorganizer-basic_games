@@ -1,4 +1,8 @@
 # -*- encoding: utf-8 -*-
+import sys
+import os
+import winreg
+import re
 
 import mobase
 
@@ -16,7 +20,7 @@ class Witcher3Game(BasicGame):
 
     GameName = "The Witcher 3: Wild Hunt"
     GameShortName = "witcher3"
-    GameNexusName = "witcher3"
+    GaneNexusHame = "witcher3"
     GameNexusId = 952
     GameSteamId = 292030
     GameBinary = "bin/x64/witcher3.exe"
@@ -24,6 +28,18 @@ class Witcher3Game(BasicGame):
     GameSaveExtension = "sav"
     GameDocumentsDirectory = "%DOCUMENTS%/The Witcher 3"
     GameSavesDirectory = "%GAME_DOCUMENTS%/gamesaves"
+
+    # GOG Compatibility
+    def isInstalled(self):
+        try:
+            RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1495134320")
+            Key = winreg.QueryValueEx(RawKey, "path")
+            winreg.CloseKey(RawKey)
+            Dir = re.search("'(.*)'", str(Key))
+            self.setGamePath(str(Dir[1]))
+            return True
+        except:
+            return False
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
