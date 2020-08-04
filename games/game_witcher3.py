@@ -24,7 +24,7 @@ class Witcher3Game(BasicGame):
     GameNexusId = 952
     GameSteamId = 292030
     GameBinary = "bin/x64/witcher3.exe"
-    GameDataPath = "mods"
+    GameDataPath = "Mods"
     GameSaveExtension = "sav"
     GameDocumentsDirectory = "%DOCUMENTS%/The Witcher 3"
     GameSavesDirectory = "%GAME_DOCUMENTS%/gamesaves"
