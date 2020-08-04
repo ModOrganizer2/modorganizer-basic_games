@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
 
-import os
 import sys
 
+from pathlib import Path
 from typing import Callable, Optional
 
 from PyQt5.QtCore import QDateTime, Qt
@@ -21,7 +21,7 @@ class BasicGameSaveGame(mobase.ISaveGame):
         return self._filename
 
     def getCreationTime(self):
-        return QDateTime(os.path.getmtime(self._filename))
+        return QDateTime(Path(self._filename).stat().st_mtime)
 
     def getSaveGroupIdentifier(self):
         return ""
@@ -62,7 +62,9 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         if value is None:
             return
 
-        if isinstance(value, str):
+        if isinstance(value, Path):
+            pixmap = QPixmap(str(value))
+        elif isinstance(value, str):
             pixmap = QPixmap(value)
         elif isinstance(value, QPixmap):
             pixmap = value
