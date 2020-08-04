@@ -9,9 +9,9 @@ from ..basic_game import BasicGame
 from ..basic_features import BasicGameSaveGameInfo
 
 
-class Witcher3Game(BasicGame):
+class Witcher3GameAlt(BasicGame):
 
-    Name = "Witcher 3 Support Plugin"
+    Name = "Witcher 3 Support Plugin Alternative"
     Author = "Holt59 & Luca/EzioTheDeadPoet"
     Version = "1.2.0"
     Description = "A plugin to make the Witcher work with Mod Organizer 2"
