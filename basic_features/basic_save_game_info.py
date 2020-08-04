@@ -21,7 +21,7 @@ class BasicGameSaveGame(mobase.ISaveGame):
         return self._filename
 
     def getCreationTime(self):
-        return QDateTime(Path(self._filename).stat().st_ctime)
+        return QDateTime(Path(self._filename).stat().st_mtime)
 
     def getSaveGroupIdentifier(self):
         return ""
