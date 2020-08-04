@@ -20,7 +20,7 @@ class Witcher3Game(BasicGame):
     GameShortName = "witcher3"
     GaneNexusHame = "witcher3"
     GameNexusId = 952
-    GameSteamId = 292030
+    GameSteamId = 292030 #Only GOTY
     GameBinary = "bin/x64/witcher3.exe"
     GameDataPath = "mods"
     GameSaveExtension = "sav"
@@ -33,7 +33,7 @@ class Witcher3Game(BasicGame):
         if super().isInstalled():
             return True
         try:
-            RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1495134320")
+            RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1495134320") #Only the GOTY not every version.
             Key = winreg.QueryValueEx(RawKey, "path")
             winreg.CloseKey(RawKey)
             Dir = re.search("'(.*)'", str(Key))
@@ -47,10 +47,12 @@ class Witcher3Game(BasicGame):
             "input.settings",
             "user.settings"
         ]
+    
+    #broken by adding the ability to have custom ini management.
 
-    def init(self, organizer: mobase.IOrganizer):
-        super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".sav", ".png")
-        )
-        return True
+    #def init(self, organizer: mobase.IOrganizer):
+    #    super().init(organizer)
+    #    self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
+    #        lambda s: s.replace(".sav", ".png")
+    #    )
+    #    return True
