@@ -1,6 +1,4 @@
 # -*- encoding: utf-8 -*-
-import sys
-import os
 import winreg
 import re
 
@@ -56,4 +54,3 @@ class Witcher3Game(BasicGame):
             lambda s: s.replace(".sav", ".png")
         )
         return True
-    
