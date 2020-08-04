@@ -15,7 +15,7 @@ class Witcher3Game(BasicGame):
 
     Name = "Witcher 3 Support Plugin"
     Author = "Holt59 & Luca/EzioTheDeadPoet"
-    Version = "1.1.0"
+    Version = "1.2.0"
     Description = "A plugin to make the Witcher work with Mod Organizer 2"
 
     GameName = "The Witcher 3: Wild Hunt"
