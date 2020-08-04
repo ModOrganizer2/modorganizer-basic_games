@@ -14,9 +14,9 @@ from ..basic_features import BasicGameSaveGameInfo
 class Witcher3Game(BasicGame):
 
     Name = "Witcher 3 Support Plugin"
-    Author = "Holt59"
+    Author = "Holt59 & Luca/EzioTheDeadPoet"
     Version = "1.1.0"
-    Description = "The Description Of The Dead| Updated to work with GOG by Luca/EzioTheDeadPoet"
+    Description = "A plugin to make the Witcher work with Mod Organizer 2"
 
     GameName = "The Witcher 3: Wild Hunt"
     GameShortName = "witcher3"
@@ -30,7 +30,10 @@ class Witcher3Game(BasicGame):
     GameSavesDirectory = "%GAME_DOCUMENTS%/gamesaves"
 
     # GOG Compatibility
+    
     def isInstalled(self):
+        if super().isInstalled():
+            return True
         try:
             RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1495134320")
             Key = winreg.QueryValueEx(RawKey, "path")
