@@ -19,6 +19,7 @@ class Witcher3Game(BasicGame):
     GaneNexusHame = "witcher3"
     GameNexusId = 952
     GameSteamId = 292030
+    GameGOGId = 1495134320
     GameBinary = "bin/x64/witcher3.exe"
     GameDataPath = "Mods"
     GameSaveExtension = "sav"

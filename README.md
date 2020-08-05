@@ -165,6 +165,7 @@ If the column `Ini` is empty, it means it only accepts a basic string.
 | GameSavesDirectory | Directory containing saves (Optional, default to `GameDocumentsDirectory`) | `savesDirectory` | `str` or `QDir` | |
 | GameSaveExtension | Save file extension (Optional) `savegameExtension` | `str` | |
 | GameSteamId | Steam ID of the game (Optional) | `steamAPPId` | `str` | |
+| GameGOGId | GOG ID of the game (Optional) | `gogAPPId` | `str`| |
 
 You can use the following variables for `str`:
 

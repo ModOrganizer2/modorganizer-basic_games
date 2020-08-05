@@ -1,4 +1,6 @@
 # -*- encoding: utf-8 -*-
+import winreg
+import re
 
 import shutil
 
@@ -122,6 +124,7 @@ class BasicGameMappings:
     savesDirectory: BasicGameMapping[QDir]
     savegameExtension: BasicGameMapping[str]
     steamAPPId: BasicGameMapping[str]
+    gogAPPId: BasicGameMapping[str]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -202,6 +205,9 @@ class BasicGameMappings:
         )
         self.steamAPPId = BasicGameMapping(
             game, "GameSteamId", "steamAPPId", default=lambda g: "", apply_fn=str
+        )
+        self.gogAPPId = BasicGameMapping(
+            game, "GameGOGId", "gogAPPId", default=lambda g: "", apply_fn=str
         )
 
 
@@ -295,6 +301,9 @@ class BasicGame(mobase.IPluginGame):
     def steamAPPId(self) -> str:
         return self.mappings.steamAPPId.get()
 
+    def gogAPPId(self) -> str:
+        return self.mappings.gogAPPId.get()
+
     def binaryName(self) -> str:
         return self.mappings.binaryName.get()
 
@@ -376,8 +385,18 @@ class BasicGame(mobase.IPluginGame):
         if self.steamAPPId() in BasicGame.steam_games:
             self.setGamePath(BasicGame.steam_games[self.steamAPPId()])
             return True
+        #GOG Check        
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f'SOFTWARE\\WOW6432Node\\GOG.com\\Games\\{self.gogAPPId()}', 0, (winreg.KEY_WOW64_64KEY+winreg.KEY_READ)) as RawKey:
+                Key = winreg.QueryValueEx(RawKey, "path")
+                winreg.CloseKey(RawKey)
+                Dir = re.search("'(.*)'", str(Key))
+                self.setGamePath(str(Dir[1]))
+                return True
+        except:
+            return False
+    
 
-        return False
 
     def gameDirectory(self) -> QDir:
         """
