@@ -9,7 +9,7 @@ from ..basic_game import BasicGame
 from ..basic_features import BasicGameSaveGameInfo
 
 
-class Witcher3GameAlt(BasicGame):
+class Witcher3Game(BasicGame):
 
     Name = "Witcher 3 Support Plugin Alternative"
     Author = "Holt59 & Luca/EzioTheDeadPoet"
@@ -20,7 +20,7 @@ class Witcher3GameAlt(BasicGame):
     GameShortName = "witcher3"
     GaneNexusHame = "witcher3"
     GameNexusId = 952
-    GameSteamId = 292030 #Only GOTY
+    GameSteamId =  499450#Only GOTY
     GameBinary = "bin/x64/witcher3.exe"
     GameDataPath = "mods"
     GameSaveExtension = "sav"
@@ -32,6 +32,9 @@ class Witcher3GameAlt(BasicGame):
     def isInstalled(self):
         if super().isInstalled():
             return True
+        GameSteamId = 292030
+        if super().isInstalled():
+            return True
         try:
             RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1495134320") #Only the GOTY not every version.
             Key = winreg.QueryValueEx(RawKey, "path")
@@ -40,7 +43,31 @@ class Witcher3GameAlt(BasicGame):
             self.setGamePath(str(Dir[1]))
             return True
         except:
-            return False
+            try:
+                RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1640424747") #Other Versions.
+                Key = winreg.QueryValueEx(RawKey, "path")
+                winreg.CloseKey(RawKey)
+                Dir = re.search("'(.*)'", str(Key))
+                self.setGamePath(str(Dir[1]))
+                return True
+            except:
+                try:
+                    RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1207664663") #Other Versions.
+                    Key = winreg.QueryValueEx(RawKey, "path")
+                    winreg.CloseKey(RawKey)
+                    Dir = re.search("'(.*)'", str(Key))
+                    self.setGamePath(str(Dir[1]))
+                    return True
+                except:
+                    try:
+                        RawKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1207664643") #Other Versions.
+                        Key = winreg.QueryValueEx(RawKey, "path")
+                        winreg.CloseKey(RawKey)
+                        Dir = re.search("'(.*)'", str(Key))
+                        self.setGamePath(str(Dir[1]))
+                        return True
+                    except:
+                        return False
 
     def iniFiles(self):
         return [
