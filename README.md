@@ -173,6 +173,11 @@ You can use the following variables for `str`:
 - `%GAME_PATH%` will be replaced by the path to the game folder.
 - `%GAME_DOCUMENTS%` will be replaced by the value of `GameDocumentsDirectory`.
 
+Game IDs can be found here:
+
+- For Steam on [Steam Database](https://steamdb.info/)
+- For GOG on [GOG Database](https://www.gogdb.org/)
+
 ## Extra features
 
 The meta-plugin provides some useful extra feature:
