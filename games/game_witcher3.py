@@ -12,7 +12,6 @@ class Witcher3Game(BasicGame):
     Name = "Witcher 3 Support Plugin"
     Author = "Holt59"
     Version = "1.0.0a"
-    Description = "The Description Of The Dead"
 
     GameName = "The Witcher 3: Wild Hunt"
     GameShortName = "witcher3"
