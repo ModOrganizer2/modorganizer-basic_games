@@ -53,7 +53,7 @@ git clone https://github.com/ModOrganizer2/modorganizer-basic_games basic_games
 | [Mount & Blade II: Bannerlord](https://store.steampowered.com/app/261550/Mount__Blade_II_Bannerlord/) | Holt59 | | <ul><li>steam detection</li><li>mod data checker</li></ul> |
 | [S.T.A.L.K.E.R. Anomaly](https://www.stalker-anomaly.com/) | [Qudix](https://github.com/Qudix) | [game_stalkeranomaly.py](games/game_stalkeranomaly.py) | |
 | [Stardew Valley](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), Holt59 | [game_stardewvalley.py](games/game_stardewvalley.py) | <ul><li>steam and GOG detection</li><li>mod data checker</li></ul> |
-| [The Witcher 3: Wild Hunt](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | Holt59 | [game_witcher3.py](games/game_witcher3.py) | <ul><li>steam detection</li><li>save game preview</li></ul> |
+| [The Witcher 3: Wild Hunt](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | Holt59 | [game_witcher3.py](games/game_witcher3.py) | <ul><li>steam and GOG detection</li><li>save game preview</li></ul> |
 | [Zeus and Poseidon](https://store.steampowered.com/app/566050/Zeus__Poseidon/) | Holt59 | [game_zeusandpoiseidon.py](games/game_zeusandpoiseidon.py) | <ul><li>steam and GOG detection</li><li>mod data checker</li></ul> |
 
 ## How to add a new game?
