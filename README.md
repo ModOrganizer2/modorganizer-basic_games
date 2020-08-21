@@ -47,9 +47,11 @@ git clone https://github.com/ModOrganizer2/modorganizer-basic_games basic_games
 
 | Game | Author | File | Extras |
 |------|--------|------|--------|
+|[The Binding of Isaac:Rebirth](https://store.steampowered.com/app/250900/The_Binding_of_Isaac_Rebirth/) |[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_thebindingofisaacrebirth.py](games/game_thebindingofisaacrebirth.py)|<ul><li>steam detection</li><li>profile specific ini file</li></ul>|
 | [Dark Messiah of Might & Magic](https://store.steampowered.com/app/2100/Dark_Messiah_of_Might__Magic/) | Holt59 | [game_darkmessiah[...].py](games/game_darkmessiahofmightandmagic.py) | <ul><li>steam detection</li><li>save game preview</li></ul> |
 | [Darkest Dungeon](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [game_darkestdungeon.py](games/game_darkestdungeon.py) | <ul><li>steam detection</li></ul> |
 | [Dungeon Siege II](https://store.steampowered.com/app/39200/Dungeon_Siege_II/) | Holt59 | [game_dungeonsiege2.py](games/game_dungeonsiege2.py) | <ul><li>steam detection</li><li>mod data checker</li></ul> |
+|[Mirror's Edge](https://www.gog.com/game/mirrors_edge)|[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_mirrorsedge.py](games/game_mirrorsedge.py)|<ul><li>steam and GOG detection</li></ul>|
 | [Mount & Blade II: Bannerlord](https://store.steampowered.com/app/261550/Mount__Blade_II_Bannerlord/) | Holt59 | | <ul><li>steam detection</li><li>mod data checker</li></ul> |
 | [S.T.A.L.K.E.R. Anomaly](https://www.stalker-anomaly.com/) | [Qudix](https://github.com/Qudix) | [game_stalkeranomaly.py](games/game_stalkeranomaly.py) | |
 | [Stardew Valley](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), Holt59 | [game_stardewvalley.py](games/game_stardewvalley.py) | <ul><li>steam and GOG detection</li><li>mod data checker</li></ul> |
