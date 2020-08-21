@@ -16,8 +16,8 @@ class MirrorsEdgeGame(BasicGame):
     GameName = "Mirror's Edge"
     GameShortName = "mirrorsedge"
     GaneNexusHame = ""
-    GameSteamId = [17410]
-    GameGogId = [1893001152]
+    GameSteamId = 17410
+    GameGogId = 1893001152
     GameBinary = "Binaries/MirrorsEdge.exe"
     GameDataPath = "TdGame"
 
