@@ -34,6 +34,7 @@ class StardewValleyGame(BasicGame):
     GameNexusName = "stardewvalley"
     GameNexusId = 1303
     GameSteamId = 413150
+    GameGogId = 1453375253
     GameBinary = "Stardew Valley.exe"
     GameDataPath = "mods"
     GameDocumentsDirectory = "%DOCUMENTS%/StardewValley"
