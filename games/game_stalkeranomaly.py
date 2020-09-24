@@ -6,10 +6,22 @@ import mobase
 
 from ..basic_game import BasicGame
 
+class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+    
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        if tree.exists("db") or tree.exists("appdata") or tree.exists("gamedata"):
+            return mobase.ModDataChecker.VALID
+        else:
+            return mobase.ModDataChecker.INVALID
+
 class StalkerAnomalyGame(BasicGame):
     Name = "STALKER Anomaly"
     Author = "Qudix"
-    Version = "0.1.0"
+    Version = "0.2.0"
     Description = "Adds support for STALKER Anomaly"
 
     GameName = "STALKER Anomaly"
@@ -22,6 +34,7 @@ class StalkerAnomalyGame(BasicGame):
     
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
         return True
 
     def executables(self):
