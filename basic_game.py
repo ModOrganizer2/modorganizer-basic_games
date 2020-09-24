@@ -2,6 +2,7 @@
 
 import shutil
 
+from pathlib import Path
 from typing import List, Union, Optional, TypeVar, Callable, Generic, Dict
 
 
@@ -47,7 +48,7 @@ class BasicGameMapping(Generic[T]):
     _required: bool
 
     # Callable returning a default value (if not required):
-    _default: Optional[Callable[["BasicGame"], T]]
+    _default: Callable[["BasicGame"], T]
 
     # Function to apply to the value:
     _apply_fn: Optional[Callable[[Union[T, str]], T]]
@@ -64,7 +65,6 @@ class BasicGameMapping(Generic[T]):
         self._game = game
         self._exposed_name = exposed_name
         self._internal_method_name = internal_method
-        self._default = default
         self._apply_fn = apply_fn
 
         if hasattr(game, self._exposed_name):
@@ -80,9 +80,8 @@ class BasicGameMapping(Generic[T]):
                         )
                     )
             self._default = lambda game: value  # type: ignore
-        elif self._default is not None:
-            # Not required, ok!
-            pass
+        elif default is not None:
+            self._default = default  # type: ignore
         elif getattr(game.__class__, self._internal_method_name) is getattr(
             BasicGame, self._internal_method_name
         ):
@@ -95,6 +94,68 @@ class BasicGameMapping(Generic[T]):
     def get(self) -> T:
         """ Return the value of this mapping. """
         value = self._default(self._game)  # type: ignore
+
+        if isinstance(value, str):
+            return replace_variables(value, self._game)  # type: ignore
+        elif isinstance(value, QDir):
+            return QDir(replace_variables(value.path(), self._game))  # type: ignore
+
+        return value
+
+
+class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
+
+    """
+    Represents a game mappings for which multiple options are possible. The game
+    plugin is responsible to choose the right option depending on the context.
+    """
+
+    _index: int
+
+    def __init__(
+        self,
+        game,
+        exposed_name,
+        internal_method,
+        default: Optional[Callable[["BasicGame"], T]] = None,
+        apply_fn: Optional[Callable[[Union[List[T], str]], List[T]]] = None,
+    ):
+        super().__init__(game, exposed_name, internal_method, lambda g: [], apply_fn)
+        self._index = -1
+        self._current_default = default
+
+    def set_index(self, index: int):
+        """
+        Set the index of the option to use.
+
+        Args:
+            index: Index of the option to use.
+        """
+        self._index = index
+
+    def set_value(self, value: T):
+        """
+        Set the index corresponding of the given value. If the value is not present,
+        the index is set to -1.
+
+        Args:
+            value: The value to set the index to.
+        """
+        try:
+            self._index = self.get().index(value)
+        except ValueError:
+            self._index = -1
+
+    def current(self) -> T:
+        values = self._default(self._game)  # type: ignore
+
+        if not values:
+            return self._current_default(self._game)  # type: ignore
+
+        if self._index == -1:
+            value = values[0]
+        else:
+            value = values[self._index]
 
         if isinstance(value, str):
             return replace_variables(value, self._game)  # type: ignore
@@ -121,7 +182,8 @@ class BasicGameMappings:
     documentsDirectory: BasicGameMapping[QDir]
     savesDirectory: BasicGameMapping[QDir]
     savegameExtension: BasicGameMapping[str]
-    steamAPPId: BasicGameMapping[str]
+    steamAPPId: BasicGameOptionsMapping[str]
+    gogAPPId: BasicGameOptionsMapping[str]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -200,25 +262,38 @@ class BasicGameMappings:
         self.savegameExtension = BasicGameMapping(
             game, "GameSaveExtension", "savegameExtension", default=lambda g: "save"
         )
-        self.steamAPPId = BasicGameMapping(
-            game, "GameSteamId", "steamAPPId", default=lambda g: "", apply_fn=str
+
+        # Convert Union[int, str, List[Union[int, str]]] to List[str].
+        def ids_apply(v) -> List[str]:
+            if isinstance(v, (int, str)):
+                v = [v]
+            return [str(x) for x in v]
+
+        self.steamAPPId = BasicGameOptionsMapping(
+            game, "GameSteamId", "steamAPPId", default=lambda g: "", apply_fn=ids_apply
+        )
+        self.gogAPPId = BasicGameOptionsMapping(
+            game, "GameGogId", "gogAPPId", default=lambda g: "", apply_fn=ids_apply
         )
 
 
 class BasicGame(mobase.IPluginGame):
 
-    """ This class implements some methods from mobase.IPluginGame
+    """This class implements some methods from mobase.IPluginGame
     to make it easier to create game plugins without having to implement
-    all the methods of mobase.IPluginGame. """
+    all the methods of mobase.IPluginGame."""
 
-    # List of steam games:
-    steam_games: Dict[str, str]
+    # List of steam and GOG games:
+    steam_games: Dict[str, Path]
+    gog_games: Dict[str, Path]
 
     @staticmethod
     def setup():
-        from .steam_utils import find_games
+        from .steam_utils import find_games as find_steam_games
+        from .gog_utils import find_games as find_gog_games
 
-        BasicGame.steam_games = find_games()
+        BasicGame.steam_games = find_steam_games()
+        BasicGame.gog_games = find_gog_games()
 
     # File containing the plugin:
     _fromName: str
@@ -293,7 +368,10 @@ class BasicGame(mobase.IPluginGame):
         return self.mappings.nexusGameId.get()
 
     def steamAPPId(self) -> str:
-        return self.mappings.steamAPPId.get()
+        return self.mappings.steamAPPId.current()
+
+    def gogAPPId(self) -> str:
+        return self.mappings.gogAPPId.current()
 
     def binaryName(self) -> str:
         return self.mappings.binaryName.get()
@@ -319,6 +397,9 @@ class BasicGame(mobase.IPluginGame):
             )
         )
         return execs
+
+    def executableForcedLoads(self) -> List[mobase.ExecutableForcedLoadSetting]:
+        return []
 
     def savegameExtension(self) -> str:
         return self.mappings.savegameExtension.get()
@@ -370,9 +451,15 @@ class BasicGame(mobase.IPluginGame):
         return aQDir.exists(self.binaryName())
 
     def isInstalled(self) -> bool:
-        if self.steamAPPId() in BasicGame.steam_games:
-            self.setGamePath(BasicGame.steam_games[self.steamAPPId()])
-            return True
+        for steam_id in self.mappings.steamAPPId.get():
+            if steam_id in BasicGame.steam_games:
+                self.setGamePath(BasicGame.steam_games[steam_id])
+                return True
+
+        for gog_id in self.mappings.gogAPPId.get():
+            if gog_id in BasicGame.gog_games:
+                self.setGamePath(BasicGame.gog_games[gog_id])
+                return True
 
         return False
 
@@ -387,8 +474,18 @@ class BasicGame(mobase.IPluginGame):
             self.gameDirectory().absoluteFilePath(self.mappings.dataDirectory.get())
         )
 
-    def setGamePath(self, pathStr: str):
-        self._gamePath = pathStr
+    def setGamePath(self, path: Union[Path, str]):
+        self._gamePath = str(path)
+
+        path = Path(path)
+
+        # Check if we have a matching steam ID or GOG id and set the index accordingly:
+        for steamid, steampath in BasicGame.steam_games.items():
+            if steampath == path:
+                self.mappings.steamAPPId.set_value(steamid)
+        for gogid, gogpath in BasicGame.gog_games.items():
+            if gogpath == path:
+                self.mappings.steamAPPId.set_value(gogid)
 
     def documentsDirectory(self) -> QDir:
         return self.mappings.documentsDirectory.get()
