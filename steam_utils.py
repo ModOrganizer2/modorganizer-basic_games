@@ -5,6 +5,7 @@
 import os
 import winreg  # type: ignore
 
+from pathlib import Path
 from typing import Dict
 
 
@@ -27,7 +28,9 @@ class LibraryFolder:
         self.games = []
         for filename in os.listdir(os.path.join(path, "steamapps")):
             if filename.startswith("appmanifest"):
-                with open(os.path.join(path, "steamapps", filename), "r") as fp:
+                with open(
+                    os.path.join(path, "steamapps", filename), "r", encoding="utf-8"
+                ) as fp:
                     i, n = None, None
                     for line in fp:
                         line = line.strip()
@@ -95,7 +98,7 @@ def parse_library_info(library_vdf_path):
     return library_folders
 
 
-def find_games() -> Dict[str, str]:
+def find_games() -> Dict[str, Path]:
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Valve\\Steam") as key:
             value = winreg.QueryValueEx(key, "SteamExe")
@@ -110,11 +113,11 @@ def find_games() -> Dict[str, str]:
     library_folders = parse_library_info(library_vdf_path)
     library_folders.append(LibraryFolder(os.path.dirname(steam_path)))
 
-    games: Dict[str, str] = {}
+    games: Dict[str, Path] = {}
     for library in library_folders:
         for game in library.games:
-            games[game.appid] = os.path.join(
-                library.path, "steamapps", "common", game.installdir
+            games[game.appid] = Path(library.path).joinpath(
+                "steamapps", "common", game.installdir
             )
 
     return games

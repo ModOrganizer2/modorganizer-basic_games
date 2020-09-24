@@ -14,13 +14,13 @@ class StardewValleyModDataChecker(mobase.ModDataChecker):
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        count_ok = 0
-        for e in tree:
-            if e.isDir():
-                count_ok = e.exists("manifest.json", mobase.IFileTree.FILE)  # type: ignore
 
-        if count_ok > 0:
-            return mobase.ModDataChecker.VALID
+        for e in tree:
+            if e.isDir() and e.exists(  # type: ignore
+                "manifest.json", mobase.IFileTree.FILE
+            ):
+                return mobase.ModDataChecker.VALID
+
         return mobase.ModDataChecker.INVALID
 
 
@@ -34,6 +34,7 @@ class StardewValleyGame(BasicGame):
     GameNexusName = "stardewvalley"
     GameNexusId = 1303
     GameSteamId = 413150
+    GameGogId = 1453375253
     GameBinary = "Stardew Valley.exe"
     GameDataPath = "mods"
     GameDocumentsDirectory = "%DOCUMENTS%/StardewValley"
