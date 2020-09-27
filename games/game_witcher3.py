@@ -31,3 +31,6 @@ class Witcher3Game(BasicGame):
             lambda s: s.replace(".sav", ".png")
         )
         return True
+
+    def iniFiles(self):
+        return ["user.settings", "input.settings"]
