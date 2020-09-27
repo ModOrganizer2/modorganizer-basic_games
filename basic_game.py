@@ -100,6 +100,10 @@ class BasicGameMapping(Generic[T]):
         elif isinstance(value, QDir):
             return QDir(replace_variables(value.path(), self._game))  # type: ignore
 
+        # MO2 does not support Path anywhere so we always convert to str:
+        elif isinstance(value, Path):
+            return replace_variables(str(value), self._game)  # type: ignore
+
         return value
 
 
