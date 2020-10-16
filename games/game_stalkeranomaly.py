@@ -1,5 +1,7 @@
 # -*- encoding: utf-8 -*-
 
+from typing import List
+
 from PyQt5.QtCore import QFileInfo
 
 import mobase
@@ -18,10 +20,10 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
         else:
             return mobase.ModDataChecker.INVALID
 
-class StalkerAnomalyGame(BasicGame):
+class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     Name = "STALKER Anomaly"
     Author = "Qudix"
-    Version = "0.2.0"
+    Version = "0.3.0"
     Description = "Adds support for STALKER Anomaly"
 
     GameName = "STALKER Anomaly"
@@ -31,9 +33,13 @@ class StalkerAnomalyGame(BasicGame):
     
     GameSaveExtension = "scop"
     GameSavesDirectory = "%GAME_PATH%/appdata/savedgames"
+
+    def __init__(self):
+        BasicGame.__init__(self)
+        mobase.IPluginFileMapper.__init__(self)
     
     def init(self, organizer: mobase.IOrganizer):
-        super().init(organizer)
+        BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
         return True
 
@@ -75,4 +81,14 @@ class StalkerAnomalyGame(BasicGame):
                 "Anomaly (DX8)", 
                 QFileInfo(self.gameDirectory(), "bin/AnomalyDX8.exe")
             )
-        ]        
+        ]
+
+    def mappings(self) -> List[mobase.Mapping]:
+        self.gameDirectory().mkdir("appdata")
+        
+        m = mobase.Mapping()
+        m.createTarget = True
+        m.isDirectory = True
+        m.source = self.gameDirectory().filePath("appdata")
+        m.destination = self.gameDirectory().filePath("appdata")
+        return [m]
