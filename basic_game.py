@@ -320,7 +320,7 @@ class BasicGame(mobase.IPluginGame):
         self._gamePath = ""
         self._featureMap = {}
 
-        self.mappings: BasicGameMappings = BasicGameMappings(self)
+        self._mappings: BasicGameMappings = BasicGameMappings(self)
 
     """
     Here IPlugin interface stuff.
@@ -331,16 +331,16 @@ class BasicGame(mobase.IPluginGame):
         return True
 
     def name(self) -> str:
-        return self.mappings.name.get()
+        return self._mappings.name.get()
 
     def author(self) -> str:
-        return self.mappings.author.get()
+        return self._mappings.author.get()
 
     def description(self) -> str:
-        return self.mappings.description.get()
+        return self._mappings.description.get()
 
     def version(self) -> mobase.VersionInfo:
-        return self.mappings.version.get()
+        return self._mappings.version.get()
 
     def isActive(self) -> bool:
         return True
@@ -349,10 +349,10 @@ class BasicGame(mobase.IPluginGame):
         return []
 
     def gameName(self) -> str:
-        return self.mappings.gameName.get()
+        return self._mappings.gameName.get()
 
     def gameShortName(self) -> str:
-        return self.mappings.gameShortName.get()
+        return self._mappings.gameShortName.get()
 
     def gameIcon(self) -> QIcon:
         return mobase.getIconForExecutable(
@@ -360,28 +360,28 @@ class BasicGame(mobase.IPluginGame):
         )
 
     def validShortNames(self) -> List[str]:
-        return self.mappings.validShortNames.get()
+        return self._mappings.validShortNames.get()
 
     def gameNexusName(self) -> str:
-        return self.mappings.gameNexusName.get()
+        return self._mappings.gameNexusName.get()
 
     def nexusModOrganizerID(self) -> int:
         return 0
 
     def nexusGameID(self) -> int:
-        return self.mappings.nexusGameId.get()
+        return self._mappings.nexusGameId.get()
 
     def steamAPPId(self) -> str:
-        return self.mappings.steamAPPId.current()
+        return self._mappings.steamAPPId.current()
 
     def gogAPPId(self) -> str:
-        return self.mappings.gogAPPId.current()
+        return self._mappings.gogAPPId.current()
 
     def binaryName(self) -> str:
-        return self.mappings.binaryName.get()
+        return self._mappings.binaryName.get()
 
     def getLauncherName(self) -> str:
-        return self.mappings.launcherName.get()
+        return self._mappings.launcherName.get()
 
     def executables(self) -> List[mobase.ExecutableInfo]:
         execs = []
@@ -406,7 +406,7 @@ class BasicGame(mobase.IPluginGame):
         return []
 
     def savegameExtension(self) -> str:
-        return self.mappings.savegameExtension.get()
+        return self._mappings.savegameExtension.get()
 
     def savegameSEExtension(self) -> str:
         return ""
@@ -455,12 +455,12 @@ class BasicGame(mobase.IPluginGame):
         return aQDir.exists(self.binaryName())
 
     def isInstalled(self) -> bool:
-        for steam_id in self.mappings.steamAPPId.get():
+        for steam_id in self._mappings.steamAPPId.get():
             if steam_id in BasicGame.steam_games:
                 self.setGamePath(BasicGame.steam_games[steam_id])
                 return True
 
-        for gog_id in self.mappings.gogAPPId.get():
+        for gog_id in self._mappings.gogAPPId.get():
             if gog_id in BasicGame.gog_games:
                 self.setGamePath(BasicGame.gog_games[gog_id])
                 return True
@@ -475,7 +475,7 @@ class BasicGame(mobase.IPluginGame):
 
     def dataDirectory(self) -> QDir:
         return QDir(
-            self.gameDirectory().absoluteFilePath(self.mappings.dataDirectory.get())
+            self.gameDirectory().absoluteFilePath(self._mappings.dataDirectory.get())
         )
 
     def setGamePath(self, path: Union[Path, str]):
@@ -486,16 +486,16 @@ class BasicGame(mobase.IPluginGame):
         # Check if we have a matching steam ID or GOG id and set the index accordingly:
         for steamid, steampath in BasicGame.steam_games.items():
             if steampath == path:
-                self.mappings.steamAPPId.set_value(steamid)
+                self._mappings.steamAPPId.set_value(steamid)
         for gogid, gogpath in BasicGame.gog_games.items():
             if gogpath == path:
-                self.mappings.steamAPPId.set_value(gogid)
+                self._mappings.steamAPPId.set_value(gogid)
 
     def documentsDirectory(self) -> QDir:
-        return self.mappings.documentsDirectory.get()
+        return self._mappings.documentsDirectory.get()
 
     def savesDirectory(self) -> QDir:
-        return self.mappings.savesDirectory.get()
+        return self._mappings.savesDirectory.get()
 
     def _featureList(self):
         return self._featureMap
