@@ -69,8 +69,9 @@ class DungeonSiegeIIGame(BasicGame):
     GameSteamId = 39200
     GameBinary = "DungeonSiege2.exe"
     GameDataPath = ""
-
+    GameSavesDirectory = "%GAME_DOCUMENTS%/Save"
     GameDocumentsDirectory = "%DOCUMENTS%/My Games/Dungeon Siege 2"
+    GameSaveExtension = "ds2party"
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

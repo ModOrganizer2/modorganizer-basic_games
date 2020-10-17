@@ -4,7 +4,13 @@ import mobase
 
 
 from ..basic_game import BasicGame
+from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_features import BasicGameSaveGameInfo
+
+
+class Witcher3SaveGame(BasicGameSaveGame):
+    def allFiles(self):
+        return [self._filename, self._filename.replace(".sav", ".png")]
 
 
 class Witcher3Game(BasicGame):
@@ -28,7 +34,7 @@ class Witcher3Game(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".sav", ".png")
+            lambda s: s.replace(".sav", ".png"), Witcher3SaveGame
         )
         return True
 

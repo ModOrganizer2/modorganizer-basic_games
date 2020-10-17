@@ -416,7 +416,7 @@ class BasicGame(mobase.IPluginGame):
             for iniFile in self.iniFiles():
                 shutil.copyfile(
                     self.documentsDirectory().absoluteFilePath(iniFile),
-                    path.absoluteFilePath(iniFile),
+                    path.absoluteFilePath(QFileInfo(iniFile).fileName()),
                 )
 
     def primarySources(self):
