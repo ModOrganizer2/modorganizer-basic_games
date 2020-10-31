@@ -230,7 +230,10 @@ class BasicGameMappings:
         self.gameName = BasicGameMapping(game, "GameName", "gameName")
         self.gameShortName = BasicGameMapping(game, "GameShortName", "gameShortName")
         self.gameNexusName = BasicGameMapping(
-            game, "GameNexusName", "gameNexusName", default=lambda g: g.gameShortName(),
+            game,
+            "GameNexusName",
+            "gameNexusName",
+            default=lambda g: g.gameShortName(),
         )
         self.validShortNames = BasicGameMapping(
             game,
@@ -246,7 +249,10 @@ class BasicGameMappings:
         )
         self.binaryName = BasicGameMapping(game, "GameBinary", "binaryName")
         self.launcherName = BasicGameMapping(
-            game, "GameLauncher", "getLauncherName", default=lambda g: "",
+            game,
+            "GameLauncher",
+            "getLauncherName",
+            default=lambda g: "",
         )
         self.dataDirectory = BasicGameMapping(game, "GameDataPath", "dataDirectory")
         self.documentsDirectory = BasicGameMapping(

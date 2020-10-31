@@ -72,7 +72,8 @@ class MountAndBladeIIGame(BasicGame):
             mobase.ExecutableInfo(
                 "Mount & Blade II: Bannerlord",
                 QFileInfo(
-                    self.gameDirectory(), "bin/Win64_Shipping_Client/Bannerlord.exe",
+                    self.gameDirectory(),
+                    "bin/Win64_Shipping_Client/Bannerlord.exe",
                 ),
             ),
             mobase.ExecutableInfo(
@@ -85,7 +86,8 @@ class MountAndBladeIIGame(BasicGame):
             mobase.ExecutableInfo(
                 "Mount & Blade II: Bannerlord (BE)",
                 QFileInfo(
-                    self.gameDirectory(), "bin/Win64_Shipping_Client/Bannerlord_BE.exe",
+                    self.gameDirectory(),
+                    "bin/Win64_Shipping_Client/Bannerlord_BE.exe",
                 ),
             ),
         ]
