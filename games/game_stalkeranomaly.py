@@ -8,10 +8,11 @@ import mobase
 
 from ..basic_game import BasicGame
 
+
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
-    
+
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
@@ -19,6 +20,7 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
             return mobase.ModDataChecker.VALID
         else:
             return mobase.ModDataChecker.INVALID
+
 
 class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     Name = "STALKER Anomaly"
@@ -30,14 +32,14 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     GameShortName = "stalkeranomaly"
     GameBinary = "AnomalyLauncher.exe"
     GameDataPath = ""
-    
+
     GameSaveExtension = "scop"
     GameSavesDirectory = "%GAME_PATH%/appdata/savedgames"
 
     def __init__(self):
         BasicGame.__init__(self)
         mobase.IPluginFileMapper.__init__(self)
-    
+
     def init(self, organizer: mobase.IOrganizer):
         BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
@@ -46,46 +48,42 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Anomaly Launcher", 
-                QFileInfo(self.gameDirectory(), "AnomalyLauncher.exe")
+                "Anomaly Launcher",
+                QFileInfo(self.gameDirectory(), "AnomalyLauncher.exe"),
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX11-AVX)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX11AVX.exe")
+                "Anomaly (DX11-AVX)",
+                QFileInfo(self.gameDirectory(), "bin/AnomalyDX11AVX.exe"),
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX11)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX11.exe")
+                "Anomaly (DX11)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX11.exe")
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX10-AVX)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX10AVX.exe")
+                "Anomaly (DX10-AVX)",
+                QFileInfo(self.gameDirectory(), "bin/AnomalyDX10AVX.exe"),
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX10)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX10.exe")
+                "Anomaly (DX10)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX10.exe")
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX9-AVX)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX9AVX.exe")
+                "Anomaly (DX9-AVX)",
+                QFileInfo(self.gameDirectory(), "bin/AnomalyDX9AVX.exe"),
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX9)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX9.exe")
+                "Anomaly (DX9)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX9.exe")
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX8-AVX)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX8AVX.exe")
+                "Anomaly (DX8-AVX)",
+                QFileInfo(self.gameDirectory(), "bin/AnomalyDX8AVX.exe"),
             ),
             mobase.ExecutableInfo(
-                "Anomaly (DX8)", 
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX8.exe")
-            )
+                "Anomaly (DX8)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX8.exe")
+            ),
         ]
 
     def mappings(self) -> List[mobase.Mapping]:
         self.gameDirectory().mkdir("appdata")
-        
+
         m = mobase.Mapping()
         m.createTarget = True
         m.isDirectory = True

@@ -13,7 +13,7 @@ class BasicIniGame(BasicGame):
 
         # Read the file:
         config = configparser.ConfigParser()
-        config.optionxform = str
+        config.optionxform = str  # type: ignore
         config.read(path)
 
         # Just fill the class with values:

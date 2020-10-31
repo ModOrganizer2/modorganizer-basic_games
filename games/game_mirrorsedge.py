@@ -1,10 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-import mobase
-
-
 from ..basic_game import BasicGame
-from ..basic_features import BasicGameSaveGameInfo
 
 
 class MirrorsEdgeGame(BasicGame):
@@ -20,4 +16,3 @@ class MirrorsEdgeGame(BasicGame):
     GameGogId = 1893001152
     GameBinary = "Binaries/MirrorsEdge.exe"
     GameDataPath = "TdGame"
-
