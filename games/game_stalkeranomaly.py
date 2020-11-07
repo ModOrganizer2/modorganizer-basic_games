@@ -10,22 +10,30 @@ from ..basic_game import BasicGame
 
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
+    _valid_folders: List[str] = [
+        "db",
+        "appdata",
+        "gamedata",
+    ]
+
     def __init__(self):
         super().__init__()
 
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        if tree.exists("db") or tree.exists("appdata") or tree.exists("gamedata"):
-            return mobase.ModDataChecker.VALID
-        else:
-            return mobase.ModDataChecker.INVALID
+        for e in tree:
+            if e.isDir():
+                if e.name().lower() in self._valid_folders:
+                    return mobase.ModDataChecker.VALID
+
+        return mobase.ModDataChecker.INVALID
 
 
 class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     Name = "STALKER Anomaly"
     Author = "Qudix"
-    Version = "0.3.0"
+    Version = "0.3.1"
     Description = "Adds support for STALKER Anomaly"
 
     GameName = "STALKER Anomaly"
