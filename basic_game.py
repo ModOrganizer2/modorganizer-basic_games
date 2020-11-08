@@ -332,6 +332,18 @@ class BasicGame(mobase.IPluginGame):
     Here IPlugin interface stuff.
     """
 
+    def detectGame(self):
+        for steam_id in self._mappings.steamAPPId.get():
+            if steam_id in BasicGame.steam_games:
+                self.setGamePath(BasicGame.steam_games[steam_id])
+                return
+
+        for gog_id in self._mappings.gogAPPId.get():
+            if gog_id in BasicGame.gog_games:
+                self.setGamePath(BasicGame.gog_games[gog_id])
+                return
+
+
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
         return True
@@ -461,17 +473,7 @@ class BasicGame(mobase.IPluginGame):
         return aQDir.exists(self.binaryName())
 
     def isInstalled(self) -> bool:
-        for steam_id in self._mappings.steamAPPId.get():
-            if steam_id in BasicGame.steam_games:
-                self.setGamePath(BasicGame.steam_games[steam_id])
-                return True
-
-        for gog_id in self._mappings.gogAPPId.get():
-            if gog_id in BasicGame.gog_games:
-                self.setGamePath(BasicGame.gog_games[gog_id])
-                return True
-
-        return False
+        return self._gamePath != ""
 
     def gameDirectory(self) -> QDir:
         """
