@@ -57,7 +57,7 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 
 ## How to add a new game?
 
-You can create a plugin by providing a python classin the `games` folder.
+You can create a plugin by providing a python class in the `games` folder.
 
 **Note:** If your game plugin does not load properly, you should set the log level
 to debug and look at the `mo_interface.log` file.
@@ -120,8 +120,6 @@ class Witcher3Game(BasicGame):
 ```
 
 ### List of valid keys
-
-If the column `Ini` is empty, it means it only accepts a basic string.
 
 | Name | Description | `IPluginGame` method | Python |
 |------|-------------|----------------------|--------|
