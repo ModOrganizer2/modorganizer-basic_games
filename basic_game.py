@@ -347,7 +347,8 @@ class BasicGame(mobase.IPluginGame):
         return self._mappings.version.get()
 
     def isActive(self) -> bool:
-        return True
+        # Note: self is self._organizer.managedGame() does not work:
+        return self.name() == self._organizer.managedGame().name()
 
     def settings(self) -> List[mobase.PluginSetting]:
         return []
