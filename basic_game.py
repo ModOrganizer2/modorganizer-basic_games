@@ -11,6 +11,8 @@ from PyQt5.QtGui import QIcon
 
 import mobase
 
+from .basic_features.basic_save_game_info import BasicGameSaveGame
+
 
 def replace_variables(value: str, game: "BasicGame") -> str:
     """ Replace special paths in the given value. """
@@ -426,11 +428,12 @@ class BasicGame(mobase.IPluginGame):
     def executableForcedLoads(self) -> List[mobase.ExecutableForcedLoadSetting]:
         return []
 
-    def savegameExtension(self) -> str:
-        return self._mappings.savegameExtension.get()
-
-    def savegameSEExtension(self) -> str:
-        return ""
+    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+        ext = self._mappings.savegameExtension.get()
+        return [
+            BasicGameSaveGame(path)
+            for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
+        ]
 
     def initializeProfile(self, path: QDir, settings: int):
         if settings & mobase.ProfileSetting.CONFIGURATION:

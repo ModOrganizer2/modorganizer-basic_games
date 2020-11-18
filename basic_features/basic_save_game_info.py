@@ -13,24 +13,24 @@ import mobase
 
 
 class BasicGameSaveGame(mobase.ISaveGame):
-    def __init__(self, filename: str):
+    def __init__(self, filepath: Path):
         super().__init__()
-        self._filename = filename
+        self._filepath = filepath
 
-    def getFilename(self) -> str:
-        return self._filename
+    def getFilepath(self) -> str:
+        return self._filepath.as_posix()
+
+    def getName(self) -> str:
+        return self._filepath.name
 
     def getCreationTime(self):
-        return QDateTime(Path(self._filename).stat().st_mtime)
+        return QDateTime.fromSecsSinceEpoch(int(self._filepath.stat().st_mtime))
 
     def getSaveGroupIdentifier(self) -> str:
         return ""
 
     def allFiles(self) -> List[str]:
-        return [self._filename]
-
-    def hasScriptExtenderFile(self) -> bool:
-        return False
+        return [self.getFilename()]
 
 
 class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
@@ -52,12 +52,12 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self.setAutoFillBackground(True)
         self.setPalette(palette)
 
-    def setSave(self, filename):
+    def setSave(self, save: mobase.ISaveGame):
         # Resize the label to (0, 0) to hide it:
         self._label.resize(0, 0)
 
         # Retrieve the pixmap:
-        value = self._get_preview(filename)
+        value = self._get_preview(save.getFilepath())
 
         if value is None:
             return
