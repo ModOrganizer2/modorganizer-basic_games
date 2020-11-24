@@ -60,13 +60,14 @@ class DungeonSiegeIIModDataChecker(mobase.ModDataChecker):
 class DungeonSiegeIIGame(BasicGame):
     Name = "Dungeon Siege II"
     Author = "Holt59"
-    Version = "0.1.0"
+    Version = "0.1.1"
 
     GameName = "Dungeon Siege II"
     GameShortName = "dungeonsiegeii"
     GameNexusName = "dungeonsiegeii"
     GameNexusId = 2078
-    GameSteamId = 39200
+    GameSteamId = [39200]
+    GameGogId = [1142020247]
     GameBinary = "DungeonSiege2.exe"
     GameDataPath = ""
     GameSavesDirectory = "%GAME_DOCUMENTS%/Save"

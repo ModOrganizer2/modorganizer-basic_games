@@ -43,17 +43,18 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 
 | Game | Author | File | Extras |
 |------|--------|------|--------|
-|[The Binding of Isaac:Rebirth](https://store.steampowered.com/app/250900/The_Binding_of_Isaac_Rebirth/) |[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_thebindingofisaacrebirth.py](games/game_thebindingofisaacrebirth.py)|<ul><li>profile specific ini file</li></ul>|
-| [Darkest Dungeon](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [game_darkestdungeon.py](games/game_darkestdungeon.py) |  |
-| [Dark Messiah of Might & Magic](https://store.steampowered.com/app/2100/Dark_Messiah_of_Might__Magic/) | [Holt59](https://github.com/holt59/) | [game_darkmessiah[...].py](games/game_darkmessiahofmightandmagic.py) | <ul><li>save game preview</li></ul> |
-| [Dark Souls](https://store.steampowered.com/app/211420/DARK_SOULS_Prepare_To_Die_Edition/) | [Holt59](https://github.com/holt59/) | [game_darkestdungeon.py](games/game_darkestdungeon.py) |  |
-| [Dungeon Siege II](https://store.steampowered.com/app/39200/Dungeon_Siege_II/) | [Holt59](https://github.com/holt59/) | [game_dungeonsiege2.py](games/game_dungeonsiege2.py) | <ul><li>mod data checker</li></ul> |
-|[Mirror's Edge](https://www.gog.com/game/mirrors_edge)|[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_mirrorsedge.py](games/game_mirrorsedge.py)| |
-| [Mount & Blade II: Bannerlord](https://store.steampowered.com/app/261550/Mount__Blade_II_Bannerlord/) | [Holt59](https://github.com/holt59/) | | <ul><li>mod data checker</li></ul> |
-| [S.T.A.L.K.E.R. Anomaly](https://www.stalker-anomaly.com/) | [Qudix](https://github.com/Qudix) | [game_stalkeranomaly.py](games/game_stalkeranomaly.py) | <ul><li>mod data checker</li></ul> |
-| [Stardew Valley](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), [Holt59](https://github.com/holt59/) | [game_stardewvalley.py](games/game_stardewvalley.py) | <ul><li>mod data checker</li></ul> |
-| [The Witcher 3: Wild Hunt](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | [Holt59](https://github.com/holt59/) | [game_witcher3.py](games/game_witcher3.py) | <ul><li>save game preview</li></ul> |
-| [Zeus and Poseidon](https://store.steampowered.com/app/566050/Zeus__Poseidon/) | [Holt59](https://github.com/holt59/) | [game_zeusandpoiseidon.py](games/game_zeusandpoiseidon.py) | <ul><li>mod data checker</li></ul> |
+| The Binding of Isaac: Rebirth — [STEAM](https://store.steampowered.com/app/250900/The_Binding_of_Isaac_Rebirth/) |[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_thebindingofisaacrebirth.py](games/game_thebindingofisaacrebirth.py)|<ul><li>profile specific ini file</li></ul>|
+| Darkest Dungeon — [GOG](https://www.gog.com/game/darkest_dungeon) / [STEAM](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [game_darkestdungeon.py](games/game_darkestdungeon.py) |  |
+| Dark Messiah of Might & Magic — [STEAM](https://store.steampowered.com/app/2100/Dark_Messiah_of_Might__Magic/) | [Holt59](https://github.com/holt59/) | [game_darkmessiah[...].py](games/game_darkmessiahofmightandmagic.py) | <ul><li>save game preview</li></ul> |
+| Dark Souls — [STEAM](https://store.steampowered.com/app/211420/DARK_SOULS_Prepare_To_Die_Edition/) | [Holt59](https://github.com/holt59/) | [game_darksouls.py](games/game_darkestdungeon.py) |  |
+| Dungeon Siege II — [GOG](https://www.gog.com/game/dungeon_siege_collection) / [STEAM](https://store.steampowered.com/app/39200/Dungeon_Siege_II/) | [Holt59](https://github.com/holt59/) | [game_dungeonsiege2.py](games/game_dungeonsiege2.py) | <ul><li>mod data checker</li></ul> | 
+| Kingdom Come: Deliverance — [GOG](https://www.gog.com/game/kingdom_come_deliverance) / [STEAM](https://store.steampowered.com/app/379430/Kingdom_Come_Deliverance/)| [Silencer711](https://github.com/Silencer711) | [game_kingdomcomedeliverance.py](games/game_kingdomcomedeliverance.py) | <ul><li>profile specific cfg files</li></ul>|
+| Mirror's Edge — [GOG](https://www.gog.com/game/mirrors_edge) / [STEAM](https://store.steampowered.com/app/17410/Mirrors_Edge)|[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_mirrorsedge.py](games/game_mirrorsedge.py)| |
+| Mount & Blade II: Bannerlord — [GOG](https://www.gog.com/game/mount_blade_ii_bannerlord) / [STEAM](https://store.steampowered.com/app/261550/Mount__Blade_II_Bannerlord/) | [Holt59](https://github.com/holt59/) | [game_mountandblade2.py](games/game_mountandblade2.py) | <ul><li>mod data checker</li></ul> |
+| S.T.A.L.K.E.R. Anomaly — [MOD](https://www.stalker-anomaly.com/) | [Qudix](https://github.com/Qudix) | [game_stalkeranomaly.py](games/game_stalkeranomaly.py) | <ul><li>mod data checker</li></ul> |
+| Stardew Valley — [GOG](https://www.gog.com/game/stardew_valley) / [STEAM](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), [Holt59](https://github.com/holt59/) | [game_stardewvalley.py](games/game_stardewvalley.py) | <ul><li>mod data checker</li></ul> |
+| The Witcher 3: Wild Hunt — [GOG](https://www.gog.com/game/the_witcher_3_wild_hunt) / [STEAM](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | [Holt59](https://github.com/holt59/) | [game_witcher3.py](games/game_witcher3.py) | <ul><li>save game preview</li></ul> |
+| Zeus and Poseidon — [GOG](https://www.gog.com/game/zeus_poseidon) / [STEAM](https://store.steampowered.com/app/566050/Zeus__Poseidon/) | [Holt59](https://github.com/holt59/) | [game_zeusandpoiseidon.py](games/game_zeusandpoiseidon.py) | <ul><li>mod data checker</li></ul> |
 
 ## How to add a new game?
 
