@@ -66,8 +66,8 @@ class DungeonSiegeIIGame(BasicGame):
     GameShortName = "dungeonsiegeii"
     GameNexusName = "dungeonsiegeii"
     GameNexusId = 2078
-    GameSteamId = 39200
-	GameGogId = 1142020247
+    GameSteamId = [39200]
+	GameGogId = [1142020247]
     GameBinary = "DungeonSiege2.exe"
     GameDataPath = ""
     GameSavesDirectory = "%GAME_DOCUMENTS%/Save"
