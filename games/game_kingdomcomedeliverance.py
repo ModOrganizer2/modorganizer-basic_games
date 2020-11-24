@@ -21,4 +21,4 @@ class KingdomComeDeliveranceGame(BasicGame):
     GameSavesDirectory = "%USERPROFILE%/Saved Games/kingdomcome/saves"
 
     def iniFiles(self):
-        return ["custom.cfg, system.cfg, user.cfg"]
+        return ["custom.cfg", "system.cfg", "user.cfg"]
