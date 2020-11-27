@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 
+import os
 import shutil
 
 from pathlib import Path
@@ -435,10 +436,13 @@ class BasicGame(mobase.IPluginGame):
     def initializeProfile(self, path: QDir, settings: int):
         if settings & mobase.ProfileSetting.CONFIGURATION:
             for iniFile in self.iniFiles():
-                shutil.copyfile(
-                    self.documentsDirectory().absoluteFilePath(iniFile),
-                    path.absoluteFilePath(QFileInfo(iniFile).fileName()),
-                )
+                inPath = self.documentsDirectory().absoluteFilePath(iniFile)
+                outPath = path.absoluteFilePath(QFileInfo(iniFile).fileName())
+                if os.path.exists(inPath):
+                    shutil.copyfile(inPath, outPath)
+                else:
+                    with open(outPath, "w") as _:
+                        pass
 
     def primarySources(self):
         return []
