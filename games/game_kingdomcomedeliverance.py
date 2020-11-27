@@ -2,6 +2,9 @@
 
 from ..basic_game import BasicGame
 
+import os
+from PyQt5.QtCore import QDir
+
 
 class KingdomComeDeliveranceGame(BasicGame):
     Name = "Kingdom Come Deliverance Support Plugin"
@@ -22,3 +25,18 @@ class KingdomComeDeliveranceGame(BasicGame):
 
     def iniFiles(self):
         return ["custom.cfg", "system.cfg", "user.cfg"]
+
+    def initializeProfile(self, path: QDir, settings: int):
+        # Create .cfg files if they don't exist
+        for iniFile in self.iniFiles():
+            iniPath = self.documentsDirectory().absoluteFilePath(iniFile)
+            if not os.path.exists(iniPath):
+                with open(iniPath, "w") as _:
+                    pass
+
+        # Create the mods directory if it doesn't exist
+        modsPath = self.dataDirectory().absolutePath()
+        if not os.path.exists(modsPath):
+            os.mkdir(modsPath)
+
+        super().initializeProfile(path, settings)
