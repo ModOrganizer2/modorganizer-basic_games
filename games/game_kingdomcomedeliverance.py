@@ -39,4 +39,4 @@ class KingdomComeDeliveranceGame(BasicGame):
         if not os.path.exists(modsPath):
             os.mkdir(modsPath)
 
-        super(KingdomComeDeliveranceGame, self).initializeProfile(path, settings)
+        super().initializeProfile(path, settings)
