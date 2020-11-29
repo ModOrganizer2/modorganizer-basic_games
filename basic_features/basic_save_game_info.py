@@ -30,7 +30,7 @@ class BasicGameSaveGame(mobase.ISaveGame):
         return ""
 
     def allFiles(self) -> List[str]:
-        return [self.getFilename()]
+        return [self.getFilepath()]
 
 
 class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):

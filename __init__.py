@@ -32,6 +32,8 @@ for file in glob.glob(os.path.join(curpath, "games", "*.py")):
         module = importlib.import_module(".games." + module_p[:-3], __package__)
     except ImportError as e:
         print("Failed to import module {}: {}".format(module_p, e), file=sys.stderr)
+    except Exception as e:
+        print("Failed to import module {}: {}".format(module_p, e), file=sys.stderr)
 
     # Lookup game plugins:
     for name in dir(module):
@@ -42,7 +44,12 @@ for file in glob.glob(os.path.join(curpath, "games", "*.py")):
                 and issubclass(obj, BasicGame)
                 and obj is not BasicGame
             ):
-                game_plugins.append(obj())
+                try:
+                    game_plugins.append(obj())
+                except Exception as e:
+                    print(
+                        "Failed to instantiate {}: {}".format(name, e), file=sys.stderr
+                    )
 
 
 def createPlugins():
