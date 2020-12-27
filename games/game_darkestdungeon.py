@@ -22,11 +22,11 @@ class DarkestDungeonGame(BasicGame):
     GameDataPath = ""
 
     def executables(self):
+        path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
+        if not path.exists():
+            path = QFileInfo(self.gameDirectory(), "_windowsnosteam/darkest.exe")
         return [
-            mobase.ExecutableInfo(
-                "Darkest Dungeon",
-                QFileInfo(self.gameDirectory(), "_windowsnosteam//darkest.exe"),
-            ),
+            mobase.ExecutableInfo("Darkest Dungeon", path),
         ]
 
     def savesDirectory(self):
