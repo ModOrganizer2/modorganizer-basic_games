@@ -18,15 +18,15 @@ class DarkestDungeonGame(BasicGame):
     GameNexusId = 804
     GameSteamId = 262060
     GameGogId = 1719198803
-    GameBinary = "_windows//darkest.exe"
+    GameBinary = "_windowsnosteam//darkest.exe"
     GameDataPath = ""
 
     def executables(self):
+        path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
+        if not path.exists():
+            path = QFileInfo(self.gameDirectory(), "_windowsnosteam/darkest.exe")
         return [
-            mobase.ExecutableInfo(
-                "Darkest Dungeon",
-                QFileInfo(self.gameDirectory(), "_windows//darkest.exe"),
-            ),
+            mobase.ExecutableInfo("Darkest Dungeon", path),
         ]
 
     def savesDirectory(self):
