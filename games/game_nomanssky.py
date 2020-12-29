@@ -18,9 +18,6 @@ class NoMansSkyGame(BasicGame):
     GameDataPath = "GAMEDATA/PCBANKS/MODS"
 
     def executables(self):
-    return [
-        mobase.ExecutableInfo(
-            "No Man's Sky",
-            QFileInfo(self.gameDirectory(), "Binaries/NMS.exe"),
-        ),
-    ]
+        return [
+            mobase.ExecutableInfo("No Man's Sky", GameBinary),
+        ]
