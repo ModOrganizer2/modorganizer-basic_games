@@ -16,8 +16,3 @@ class NoMansSkyGame(BasicGame):
     GameGogId = 1446213994
     GameBinary = "Binaries/NMS.exe"
     GameDataPath = "GAMEDATA/PCBANKS/MODS"
-
-    def executables(self):
-        return [
-            mobase.ExecutableInfo("No Man's Sky", GameBinary),
-        ]
