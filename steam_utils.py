@@ -110,8 +110,11 @@ def find_games() -> Dict[str, Path]:
         os.path.dirname(steam_path), "steamapps", "libraryfolders.vdf"
     )
 
-    library_folders = parse_library_info(library_vdf_path)
-    library_folders.append(LibraryFolder(os.path.dirname(steam_path)))
+    try:
+        library_folders = parse_library_info(library_vdf_path)
+        library_folders.append(LibraryFolder(os.path.dirname(steam_path)))
+    except FileNotFoundError:
+        return {}
 
     games: Dict[str, Path] = {}
     for library in library_folders:
