@@ -11,6 +11,8 @@ from PyQt5.QtGui import QIcon
 
 import mobase
 
+from .basic_features.basic_save_game_info import BasicGameSaveGame
+
 
 def replace_variables(value: str, game: "BasicGame") -> str:
     """ Replace special paths in the given value. """
@@ -19,6 +21,11 @@ def replace_variables(value: str, game: "BasicGame") -> str:
         value = value.replace(
             "%DOCUMENTS%",
             QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+        )
+    if value.find("%USERPROFILE%") != -1:
+        value = value.replace(
+            "%USERPROFILE%",
+            QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
         )
     if value.find("%GAME_DOCUMENTS%") != -1:
         value = value.replace(
@@ -328,9 +335,7 @@ class BasicGame(mobase.IPluginGame):
 
         self._mappings: BasicGameMappings = BasicGameMappings(self)
 
-    """
-    Here IPlugin interface stuff.
-    """
+    # IPlugin interface:
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
@@ -349,10 +354,27 @@ class BasicGame(mobase.IPluginGame):
         return self._mappings.version.get()
 
     def isActive(self) -> bool:
-        return True
+        if not self._organizer.managedGame():
+            return False
+
+        # Note: self is self._organizer.managedGame() does not work:
+        return self.name() == self._organizer.managedGame().name()
 
     def settings(self) -> List[mobase.PluginSetting]:
         return []
+
+    # IPluginGame interface:
+
+    def detectGame(self):
+        for steam_id in self._mappings.steamAPPId.get():
+            if steam_id in BasicGame.steam_games:
+                self.setGamePath(BasicGame.steam_games[steam_id])
+                return
+
+        for gog_id in self._mappings.gogAPPId.get():
+            if gog_id in BasicGame.gog_games:
+                self.setGamePath(BasicGame.gog_games[gog_id])
+                return
 
     def gameName(self) -> str:
         return self._mappings.gameName.get()
@@ -411,18 +433,19 @@ class BasicGame(mobase.IPluginGame):
     def executableForcedLoads(self) -> List[mobase.ExecutableForcedLoadSetting]:
         return []
 
-    def savegameExtension(self) -> str:
-        return self._mappings.savegameExtension.get()
-
-    def savegameSEExtension(self) -> str:
-        return ""
+    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+        ext = self._mappings.savegameExtension.get()
+        return [
+            BasicGameSaveGame(path)
+            for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
+        ]
 
     def initializeProfile(self, path: QDir, settings: int):
         if settings & mobase.ProfileSetting.CONFIGURATION:
             for iniFile in self.iniFiles():
                 shutil.copyfile(
                     self.documentsDirectory().absoluteFilePath(iniFile),
-                    path.absoluteFilePath(iniFile),
+                    path.absoluteFilePath(QFileInfo(iniFile).fileName()),
                 )
 
     def primarySources(self):
@@ -461,17 +484,7 @@ class BasicGame(mobase.IPluginGame):
         return aQDir.exists(self.binaryName())
 
     def isInstalled(self) -> bool:
-        for steam_id in self._mappings.steamAPPId.get():
-            if steam_id in BasicGame.steam_games:
-                self.setGamePath(BasicGame.steam_games[steam_id])
-                return True
-
-        for gog_id in self._mappings.gogAPPId.get():
-            if gog_id in BasicGame.gog_games:
-                self.setGamePath(BasicGame.gog_games[gog_id])
-                return True
-
-        return False
+        return bool(self._gamePath)
 
     def gameDirectory(self) -> QDir:
         """
