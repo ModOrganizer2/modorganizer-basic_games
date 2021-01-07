@@ -8,6 +8,8 @@ import winreg  # type: ignore
 from pathlib import Path
 from typing import Dict
 
+from PyQt5.QtCore import qWarning
+
 
 class SteamGame:
     def __init__(self, appid, installdir):
@@ -28,23 +30,25 @@ class LibraryFolder:
         self.games = []
         for filename in os.listdir(os.path.join(path, "steamapps")):
             if filename.startswith("appmanifest"):
-                with open(
-                    os.path.join(path, "steamapps", filename), "r", encoding="utf-8"
-                ) as fp:
-                    i, n = None, None
-                    for line in fp:
-                        line = line.strip()
+                filepath = os.path.join(path, "steamapps", filename)
+                try:
+                    with open(filepath, "r", encoding="utf-8" ) as fp:
+                        i, n = None, None
+                        for line in fp:
+                            line = line.strip()
 
-                        if line.startswith('"appid"'):
-                            i = line.replace('"appid"', "").strip()[1:-1]
-                        if line.startswith('"installdir"'):
-                            n = line.replace('"installdir"', "").strip()[1:-1]
+                            if line.startswith('"appid"'):
+                                i = line.replace('"appid"', "").strip()[1:-1]
+                            if line.startswith('"installdir"'):
+                                n = line.replace('"installdir"', "").strip()[1:-1]
 
-                        if i is not None and n is not None:
-                            break
-                if i is None or n is None:
-                    continue
-                self.games.append(SteamGame(i, n))
+                            if i is not None and n is not None:
+                                break
+                    if i is None or n is None:
+                        continue
+                    self.games.append(SteamGame(i, n))
+                except:
+                    qWarning("Unable to parse file \"{}\"".format(filepath.encode('utf-8')))
 
     def __repr__(self):
         return str(self)
