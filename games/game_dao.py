@@ -11,8 +11,8 @@ class DAOriginsGame(BasicGame):
 
     GameName = "Dragon Age: Origins"
     GameShortName = "dragonage"
-    GameBinary = "bin_ship\DAOrigins.exe"
-    GameDataPath = "%DOCUMENTS%\BioWare\Dragon Age\packages\core\override"
+    GameBinary = r"bin_ship\DAOrigins.exe"
+    GameDataPath = r"%DOCUMENTS%\BioWare\Dragon Age\packages\core\override"
     GameSaveExtension = "das"
     GameSteamId = [17450, 47810]
 
