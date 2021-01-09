@@ -3,12 +3,11 @@
 # Code greatly inspired by https://github.com/LostDragonist/steam-library-setup-tool
 
 import os
+import sys
 import winreg  # type: ignore
 
 from pathlib import Path
 from typing import Dict
-
-from PyQt5.QtCore import qWarning
 
 
 class SteamGame:
@@ -32,7 +31,7 @@ class LibraryFolder:
             if filename.startswith("appmanifest"):
                 filepath = os.path.join(path, "steamapps", filename)
                 try:
-                    with open(filepath, "r", encoding="utf-8" ) as fp:
+                    with open(filepath, "r", encoding="utf-8") as fp:
                         i, n = None, None
                         for line in fp:
                             line = line.strip()
@@ -47,8 +46,8 @@ class LibraryFolder:
                     if i is None or n is None:
                         continue
                     self.games.append(SteamGame(i, n))
-                except:
-                    qWarning("Unable to parse file \"{}\"".format(filepath.encode('utf-8')))
+                except UnicodeDecodeError:
+                    print('Unable to parse file "{}"'.format(filepath), file=sys.stderr)
 
     def __repr__(self):
         return str(self)
