@@ -4,7 +4,7 @@ import mobase
 
 from ..basic_game import BasicGame
 
-#TODO: Savegame and settings integration.
+#TODO: Better savegame and settings integration.
 
 """
 class RimworldLocalSavegames(mobase.LocalSavegames):
