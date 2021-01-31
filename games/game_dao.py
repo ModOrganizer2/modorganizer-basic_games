@@ -15,6 +15,7 @@ class DAOriginsGame(BasicGame):
     GameDataPath = r"%DOCUMENTS%\BioWare\Dragon Age\packages\core\override"
     GameSaveExtension = "das"
     GameSteamId = [17450, 47810]
+    GameGogId = 1949616134
 
     def version(self):
         # Don't forget to import mobase!
