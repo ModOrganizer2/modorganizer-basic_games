@@ -15,8 +15,12 @@ providing a very simple python class.
 
 Download the archive for your MO2 version and extract it directly into your MO2 `plugins` folder.
 
-- [Download for 2.3.2](https://github.com/ModOrganizer2/modorganizer-basic_games/archive/v2.3.x.zip)
-- [Download for 2.4.x (dev-build)](https://github.com/ModOrganizer2/modorganizer-basic_games/archive/master.zip)
+- Mod Organizer **2.3.2**: [Download](https://github.com/ModOrganizer2/modorganizer-basic_games/releases/download/v0.0.3/basic_games-0.0.3.zip)
+  and extract in your `plugins/` folder (see below).
+- Mod Organizer **2.4**: Basic games is included in Mod Organizer 2.4. 
+  - If you want to use new game plugins that have not been included in the
+    release, [download the latest archive](https://github.com/ModOrganizer2/modorganizer-basic_games/archive/master.zip) and extract the files
+    in the existing `basic_games` folder, overwriting existing files.
 
 **Important:** Extract the *folder* in your `plugins` folder, not the individual files. Your
 `plugins` folder should look like this:
@@ -25,7 +29,7 @@ Download the archive for your MO2 version and extract it directly into your MO2 
 dlls/
 plugins/
   data/
-  modorganizer-basic_games-xxx/
+  basic_games/
     games/
       __init__.py
       ...
