@@ -1,25 +1,28 @@
-from PyQt5.QtCore import QDir
 from ..basic_game import BasicGame
+from ..basic_features import BasicGameSaveGameInfo
 
 import mobase
+import os
 
 
 class DAOriginsGame(BasicGame):
 
     Name = "Dragon Age Origins Support Plugin"
     Author = "Patchier"
+    Version = "1.1.0"
 
     GameName = "Dragon Age: Origins"
     GameShortName = "dragonage"
     GameBinary = r"bin_ship\DAOrigins.exe"
     GameDataPath = r"%DOCUMENTS%\BioWare\Dragon Age\packages\core\override"
+    GameSavesDirectory = r"%DOCUMENTS%\BioWare\Dragon Age\Characters"
     GameSaveExtension = "das"
     GameSteamId = [17450, 47810]
     GameGogId = 1949616134
 
-    def version(self):
-        # Don't forget to import mobase!
-        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.final)
-
-    def savesDirectory(self):
-        return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))
+    def init(self, organizer: mobase.IOrganizer):
+        super().init(organizer)
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
+            lambda s: os.path.split(s)[0] + "/screen.dds"
+        )
+        return True
