@@ -13,3 +13,4 @@ class KerbalSpaceProgramGame(BasicGame):
     GameSteamId = [220200, 283740, 982970]
     GameBinary = "KSP_x64.exe"
     GameDataPath = "GameData"
+    
