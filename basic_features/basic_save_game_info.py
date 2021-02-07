@@ -52,9 +52,11 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self.setAutoFillBackground(True)
         self.setPalette(palette)
 
+        self.setWindowFlags(Qt.ToolTip | Qt.BypassGraphicsProxyWidget)  # type: ignore
+
     def setSave(self, save: mobase.ISaveGame):
         # Resize the label to (0, 0) to hide it:
-        self._label.resize(0, 0)
+        self.resize(0, 0)
 
         # Retrieve the pixmap:
         value = self._get_preview(save.getFilepath())
@@ -96,9 +98,9 @@ class BasicGameSaveGameInfo(mobase.SaveGameInfo):
         self._savegame_class = savegame_class
 
     def getSaveGameInfo(self, filename: str):
-        return self._savegame_class(filename)
+        return self._savegame_class(Path(filename))
 
-    def getMissingAssets(self, filename: str):
+    def getMissingAssets(self, save: mobase.ISaveGame):
         return {}
 
     def getSaveGameWidget(self, parent=None):
