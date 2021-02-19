@@ -9,7 +9,7 @@ class NoMansSkyGame(BasicGame):
     Author = "Luca/EzioTheDeadPoet"
     Version = "1.0.0"
 
-    GameName = "Mo Man's Sky"
+    GameName = "No Man's Sky"
     GameShortName = "nomanssky"
     GaneNexusHame = "nomanssky"
     GameSteamId = 275850
