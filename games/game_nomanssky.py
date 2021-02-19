@@ -5,7 +5,7 @@ from ..basic_game import BasicGame
 
 class NoMansSkyGame(BasicGame):
 
-    Name = "Mo Man's Sky Support Plugin"
+    Name = "No Man's Sky Support Plugin"
     Author = "Luca/EzioTheDeadPoet"
     Version = "1.0.0"
 
