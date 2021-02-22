@@ -101,12 +101,18 @@ def parse_library_info(library_vdf_path):
     return library_folders
 
 
-def find_games() -> Dict[str, Path]:
+def getSteamPath() -> str:
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Valve\\Steam") as key:
             value = winreg.QueryValueEx(key, "SteamExe")
-            steam_path = value[0].replace("/", "\\")
+            return value[0].replace("/", "\\")
     except FileNotFoundError:
+        return ""
+
+
+def find_games() -> Dict[str, Path]:
+    steam_path = getSteamPath()
+    if steam_path == "":
         return {}
 
     library_vdf_path = os.path.join(
