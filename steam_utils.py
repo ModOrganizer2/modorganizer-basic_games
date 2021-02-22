@@ -2,12 +2,11 @@
 
 # Code greatly inspired by https://github.com/LostDragonist/steam-library-setup-tool
 
-import os
 import sys
 import winreg  # type: ignore
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 
 class SteamGame:
@@ -23,13 +22,12 @@ class SteamGame:
 
 
 class LibraryFolder:
-    def __init__(self, path: str):
+    def __init__(self, path: Path):
         self.path = path
 
         self.games = []
-        for filename in os.listdir(os.path.join(path, "steamapps")):
-            if filename.startswith("appmanifest"):
-                filepath = os.path.join(path, "steamapps", filename)
+        for filepath in path.joinpath("steamapps").iterdir():
+            if filepath.name.startswith("appmanifest") and filepath.is_file():
                 try:
                     with open(filepath, "r", encoding="utf-8") as fp:
                         i, n = None, None
@@ -56,7 +54,17 @@ class LibraryFolder:
         return "LibraryFolder at {}: {}".format(self.path, self.games)
 
 
-def parse_library_info(library_vdf_path):
+def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
+    """
+    Read library folders from the main library file.
+
+    Args:
+        library_vdf_path: The main library file (from the Steam installation
+            folder).
+
+    Returns:
+        A list of LibraryFolder, for each library found.
+    """
 
     library_folders = []
 
@@ -93,7 +101,7 @@ def parse_library_info(library_vdf_path):
 
                 try:
                     path = parts[2].strip().replace("\\\\", "\\")
-                    library_folders.append(LibraryFolder(path))
+                    library_folders.append(LibraryFolder(Path(path)))
                 except Exception as e:
                     print(
                         'Failed to read steam library from "{}", {}'.format(
@@ -105,7 +113,7 @@ def parse_library_info(library_vdf_path):
     return library_folders
 
 
-def find_steam_path() -> Optional[str]:
+def find_steam_path() -> Optional[Path]:
     """
     Retrieve the Steam path, if available.
 
@@ -115,7 +123,7 @@ def find_steam_path() -> Optional[str]:
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Valve\\Steam") as key:
             value = winreg.QueryValueEx(key, "SteamExe")
-            return str(os.path.dirname(value[0].replace("/", "\\")))
+            return Path(value[0].replace("/", "\\")).parent
     except FileNotFoundError:
         return None
 
@@ -132,7 +140,7 @@ def find_games() -> Dict[str, Path]:
     if not steam_path:
         return {}
 
-    library_vdf_path = os.path.join(steam_path, "steamapps", "libraryfolders.vdf")
+    library_vdf_path = steam_path.joinpath("steamapps", "libraryfolders.vdf")
 
     try:
         library_folders = parse_library_info(library_vdf_path)
