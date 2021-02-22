@@ -10,7 +10,7 @@ from ..basic_game import BasicGame
 class DarkestDungeonGame(BasicGame):
     Name = "DarkestDungeon"
     Author = "erri120"
-    Version = "0.1.1"
+    Version = "0.2.0"
 
     GameName = "Darkest Dungeon"
     GameShortName = "darkestdungeon"
