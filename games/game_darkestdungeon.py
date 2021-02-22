@@ -28,10 +28,3 @@ class DarkestDungeonGame(BasicGame):
         return [
             mobase.ExecutableInfo("Darkest Dungeon", path).withWorkingDirectory(self.gameDirectory()),
         ]
-
-    def savesDirectory(self):
-        return QDir(
-            "{}/Darkest".format(
-                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation)
-            )
-        )
