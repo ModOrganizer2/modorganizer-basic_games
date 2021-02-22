@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import List
 import json
 
-from PyQt5.QtCore import QDir, QFileInfo
+from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 
 import mobase
 
 from ..basic_game import BasicGame, BasicGameSaveGame
+from ..steam_utils import getSteamPath
 
 
 class DarkestDungeonSaveGame(BasicGameSaveGame):
@@ -111,15 +112,43 @@ class DarkestDungeonGame(BasicGame):
     GameDataPath = ""
 
     def executables(self):
-        path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
-        if not path.exists():
+        if self.isSteam():
+            path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
+        else:
             path = QFileInfo(self.gameDirectory(), "_windowsnosteam/darkest.exe")
         return [
             mobase.ExecutableInfo("Darkest Dungeon", path).withWorkingDirectory(self.gameDirectory()),
         ]
 
+    def isSteam(self) -> bool:
+        path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
+        return path.exists()
+
+    @staticmethod
+    def getCloudSaveDirectory():
+        steamPath = Path(getSteamPath())
+        userData = steamPath.joinpath("userdata")
+        for child in userData.iterdir():
+            name = child.name
+            try:
+                userID = int(name)
+            except ValueError:
+                userID = -1
+            if userID == -1:
+                continue
+            cloudSaves = child.joinpath("262060", "remote")
+            if cloudSaves.exists() and cloudSaves.is_dir():
+                return str(cloudSaves)
+        return None
+
     def savesDirectory(self) -> QDir:
-        return QDir("C:\\Program Files (x86)\\Steam\\userdata\\149956546\\262060\\remote")
+        documentsSaves = QDir("{}/Darkest".format(QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation)))
+        if self.isSteam():
+            cloudSaves = self.getCloudSaveDirectory()
+            if cloudSaves is None:
+                return documentsSaves
+            return QDir(cloudSaves)
+        return documentsSaves
 
     def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
         profiles = list()
