@@ -115,9 +115,7 @@ def find_games() -> Dict[str, Path]:
     if steam_path == "":
         return {}
 
-    library_vdf_path = os.path.join(
-        steam_path, "steamapps", "libraryfolders.vdf"
-    )
+    library_vdf_path = os.path.join(steam_path, "steamapps", "libraryfolders.vdf")
 
     try:
         library_folders = parse_library_info(library_vdf_path)
