@@ -92,11 +92,15 @@ def parse_library_info(library_vdf_path):
                     continue
 
                 try:
-                    library_folders.append(
-                        LibraryFolder(parts[2].strip().replace("\\\\", "\\"))
+                    path = parts[2].strip().replace("\\\\", "\\")
+                    library_folders.append(LibraryFolder(path))
+                except Exception as e:
+                    print(
+                        'Failed to read steam library from "{}", {}'.format(
+                            path, repr(e)
+                        ),
+                        file=sys.stderr,
                     )
-                except (FileNotFoundError, ValueError):
-                    continue
 
     return library_folders
 
