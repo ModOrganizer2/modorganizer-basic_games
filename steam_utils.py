@@ -105,7 +105,7 @@ def getSteamPath() -> str:
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Valve\\Steam") as key:
             value = winreg.QueryValueEx(key, "SteamExe")
-            return os.path.dirname(value[0].replace("/", "\\"))
+            return str(os.path.dirname(value[0].replace("/", "\\")))
     except FileNotFoundError:
         return ""
 

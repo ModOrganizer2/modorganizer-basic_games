@@ -15,7 +15,7 @@ class DarkestDungeonSaveGame(BasicGameSaveGame):
     def __init__(self, filepath):
         super().__init__(filepath)
         dataPath = filepath.joinpath("persist.game.json")
-        self.name = ""
+        self.name: str = ""
         if self.isBinary(dataPath):
             self.loadBinarySaveFile(dataPath)
         else:
