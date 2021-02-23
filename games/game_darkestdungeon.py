@@ -123,7 +123,7 @@ class DarkestDungeonGame(BasicGame):
     GameDataPath = ""
 
     def executables(self):
-        if self.isSteam():
+        if self.is_steam():
             path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
         else:
             path = QFileInfo(self.gameDirectory(), "_windowsnosteam/darkest.exe")
