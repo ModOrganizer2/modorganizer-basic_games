@@ -8,7 +8,7 @@ from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 import mobase
 
 from ..basic_game import BasicGame, BasicGameSaveGame
-from ..steam_utils import getSteamPath
+from ..steam_utils import find_steam_path
 
 
 class DarkestDungeonSaveGame(BasicGameSaveGame):
@@ -133,13 +133,9 @@ class DarkestDungeonGame(BasicGame):
             ),
         ]
 
-    def isSteam(self) -> bool:
-        path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
-        return path.exists()
-
     @staticmethod
     def getCloudSaveDirectory():
-        steamPath = Path(getSteamPath())
+        steamPath = Path(find_steam_path())
         userData = steamPath.joinpath("userdata")
         for child in userData.iterdir():
             name = child.name
@@ -160,7 +156,7 @@ class DarkestDungeonGame(BasicGame):
                 QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation)
             )
         )
-        if self.isSteam():
+        if self.is_steam():
             cloudSaves = self.getCloudSaveDirectory()
             if cloudSaves is None:
                 return documentsSaves

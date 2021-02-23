@@ -157,6 +157,15 @@ class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
         except ValueError:
             self._index = -1
 
+    def has_value(self) -> bool:
+        """
+        Check if a value was set for this options mapping.
+
+        Returns:
+            True if a value was set, False otherwise.
+        """
+        return self._index != -1
+
     def current(self) -> T:
         values = self._default(self._game)  # type: ignore
 
@@ -334,6 +343,13 @@ class BasicGame(mobase.IPluginGame):
         self._featureMap = {}
 
         self._mappings: BasicGameMappings = BasicGameMappings(self)
+
+    # Specific to BasicGame:
+    def is_steam(self) -> bool:
+        return self._mappings.steamAPPId.has_value()
+
+    def is_gog(self) -> bool:
+        return self._mappings.gogAPPId.has_value()
 
     # IPlugin interface:
 

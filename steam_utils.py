@@ -7,7 +7,7 @@ import sys
 import winreg  # type: ignore
 
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 
 class SteamGame:
@@ -101,18 +101,31 @@ def parse_library_info(library_vdf_path):
     return library_folders
 
 
-def getSteamPath() -> str:
+def find_steam_path() -> Optional[str]:
+    """
+    Retrieve the Steam path, if available.
+
+    Returns:
+        The Steam path, or None if Steam is not installed.
+    """
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Software\\Valve\\Steam") as key:
             value = winreg.QueryValueEx(key, "SteamExe")
             return str(os.path.dirname(value[0].replace("/", "\\")))
     except FileNotFoundError:
-        return ""
+        return None
 
 
 def find_games() -> Dict[str, Path]:
-    steam_path = getSteamPath()
-    if steam_path == "":
+    """
+    Find the list of Steam games installed.
+
+    Returns:
+        A mapping from Steam game ID to install locations for available
+        Steam games.
+    """
+    steam_path = find_steam_path()
+    if not steam_path:
         return {}
 
     library_vdf_path = os.path.join(steam_path, "steamapps", "libraryfolders.vdf")
