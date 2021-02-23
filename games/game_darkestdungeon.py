@@ -35,7 +35,7 @@ class DarkestDungeonSaveGame(BasicGameSaveGame):
         self.name = str(data["estatename"])
 
     def loadBinarySaveFile(self, dataPath: Path):
-        # see https://github.com/robojumper/DarkestDungeonSaveEditor/blob/master/docs/dson.md
+        # see https://github.com/robojumper/DarkestDungeonSaveEditor
         with dataPath.open(mode="rb") as fp:
             # read Header
 
@@ -45,14 +45,21 @@ class DarkestDungeonSaveGame(BasicGameSaveGame):
             if headerLength != 64:
                 raise ValueError("Header Length is not 64: " + str(headerLength))
             fp.seek(4, 1)
-            meta1Size = int.from_bytes(fp.read(4), "little")
-            numMeta1Entries = int.from_bytes(fp.read(4), "little")
+
+            # meta1Size = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+            # numMeta1Entries = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+
             meta1Offset = int.from_bytes(fp.read(4), "little")
             fp.seek(16, 1)
             numMeta2Entries = int.from_bytes(fp.read(4), "little")
             meta2Offset = int.from_bytes(fp.read(4), "little")
             fp.seek(4, 1)
-            dataLength = int.from_bytes(fp.read(4), "little")
+
+            # dataLength = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+
             dataOffset = int.from_bytes(fp.read(4), "little")
 
             # read Meta1 Block
