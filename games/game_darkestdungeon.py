@@ -1,16 +1,117 @@
 # -*- encoding: utf-8 -*-
+from pathlib import Path
+from typing import List
+import json
 
 from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 
 import mobase
 
-from ..basic_game import BasicGame
+from ..basic_game import BasicGame, BasicGameSaveGame
+from ..steam_utils import find_steam_path
+
+
+class DarkestDungeonSaveGame(BasicGameSaveGame):
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        dataPath = filepath.joinpath("persist.game.json")
+        self.name: str = ""
+        if self.isBinary(dataPath):
+            self.loadBinarySaveFile(dataPath)
+        else:
+            self.loadJSONSaveFile(dataPath)
+
+    @staticmethod
+    def isBinary(dataPath: Path) -> bool:
+        with dataPath.open(mode="rb") as fp:
+            magic = fp.read(4)
+            # magic number in binary save files
+            return magic == b"\x01\xb1\x00\x00"
+
+    def loadJSONSaveFile(self, dataPath: Path):
+        text = dataPath.read_text()
+        content = json.loads(text)
+        data = content["data"]
+        self.name = str(data["estatename"])
+
+    def loadBinarySaveFile(self, dataPath: Path):
+        # see https://github.com/robojumper/DarkestDungeonSaveEditor
+        with dataPath.open(mode="rb") as fp:
+            # read Header
+
+            # skip to headerLength
+            fp.seek(8, 0)
+            headerLength = int.from_bytes(fp.read(4), "little")
+            if headerLength != 64:
+                raise ValueError("Header Length is not 64: " + str(headerLength))
+            fp.seek(4, 1)
+
+            # meta1Size = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+            # numMeta1Entries = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+
+            meta1Offset = int.from_bytes(fp.read(4), "little")
+            fp.seek(16, 1)
+            numMeta2Entries = int.from_bytes(fp.read(4), "little")
+            meta2Offset = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+
+            # dataLength = int.from_bytes(fp.read(4), "little")
+            fp.seek(4, 1)
+
+            dataOffset = int.from_bytes(fp.read(4), "little")
+
+            # read Meta1 Block
+            fp.seek(meta1Offset, 0)
+            meta1DataLength = meta2Offset - meta1Offset
+            if meta1DataLength % 16 != 0:
+                raise ValueError(
+                    "Meta1 has wrong number of bytes: " + str(meta1DataLength)
+                )
+
+            # read Meta2 Block
+            fp.seek(meta2Offset, 0)
+            meta2DataLength = dataOffset - meta2Offset
+            if meta2DataLength % 12 != 0:
+                raise ValueError(
+                    "Meta2 has wrong number of bytes: " + str(meta2DataLength)
+                )
+            meta2List = list()
+            for x in range(numMeta2Entries):
+                entryHash = int.from_bytes(fp.read(4), "little")
+                offset = int.from_bytes(fp.read(4), "little")
+                fieldInfo = int.from_bytes(fp.read(4), "little")
+                meta2List.append([entryHash, offset, fieldInfo])
+
+            # read Data
+            fp.seek(dataOffset, 0)
+            for x in range(numMeta2Entries):
+                meta2Entry = meta2List[x]
+                fp.seek(dataOffset + meta2Entry[1], 0)
+                nameLength = (meta2Entry[2] & 0b11111111100) >> 2
+                # null terminated string
+                nameBytes = fp.read(nameLength - 1)
+                fp.seek(1, 1)
+                name = bytes.decode(nameBytes, "utf-8")
+                if name != "estatename":
+                    continue
+                valueLength = int.from_bytes(fp.read(4), "little")
+                valueBytes = fp.read(valueLength - 1)
+                value = bytes.decode(valueBytes, "utf-8")
+                self.name = value
+                break
+
+    def getName(self) -> str:
+        if self.name == "":
+            return super().getName()
+        return self.name
 
 
 class DarkestDungeonGame(BasicGame):
     Name = "DarkestDungeon"
     Author = "erri120"
-    Version = "0.1.1"
+    Version = "0.2.0"
 
     GameName = "Darkest Dungeon"
     GameShortName = "darkestdungeon"
@@ -22,16 +123,53 @@ class DarkestDungeonGame(BasicGame):
     GameDataPath = ""
 
     def executables(self):
-        path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
-        if not path.exists():
+        if self.isSteam():
+            path = QFileInfo(self.gameDirectory(), "_windows/darkest.exe")
+        else:
             path = QFileInfo(self.gameDirectory(), "_windowsnosteam/darkest.exe")
         return [
-            mobase.ExecutableInfo("Darkest Dungeon", path),
+            mobase.ExecutableInfo("Darkest Dungeon", path).withWorkingDirectory(
+                self.gameDirectory()
+            ),
         ]
 
-    def savesDirectory(self):
-        return QDir(
+    @staticmethod
+    def getCloudSaveDirectory():
+        steamPath = Path(find_steam_path())
+        userData = steamPath.joinpath("userdata")
+        for child in userData.iterdir():
+            name = child.name
+            try:
+                userID = int(name)
+            except ValueError:
+                userID = -1
+            if userID == -1:
+                continue
+            cloudSaves = child.joinpath("262060", "remote")
+            if cloudSaves.exists() and cloudSaves.is_dir():
+                return str(cloudSaves)
+        return None
+
+    def savesDirectory(self) -> QDir:
+        documentsSaves = QDir(
             "{}/Darkest".format(
                 QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation)
             )
         )
+        if self.is_steam():
+            cloudSaves = self.getCloudSaveDirectory()
+            if cloudSaves is None:
+                return documentsSaves
+            return QDir(cloudSaves)
+        return documentsSaves
+
+    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+        profiles = list()
+        for path in Path(folder.absolutePath()).glob("profile_*"):
+            # profile_9 is only for the Multiplayer DLC "The Butcher's Circus"
+            # and contains different files than other profiles
+            if path.name == "profile_9":
+                continue
+            profiles.append(path)
+
+        return [DarkestDungeonSaveGame(path) for path in profiles]
