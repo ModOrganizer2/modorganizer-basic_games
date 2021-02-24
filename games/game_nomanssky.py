@@ -11,7 +11,8 @@ class NoMansSkyGame(BasicGame):
 
     GameName = "No Man's Sky"
     GameShortName = "nomanssky"
-    GaneNexusHame = "nomanssky"
+    GameNexusName = "nomanssky"
+    GameNexusId = 1634
     GameSteamId = 275850
     GameGogId = 1446213994
     GameBinary = "Binaries/NMS.exe"
