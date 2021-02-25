@@ -11,6 +11,56 @@ from ..basic_game import BasicGame, BasicGameSaveGame
 from ..steam_utils import find_steam_path
 
 
+class DarkestDungeonModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+        self.validDirNames = [
+            "activity_log",
+            "audio",
+            "campaign",
+            "colours",
+            "curios",
+            "cursors",
+            "dlc",
+            "dungeons",
+            "effects",
+            "fe_flow",
+            "fonts",
+            "fx",
+            "game_over",
+            "heroes",
+            "inventory",
+            "loading_screen",
+            "localization",
+            "loot",
+            "maps",
+            "modes",
+            "monsters",
+            "overlays",
+            "panels",
+            "props",
+            "raid",
+            "raid_result",
+            "scripts",
+            "scrolls",
+            "shaders",
+            "shared",
+            "trinkets",
+            "upgrades",
+            "video",
+        ]
+
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        for entry in tree:
+            if not entry.isDir():
+                continue
+            if entry.name() in self.validDirNames:
+                return mobase.ModDataChecker.VALID
+        return mobase.ModDataChecker.INVALID
+
+
 class DarkestDungeonSaveGame(BasicGameSaveGame):
     def __init__(self, filepath):
         super().__init__(filepath)
@@ -121,6 +171,11 @@ class DarkestDungeonGame(BasicGame):
     GameGogId = 1719198803
     GameBinary = "_windowsnosteam//darkest.exe"
     GameDataPath = ""
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = DarkestDungeonModDataChecker()
+        return True
 
     def executables(self):
         if self.is_steam():
