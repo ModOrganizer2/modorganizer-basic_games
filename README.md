@@ -48,7 +48,7 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | Game | Author | File | Extras |
 |------|--------|------|--------|
 | The Binding of Isaac: Rebirth — [STEAM](https://store.steampowered.com/app/250900/The_Binding_of_Isaac_Rebirth/) |[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_thebindingofisaacrebirth.py](games/game_thebindingofisaacrebirth.py)|<ul><li>profile specific ini file</li></ul>|
-| Darkest Dungeon — [GOG](https://www.gog.com/game/darkest_dungeon) / [STEAM](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [game_darkestdungeon.py](games/game_darkestdungeon.py) | <ul><li>save slot parsing</li></ul> |
+| Darkest Dungeon — [GOG](https://www.gog.com/game/darkest_dungeon) / [STEAM](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [game_darkestdungeon.py](games/game_darkestdungeon.py) | <ul><li>save slot parsing</li><li>mod data checker</li></ul> |
 | Dark Messiah of Might & Magic — [STEAM](https://store.steampowered.com/app/2100/Dark_Messiah_of_Might__Magic/) | [Holt59](https://github.com/holt59/) | [game_darkmessiahofmightandmagic.py](games/game_darkmessiahofmightandmagic.py) | <ul><li>save game preview</li></ul> |
 | Dark Souls — [STEAM](https://store.steampowered.com/app/211420/DARK_SOULS_Prepare_To_Die_Edition/) | [Holt59](https://github.com/holt59/) | [game_darksouls.py](games/game_darkestdungeon.py) |  |
 | Dungeon Siege II — [GOG](https://www.gog.com/game/dungeon_siege_collection) / [STEAM](https://store.steampowered.com/app/39200/Dungeon_Siege_II/) | [Holt59](https://github.com/holt59/) | [game_dungeonsiege2.py](games/game_dungeonsiege2.py) | <ul><li>mod data checker</li></ul> | 
