@@ -68,6 +68,55 @@ You can create a plugin by providing a python class in the `games` folder.
 **Note:** If your game plugin does not load properly, you should set the log level
 to debug and look at the `mo_interface.log` file.
 
+### Setup Development Environment
+
+**Make sure that you do not use modorganizer-basic_games as a folder name**. One of the linters is `mypy` and it requires a valid Python package name as the folder name. The problem with `modorganizer-basic_games` is the `-` so either replace it with `_` or use a totally different name like `basic_games`.
+
+#### Requirements
+
+- [Python 3.8.x](https://www.python.org/downloads/): you **must** use 3.8 to install the `mobase-stubs` package
+- IDE: [VS Code](https://code.visualstudio.com/), [PyCharm](https://www.jetbrains.com/pycharm/) or others
+
+#### Creating a virtual environment
+
+Virtual Environments are isolated Python environments, created with [virtualenv](https://virtualenv.pypa.io/en/latest/index.html). If you are using PyCharm see the guide [Configure a virtual environment](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html) and if you are using VS Code [Using Python environments in VS Code](https://code.visualstudio.com/docs/python/environments).
+
+Make sure that you install the required packages in this environment.
+
+#### Running Linters in tox
+
+[tox](https://pypi.org/project/tox/) is a useful tool for running arbitrary commands in an isolated environment and is used for running the linters in this project. You need to install tox in your virtual environment and configure a task for it.
+
+In PyCharm you can create a new [Run/Debug Configuration: tox](https://www.jetbrains.com/help/pycharm/run-debug-configuration-tox.html#802d5207) and use `-e py38-lint` as the arguments.
+
+In VS Code you need to create a new Task:
+
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Lint",
+            "type": "shell",
+            "command": "e:/Tools/venv3.8/Scripts/Activate.ps1; tox -e py38-lint",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}
+```
+
+You need to change the path to `Activate.ps1` and replace it with the path to the virtual environment you created.
+
+### Add a new game
+
 You need to create a class that inherits `BasicGame` and put it in a `game_XX.py` in `games`.
 Below is an example for The Witcher 3 (see also [games/game_witcher3.py](games/game_witcher3.py)):
 
