@@ -56,7 +56,7 @@ class DarkestDungeonModDataChecker(mobase.ModDataChecker):
         for entry in tree:
             if not entry.isDir():
                 continue
-            if entry.name() in self.validDirNames:
+            if entry.name().casefold() in self.validDirNames:
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.INVALID
 
