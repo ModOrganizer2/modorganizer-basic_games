@@ -1,5 +1,9 @@
 # -*- encoding: utf-8 -*-
 
+from PyQt5.QtCore import QFileInfo
+
+import mobase
+
 from ..basic_game import BasicGame
 
 
@@ -17,3 +21,15 @@ class NoMansSkyGame(BasicGame):
     GameGogId = 1446213994
     GameBinary = "Binaries/NMS.exe"
     GameDataPath = "GAMEDATA/PCBANKS/MODS"
+
+    def executables(self):
+        return [
+            mobase.ExecutableInfo(
+                "No Man's Sky",
+                QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
+            ),
+            mobase.ExecutableInfo(
+                "No Man's Sky VR",
+                QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
+            ).withArgument("-HmdEnable 1"),
+        ]
