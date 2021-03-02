@@ -41,8 +41,6 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     GameBinary = "AnomalyLauncher.exe"
     GameDataPath = ""
 
-    GameSteamId = 0
-
     GameSaveExtension = "scop"
     GameSavesDirectory = "%GAME_PATH%/appdata/savedgames"
 
