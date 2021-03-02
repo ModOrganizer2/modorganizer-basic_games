@@ -3,7 +3,7 @@
 import sys
 
 from pathlib import Path
-from typing import Callable, List, Optional, Type
+from typing import Callable, List, Optional
 
 from PyQt5.QtCore import QDateTime, Qt
 from PyQt5.QtGui import QPixmap, QImage
@@ -88,17 +88,9 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
 
 
 class BasicGameSaveGameInfo(mobase.SaveGameInfo):
-    def __init__(
-        self,
-        get_preview: Optional[Callable[[str], str]] = None,
-        savegame_class: Type[BasicGameSaveGame] = BasicGameSaveGame,
-    ):
+    def __init__(self, get_preview: Optional[Callable[[str], str]] = None):
         super().__init__()
         self._get_preview = get_preview
-        self._savegame_class = savegame_class
-
-    def getSaveGameInfo(self, filename: str):
-        return self._savegame_class(Path(filename))
 
     def getMissingAssets(self, save: mobase.ISaveGame):
         return {}
@@ -107,6 +99,3 @@ class BasicGameSaveGameInfo(mobase.SaveGameInfo):
         if self._get_preview is not None:
             return BasicGameSaveGameInfoWidget(parent, self._get_preview)
         return None
-
-    def hasScriptExtenderSave(self, filename: str):
-        return False

@@ -2,6 +2,10 @@
 
 import mobase
 
+from pathlib import Path
+from typing import List
+
+from PyQt5.QtCore import QDir
 
 from ..basic_game import BasicGame
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
@@ -34,9 +38,16 @@ class Witcher3Game(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".sav", ".png"), Witcher3SaveGame
+            lambda s: s.replace(".sav", ".png")
         )
         return True
 
     def iniFiles(self):
         return ["user.settings", "input.settings"]
+
+    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+        ext = self._mappings.savegameExtension.get()
+        return [
+            Witcher3SaveGame(path)
+            for path in Path(folder.absolutePath()).glob(f"*.{ext}")
+        ]
