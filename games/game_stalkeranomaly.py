@@ -1,12 +1,15 @@
 # -*- encoding: utf-8 -*-
 
+from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QFileInfo
+from PyQt5.QtCore import QDir, QFileInfo
 
 import mobase
 
 from ..basic_game import BasicGame
+from ..basic_features.basic_save_game_info import BasicGameSaveGame
+from ..basic_features import BasicGameSaveGameInfo
 
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
@@ -28,6 +31,12 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
                     return mobase.ModDataChecker.VALID
 
         return mobase.ModDataChecker.INVALID
+
+
+class StalkerAnomalySaveGame(BasicGameSaveGame):
+    def allFiles(self) -> List[str]:
+        filepath = self.getFilepath()
+        return [filepath, filepath.replace("scop", "scoc"), filepath.replace("scop", "dds")]
 
 
 class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
@@ -87,6 +96,13 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
             mobase.ExecutableInfo(
                 "Anomaly (DX8)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX8.exe")
             ),
+        ]
+
+    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+        ext = self._mappings.savegameExtension.get()
+        return [
+            StalkerAnomalySaveGame(path)
+            for path in Path(folder.absolutePath()).glob(f"*.{ext}")
         ]
 
     def mappings(self) -> List[mobase.Mapping]:
