@@ -9,7 +9,6 @@ import mobase
 
 from ..basic_game import BasicGame
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
-from ..basic_features import BasicGameSaveGameInfo
 
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
