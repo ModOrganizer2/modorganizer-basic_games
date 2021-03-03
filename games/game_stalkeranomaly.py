@@ -36,7 +36,11 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
 class StalkerAnomalySaveGame(BasicGameSaveGame):
     def allFiles(self) -> List[str]:
         filepath = self.getFilepath()
-        return [filepath, filepath.replace("scop", "scoc"), filepath.replace("scop", "dds")]
+        return [
+            filepath,
+            filepath.replace("scop", "scoc"),
+            filepath.replace("scop", "dds"),
+        ]
 
 
 class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
