@@ -4,6 +4,7 @@ from ..basic_features import BasicGameSaveGameInfo
 import mobase
 import os
 
+
 class BeamNGGame(BasicGame):
 
     Name = "BeamNG.drive Support Plugin"

@@ -4,6 +4,7 @@ from ..basic_features import BasicGameSaveGameInfo
 import mobase
 import os
 
+
 class BeatSaberGame(BasicGame):
 
     Name = "Beat Saber Support Plugin"

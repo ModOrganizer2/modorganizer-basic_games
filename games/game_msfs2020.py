@@ -4,6 +4,7 @@ from ..basic_features import BasicGameSaveGameInfo
 import mobase
 import os
 
+
 class MSFS2020Game(BasicGame):
 
     Name = "Microsoft Flight Simulator 2020 Support Plugin"

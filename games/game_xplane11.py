@@ -4,6 +4,7 @@ from ..basic_features import BasicGameSaveGameInfo
 import mobase
 import os
 
+
 class XP11Game(BasicGame):
 
     Name = "X-Plane 11 Support Plugin"

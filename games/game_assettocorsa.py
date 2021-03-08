@@ -4,7 +4,9 @@ from ..basic_features import BasicGameSaveGameInfo
 import mobase
 import os
 
+
 class AssettoCorsaGame(BasicGame):
+
     Name = "Assetto Corsa Support Plugin"
     Author = "Deorder"
     Version = "0.0.1"
