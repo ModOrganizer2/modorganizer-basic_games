@@ -15,9 +15,6 @@ class MSFS2020Game(BasicGame):
     GameName = "Microsoft Flight Simulator 2020"
     GameShortName = "msfs2020"
     GameBinary = r"FlightSimulator.exe"
-    GameDataPath = (
-        r"%USERPROFILE%\AppData\Roaming\Microsoft Flight Simulator\Packages\Community"
-    )
     GameSteamId = [1250410]
 
     def dataDirectory(self) -> QDir:
