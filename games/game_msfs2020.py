@@ -16,15 +16,19 @@ class MSFS2020Game(BasicGame):
     GameName = "Microsoft Flight Simulator 2020"
     GameShortName = "msfs2020"
     GameBinary = r"FlightSimulator.exe"
-    GameDataPath = r"%USERPROFILE%\AppData\Roaming\Microsoft Flight Simulator\Packages\Community"
+    GameDataPath = (
+        r"%USERPROFILE%\AppData\Roaming\Microsoft Flight Simulator\Packages\Community"
+    )
     GameSteamId = [1250410]
 
     def dataDirectory(self) -> QDir:
-        # Find and use package path specified in Asobo engine options        
+        # Find and use package path specified in Asobo engine options
         AppDataPath = os.path.expandvars(r"%APPDATA%\Microsoft Flight Simulator")
         UserCfgPath = os.path.join(AppDataPath, "UserCfg.opt")
-        InstalledPackagesPathPattern = re.compile("InstalledPackagesPath\s*=\s*\"(.*)\"", re.IGNORECASE)
-        with open(UserCfgPath, newline='') as f:
+        InstalledPackagesPathPattern = re.compile(
+            'InstalledPackagesPath\s*=\s*"(.*)"', re.IGNORECASE
+        )
+        with open(UserCfgPath, newline="") as f:
             for _, line in enumerate(f):
                 for match in re.finditer(InstalledPackagesPathPattern, line):
                     return QDir(os.path.join(match.group(), "Community"))
