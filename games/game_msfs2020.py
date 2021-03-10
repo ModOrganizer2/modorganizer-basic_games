@@ -2,7 +2,6 @@ from ..basic_game import BasicGame
 
 from PyQt5.QtCore import QDir
 
-import mobase
 import os
 import re
 
@@ -26,7 +25,7 @@ class MSFS2020Game(BasicGame):
         AppDataPath = os.path.expandvars(r"%APPDATA%\Microsoft Flight Simulator")
         UserCfgPath = os.path.join(AppDataPath, "UserCfg.opt")
         InstalledPackagesPathPattern = re.compile(
-            'InstalledPackagesPath\s*=\s*"(.*)"', re.IGNORECASE
+            r'InstalledPackagesPath\s*=\s*"(.*)"', re.IGNORECASE
         )
         with open(UserCfgPath, newline="") as f:
             for _, line in enumerate(f):
