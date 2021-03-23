@@ -34,3 +34,4 @@ class RimworldGame(BasicGame):
     GameGogId = 1094900565
     GameBinary = "RimWorldWin64.exe"
     GameDataPath = "Mods"
+    
