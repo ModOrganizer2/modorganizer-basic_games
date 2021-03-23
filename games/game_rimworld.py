@@ -4,7 +4,7 @@ import mobase
 
 from ..basic_game import BasicGame
 
-#TODO: Better savegame and settings integration.
+# TODO: Better savegame and settings integration.
 
 """
 class RimworldLocalSavegames(mobase.LocalSavegames):
@@ -13,10 +13,10 @@ class RimworldLocalSavegames(mobase.LocalSavegames):
         super().__init__()
 
     def mappings(self, profile_save_dir: PyQt5.QtCore.QDir) -> List["Mapping"]:
-        #TODO: Figure out what mappings I need to find exactly
+        # TODO: Figure out what mappings I need to find exactly
     
     def prepareProfile(self, profile: "IProfile") -> bool:
-        #TODO: Basically all of the following, just tweaked to work with Rimworld.
+        # TODO: Basically all of the following, just tweaked to work with Rimworld.
         # https://github.com/ModOrganizer2/modorganizer-game_gamebryo/blob/498b10696f3a9c7383379c7d99eb921032629434/src/gamebryo/gamebryolocalsavegames.cpp#L51
 """
 
