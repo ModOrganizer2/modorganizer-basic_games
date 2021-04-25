@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 from typing import List, Optional
+import os
 
 import mobase
 
@@ -35,6 +36,7 @@ class DivinityOriginalSinEnhancedEditionModDataChecker(mobase.ModDataChecker):
             "PlayerProfiles",
             "Public",
             "Shaders",
+            DivinityOriginalSinEnhancedEditionGame.DOCS_MOD_SPECIAL_NAME,
         ]
         for src_folder in folders:
             for dst_folder in VALID_FOLDERS:
@@ -47,8 +49,8 @@ class DivinityOriginalSinEnhancedEditionModDataChecker(mobase.ModDataChecker):
         return None
 
 
-class DivinityOriginalSinEnhancedEditionGame(BasicGame):
-    Name = "Divinity Original Sin Enhanced Edition Support Plugin"
+class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper):
+    Name = "Divinity: Original Sin (Enhanced Edition) Support Plugin"
     Author = "LostDragonist"
     Version = "1.0.0"
 
@@ -64,12 +66,18 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame):
     GameSaveExtension = "lsv"
     GameDocumentsDirectory = (
         "%USERPROFILE%/Documents/Larian Studios/"
-        "Divinity Original Sin Enhanced Edition/PlayerProfiles"
+        "Divinity Original Sin Enhanced Edition"
     )
     GameSavesDirectory = (
         "%USERPROFILE%/Documents/Larian Studios/"
         "Divinity Original Sin Enhanced Edition/PlayerProfiles"
     )
+
+    DOCS_MOD_SPECIAL_NAME = "DOCS_MOD"
+
+    def __init__(self):
+        BasicGame.__init__(self)
+        mobase.IPluginFileMapper.__init__(self)
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
@@ -80,3 +88,27 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame):
             mobase.ModDataChecker
         ] = DivinityOriginalSinEnhancedEditionModDataChecker()
         return True
+
+    def mappings(self) -> List[mobase.Mapping]:
+        map = []
+        modDirs = [self.DOCS_MOD_SPECIAL_NAME]
+        self._listDirsRecursive(modDirs, prefix=self.DOCS_MOD_SPECIAL_NAME)
+        for dir_ in modDirs:
+            for file_ in self._organizer.findFiles(path=dir_, filter=lambda x: True):
+                m = mobase.Mapping()
+                m.createTarget = True
+                m.isDirectory = False
+                m.source = file_
+                m.destination = os.path.join(
+                    self.documentsDirectory().absoluteFilePath("Mods"),
+                    file_.split(self.DOCS_MOD_SPECIAL_NAME)[1].strip("\\").strip("/"),
+                )
+                map.append(m)
+        return map
+
+    def _listDirsRecursive(self, dirs_list, prefix=""):
+        dirs = self._organizer.listDirectories(prefix)
+        for dir_ in dirs:
+            dir_ = os.path.join(prefix, dir_)
+            dirs_list.append(dir_)
+            self._listDirsRecursive(dirs_list, dir_)

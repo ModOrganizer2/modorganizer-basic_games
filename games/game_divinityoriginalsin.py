@@ -7,7 +7,7 @@ from ..basic_features import BasicGameSaveGameInfo
 
 
 class DivinityOriginalSinGame(BasicGame):
-    Name = "Divinity Original Sin Support Plugin"
+    Name = "Divinity: Original Sin (Classic) Support Plugin"
     Author = "LostDragonist"
     Version = "1.0.0"
 
@@ -21,7 +21,7 @@ class DivinityOriginalSinGame(BasicGame):
     GameDataPath = "Data"
     GameSaveExtension = "lsv"  # Not confirmed
     GameDocumentsDirectory = (
-        "%USERPROFILE%/Documents/Larian Studios/Divinity Original Sin/PlayerProfiles"
+        "%USERPROFILE%/Documents/Larian Studios/Divinity Original Sin"
     )
     GameSavesDirectory = (
         "%USERPROFILE%/Documents/Larian Studios/Divinity Original Sin/PlayerProfiles"
