@@ -106,6 +106,9 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper
                 map.append(m)
         return map
 
+    def primarySources(self):
+        return self.GameValidShortNames
+
     def _listDirsRecursive(self, dirs_list, prefix=""):
         dirs = self._organizer.listDirectories(prefix)
         for dir_ in dirs:
