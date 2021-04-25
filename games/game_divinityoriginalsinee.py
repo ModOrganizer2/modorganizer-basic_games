@@ -43,6 +43,14 @@ class DivinityOriginalSinEnhancedEditionModDataChecker(mobase.ModDataChecker):
                 if src_folder.name().lower() == dst_folder.lower():
                     return mobase.ModDataChecker.VALID
 
+        VALID_FILE_EXTENSIONS = [
+            ".pak",
+        ]
+        for src_file in files:
+            for extension in VALID_FILE_EXTENSIONS:
+                if src_file.name().lower().endswith(extension.lower()):
+                    return mobase.ModDataChecker.VALID
+
         return mobase.ModDataChecker.INVALID
 
     def fix(self, tree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
