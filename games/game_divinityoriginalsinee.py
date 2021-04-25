@@ -58,6 +58,7 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame):
     GameValidShortNames = ["divinityoriginalsin"]
     GameNexusId = 1995
     GameSteamId = [373420]
+    GameGogId = [1445516929, 1445524575]
     GameBinary = "Shipping/EoCApp.exe"
     GameDataPath = "Data"
     GameSaveExtension = "lsv"
