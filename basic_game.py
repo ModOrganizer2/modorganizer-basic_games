@@ -15,7 +15,7 @@ from .basic_features.basic_save_game_info import BasicGameSaveGame
 
 
 def replace_variables(value: str, game: "BasicGame") -> str:
-    """ Replace special paths in the given value. """
+    """Replace special paths in the given value."""
 
     if value.find("%DOCUMENTS%") != -1:
         value = value.replace(
@@ -99,7 +99,7 @@ class BasicGameMapping(Generic[T]):
             )
 
     def get(self) -> T:
-        """ Return the value of this mapping. """
+        """Return the value of this mapping."""
         value = self._default(self._game)  # type: ignore
 
         if isinstance(value, str):
