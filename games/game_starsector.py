@@ -9,6 +9,7 @@ import mobase
 from ..basic_game import BasicGame, BasicGameSaveGame
 
 class Starsector(BasicGame):
+    
     Name = "Starsector Support Plugin"
     Author = "ddbb07"
     Version = "1.0.0"
