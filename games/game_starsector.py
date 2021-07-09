@@ -12,7 +12,7 @@ from ..basic_game import BasicGame, BasicGameSaveGame
 class Starsector(BasicGame):
     Name = "Starsector Support Plugin"
     Author = "ddbb07"
-    Version = "1.0.0"
+    Version = "1.0.1"
 
     GameName = "Starsector"
     GameShortName = "starsector"
@@ -22,7 +22,7 @@ class Starsector(BasicGame):
     GameSavesDirectory = "%GAME_PATH%/saves"
 
     def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
-        saves = list()
-        for path in Path(folder.absolutePath()).glob("save_*"):
-            saves.append(path)
-        return [BasicGameSaveGame(path) for path in saves]
+        return [
+            BasicGameSaveGame(path)
+            for path in Path(folder.absolutePath()).glob("save_*")
+        ]
