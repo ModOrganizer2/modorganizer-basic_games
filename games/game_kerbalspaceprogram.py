@@ -7,7 +7,6 @@ from os import path
 from pathlib import Path
 
 
-
 class KerbalSpaceProgramSaveGame(BasicGameSaveGame):
     def allFiles(self):
         group = path.parent
@@ -16,12 +15,13 @@ class KerbalSpaceProgramSaveGame(BasicGameSaveGame):
         if banner.exists():
             files.append(banner)
         return files
-    
+
     def getName(self):
         return self._filepath.stem
-    
+
     def getSaveGroupIdentifier(self):
         return path.parent.name
+
 
 class KerbalSpaceProgramGame(BasicGame):
 
@@ -41,7 +41,9 @@ class KerbalSpaceProgramGame(BasicGame):
     def init(self, organizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: str(Path(s).parent.joinpath("banners").joinpath(f"{Path(s).stem}.png"))
+            lambda s: str(
+                Path(s).parent.joinpath("banners").joinpath(f"{Path(s).stem}.png")
+            )
         )
         return True
 
