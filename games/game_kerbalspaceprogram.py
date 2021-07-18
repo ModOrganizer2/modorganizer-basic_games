@@ -1,4 +1,26 @@
+import mobase
+
 from ..basic_game import BasicGame
+from ..basic_features.basic_save_game_info import BasicGameSaveGame
+from ..basic_features import BasicGameSaveGameInfo
+from os import path
+from pathlib import Path
+
+
+class KerbalSpaceProgramSaveGame(BasicGameSaveGame):
+    def allFiles(self):
+        group = path.parent
+        banner = group.joinpath("banners").joinpath(f"${self.getName()}.png")
+        files = [self.filename]
+        if banner.exists():
+            files.append(banner)
+        return files
+
+    def getName(self):
+        return self._filepath.stem
+
+    def getSaveGroupIdentifier(self):
+        return path.parent.name
 
 
 class KerbalSpaceProgramGame(BasicGame):
@@ -13,3 +35,21 @@ class KerbalSpaceProgramGame(BasicGame):
     GameSteamId = [220200, 283740, 982970]
     GameBinary = "KSP_x64.exe"
     GameDataPath = "GameData"
+    GameSavesDirectory = "%GAME_PATH%/saves"
+    GameSaveExtension = "sfs"
+
+    def init(self, organizer):
+        super().init(organizer)
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
+            lambda s: str(
+                Path(s).parent.joinpath("banners").joinpath(f"{Path(s).stem}.png")
+            )
+        )
+        return True
+
+    def listSaves(self, folder):
+        ext = self._mappings.savegameExtension.get()
+        return [
+            KerbalSpaceProgramSaveGame(path)
+            for path in Path(folder.absolutePath()).glob(f"*/*.{ext}")
+        ]
