@@ -1,13 +1,12 @@
 # -*- encoding: utf-8 -*-
 
 import sys
-
 from pathlib import Path
 from typing import Callable, List, Optional
 
 from PyQt5.QtCore import QDateTime, Qt
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QLabel, QWidget, QVBoxLayout
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 import mobase
 

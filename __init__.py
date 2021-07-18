@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-import importlib
 import glob
+import importlib
 import os
 import sys
 import typing

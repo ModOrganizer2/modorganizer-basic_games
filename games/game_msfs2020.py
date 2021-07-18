@@ -1,9 +1,9 @@
-from ..basic_game import BasicGame
+import os
+import re
 
 from PyQt5.QtCore import QDir
 
-import os
-import re
+from ..basic_game import BasicGame
 
 
 class MSFS2020Game(BasicGame):

@@ -2,8 +2,8 @@
 
 import mobase
 
-from ..basic_game import BasicGame
 from ..basic_features import BasicGameSaveGameInfo
+from ..basic_game import BasicGame
 
 
 class DivinityOriginalSinGame(BasicGame):

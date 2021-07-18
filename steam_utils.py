@@ -4,7 +4,6 @@
 
 import sys
 import winreg  # type: ignore
-
 from pathlib import Path
 from typing import Dict, List, Optional
 

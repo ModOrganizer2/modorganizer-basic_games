@@ -1,12 +1,12 @@
 # -*- encoding: utf-8 -*-
 
-from typing import List, Optional
 import os
+from typing import List, Optional
 
 import mobase
 
-from ..basic_game import BasicGame
 from ..basic_features import BasicGameSaveGameInfo
+from ..basic_game import BasicGame
 
 
 class DivinityOriginalSinEnhancedEditionModDataChecker(mobase.ModDataChecker):

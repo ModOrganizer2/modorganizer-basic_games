@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
+import json
 from pathlib import Path
 from typing import List
-import json
 
 from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 

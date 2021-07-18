@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-from typing import Optional, List
+from typing import List, Optional
 
 import mobase
 

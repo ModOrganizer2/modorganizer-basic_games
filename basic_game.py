@@ -1,10 +1,8 @@
 # -*- encoding: utf-8 -*-
 
 import shutil
-
 from pathlib import Path
-from typing import List, Union, Optional, TypeVar, Callable, Generic, Dict
-
+from typing import Callable, Dict, Generic, List, Optional, TypeVar, Union
 
 from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
 from PyQt5.QtGui import QIcon
@@ -315,8 +313,8 @@ class BasicGame(mobase.IPluginGame):
 
     @staticmethod
     def setup():
-        from .steam_utils import find_games as find_steam_games
         from .gog_utils import find_games as find_gog_games
+        from .steam_utils import find_games as find_steam_games
 
         BasicGame.steam_games = find_steam_games()
         BasicGame.gog_games = find_gog_games()

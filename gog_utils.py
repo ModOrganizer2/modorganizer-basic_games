@@ -4,7 +4,6 @@
 #     https://github.com/ModOrganizer2/modorganizer-basic_games/pull/5
 
 import winreg  # type: ignore
-
 from pathlib import Path
 from typing import Dict
 
