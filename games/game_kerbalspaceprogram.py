@@ -1,10 +1,11 @@
-import mobase
-
-from ..basic_game import BasicGame
-from ..basic_features.basic_save_game_info import BasicGameSaveGame
-from ..basic_features import BasicGameSaveGameInfo
 from os import path
 from pathlib import Path
+
+import mobase
+
+from ..basic_features import BasicGameSaveGameInfo
+from ..basic_features.basic_save_game_info import BasicGameSaveGame
+from ..basic_game import BasicGame
 
 
 class KerbalSpaceProgramSaveGame(BasicGameSaveGame):

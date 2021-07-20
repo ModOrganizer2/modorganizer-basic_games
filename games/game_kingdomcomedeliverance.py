@@ -1,9 +1,10 @@
 # -*- encoding: utf-8 -*-
 
-from ..basic_game import BasicGame
-
 import os
+
 from PyQt5.QtCore import QDir
+
+from ..basic_game import BasicGame
 
 
 class KingdomComeDeliveranceGame(BasicGame):

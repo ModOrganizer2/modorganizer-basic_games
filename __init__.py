@@ -1,13 +1,17 @@
 # -*- encoding: utf-8 -*-
 
-import importlib
 import glob
+import importlib
 import os
+import site
 import sys
 import typing
 
 from .basic_game import BasicGame
 from .basic_game_ini import BasicIniGame
+
+site.addsitedir(os.path.join(os.path.dirname(__file__), "lib"))
+
 
 BasicGame.setup()
 

@@ -7,8 +7,8 @@ from PyQt5.QtCore import QDir, QFileInfo
 
 import mobase
 
-from ..basic_game import BasicGame
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
+from ..basic_game import BasicGame
 
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):

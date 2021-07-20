@@ -1,8 +1,9 @@
-from ..basic_game import BasicGame
-from ..basic_features import BasicGameSaveGameInfo
+import os
 
 import mobase
-import os
+
+from ..basic_features import BasicGameSaveGameInfo
+from ..basic_game import BasicGame
 
 
 class DAOriginsGame(BasicGame):
