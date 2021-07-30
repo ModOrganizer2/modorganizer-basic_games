@@ -78,7 +78,7 @@ def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
 
     library_folders = []
 
-    if "library_folders" in info:
+    if "libraryfolders" in info:
         # new format
         info_folders = info["libraryfolders"]
 
