@@ -13,6 +13,7 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
             "mods",
             "questpacks",
             "quests",
+            "sound",
             "soundfonts",
             "spellicons",
             "tables",
