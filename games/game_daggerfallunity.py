@@ -2,6 +2,7 @@ from ..basic_game import BasicGame
 
 import mobase
 
+
 class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
@@ -20,7 +21,7 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
             "text",
             "textures",
             "worlddata",
-            "aa"
+            "aa",
         ]
 
     def dataLooksValid(
@@ -36,9 +37,9 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
 
 class DaggerfallUnityGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
-            super().init(organizer)
-            self._featureMap[mobase.ModDataChecker] = DaggerfallUnityModDataChecker()
-            return True
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = DaggerfallUnityModDataChecker()
+        return True
 
     Name = "Daggerfall Unity Support Plugin"
     Author = "HomerSimpleton"
@@ -49,4 +50,3 @@ class DaggerfallUnityGame(BasicGame):
     GameBinary = "DaggerfallUnity.exe"
     GameLauncher = "DaggerfallUnity.exe"
     GameDataPath = "%GAME_PATH%/DaggerfallUnity_Data/StreamingAssets"
-
