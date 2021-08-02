@@ -41,8 +41,8 @@ class BlackAndWhite2Game(BasicGame):
     Version = "0.3.0"
 
     GameName = "Black & White 2"
-    GameShortName = "blackandwhite2"
-    GameNexusHame = "blackandwhite2"
+    GameShortName = "BW2"
+    GameNexusName = "blackandwhite2"
     GameBinary = "white.exe"
     GameDataPath = r""
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2"
@@ -52,7 +52,7 @@ class BlackAndWhite2Game(BasicGame):
         execs = super().executables()
         
         '''
-        A bat file to launch modded executables from VFS.
+        A bat file to load modded executables from VFS.
         '''
         workaroundPath = self._gamePath + '/white.bat'
         
@@ -66,7 +66,7 @@ class BlackAndWhite2Game(BasicGame):
                 
         execs.append(
             mobase.ExecutableInfo(
-                "BW2 Modded Exec",
+                self.GameShortName + ' Modded Exec',
                 QFileInfo(workaroundPath)
             )
         )
@@ -82,3 +82,16 @@ class BlackAndWhite2Game(BasicGame):
             
             
         return [BlackAndWhite2SaveGame(path) for path in profiles]
+        
+class BOTGGame(BlackAndWhite2Game):
+
+    Name = "Black & White 2 Battle of the Gods Support Plugin"
+    Author = "Ilyu"
+
+    GameName = "Black & White 2 Battle of the Gods"
+    GameShortName = "BOTG"
+    GameBinary = "white.exe"
+    GameDataPath = r""
+    GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2 - Battle of the Gods"
+    GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
+   
