@@ -38,7 +38,7 @@ class BlackAndWhite2Game(BasicGame):
 
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
-    Version = "0.3.0"
+    Version = "0.4.0"
 
     GameName = "Black & White 2"
     GameShortName = "BW2"
@@ -54,13 +54,13 @@ class BlackAndWhite2Game(BasicGame):
         '''
         A bat file to load modded executables from VFS.
         '''
-        workaroundPath = self._gamePath + '/white.bat'
+        workaroundPath = self._gamePath + '/' + self.GameBinary[:-4] + '.bat'
         
         try:
             workaround = open(workaroundPath, 'rt')
         except FileNotFoundError:
             with open(workaroundPath, 'wt') as workaround:
-                workaround.write('start "" "white.exe"')
+                workaround.write('start "" "' + self.GameBinary + '"' )
         workaround.close()
         
                 
@@ -86,11 +86,10 @@ class BlackAndWhite2Game(BasicGame):
 class BOTGGame(BlackAndWhite2Game):
 
     Name = "Black & White 2 Battle of the Gods Support Plugin"
-    Author = "Ilyu"
-
+    
     GameName = "Black & White 2 Battle of the Gods"
     GameShortName = "BOTG"
-    GameBinary = "white.exe"
+    GameBinary = "BattleOfTheGods.exe"
     GameDataPath = r""
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2 - Battle of the Gods"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
