@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import List, Dict
 
-from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt5.QtCore import QDir, QFileInfo
 
 import mobase
 
@@ -86,23 +86,37 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
     
 class BlackAndWhite2Game(BasicGame):
 
-    Name = "Black & White 2 Support Plugin"
+    Name = 'Black & White 2 Support Plugin'
     Author = "Ilyu"
     Version = "0.5.0"
 
-    GameName = "Black & White 2"
+    GameName = 'Black & White 2'
     GameShortName = "BW2"
     GameNexusName = "blackandwhite2"
     GameDataPath = "%GAME_PATH%"
     GameBinary = "white.exe"
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
+    
+    _program_link = os.getenv('ProgramData') + "\\Microsoft\\Windows\\Start Menu\\Programs\\Black & White 2\\Black & White® 2.lnk"
 
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
         return True
+            
+
+    def detectGame(self):
+        super().detectGame()
+        
+        program_path = Path(self._program_link)
+        if program_path.exists():
+            installation_path = Path(QFileInfo(self._program_link).symLinkTarget())
+            if installation_path.exists():
+                self.setGamePath(installation_path.parent)
+        
+        return
 
     def executables(self) -> List[mobase.ExecutableInfo]:
         execs = super().executables()
@@ -138,14 +152,15 @@ class BlackAndWhite2Game(BasicGame):
             
             
         return [BlackAndWhite2SaveGame(path) for path in profiles]
-        
+
 class BOTGGame(BlackAndWhite2Game):
 
-    Name = "Black & White 2 Battle of the Gods Support Plugin"
+    Name = 'Black & White 2 Battle of the Gods Support Plugin'
     
-    GameName = "Black & White 2 Battle of the Gods"
+    GameName = 'Black & White 2 Battle of the Gods'
     GameShortName = "BOTG"
     GameBinary = "BattleOfTheGods.exe"
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2 - Battle of the Gods"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
    
+    _program_link = os.getenv('ProgramData') + "\\Microsoft\\Windows\\Start Menu\\Programs\\Black & White 2 Battle of the Gods\\Black & White® 2 Battle of the Gods.lnk"
