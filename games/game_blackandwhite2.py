@@ -146,7 +146,6 @@ class BOTGGame(BlackAndWhite2Game):
     GameName = "Black & White 2 Battle of the Gods"
     GameShortName = "BOTG"
     GameBinary = "BattleOfTheGods.exe"
-    GameDataPath = r""
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2 - Battle of the Gods"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
    
