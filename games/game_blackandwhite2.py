@@ -10,10 +10,60 @@ import mobase
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 
+class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
+    _validFolderTree = {
+        '<black & white 2>': ['Audio', 'Data', 'PlugIns', 'Scripts'],
+        'Audio': ['Dialogue','Music','SFX'],
+        'Music': ['BuildingMusic', 'Chant', 'Cutscene', 'Dynamic Music', 'Epicspell', 'TownAlignment'],
+        'SFX': ['Atmos', 'Creature', 'game', 'Script', 'Spells', 'Video'],
+        'Data': ['Art', 'Balance', 'ctr', 'effects', 'EncryptedShaders', 'font', 'HandDemo', 'Interface',
+        'landscape', 'Light Particle Effects', 'Lipsync', 'Physics', 'SFX', 'Shaders', 'Symbols', 'Text', 
+        'Textures', 'Tutorial AVI', 'VisualEffects', 'WeatherSystem', 'Zones'],
+        'Art': ['binary_anim_libs', 'binary_animations', 'features', 'models', 'skins', 'textures', 'water'],
+        'ctr': ['badvisor_evil', 'badvisor_good', 'bape', 'bgorilla', 'bhand', 'blion', 'btiger', 'bwolf', 'damage', 'siren'],
+        'font': ['Asian'],
+        'Asian': ['Korean', 'Traditional Chinese'],
+        'landscape': ['aztec', 'BW2', 'egyptian', 'generic', 'greek', 'japanese', 'norse', 'skysettings'],
+        'SFX': ['Grass'],
+        'Tutorial AVI': ['placeholder', 'stills'],
+        'VisualEffects': ['textures'],
+        'Scripts': ['BW2']
+    }
+
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        
+        valid = 1
+        
+        for entry in tree:
+            if entry.name == '<black & white 2>':
+                return mobase.ModDataChecker.VALID
+            if not entry.isDir():
+                continue
+                
+            if entry.parent() is None:
+                continue
+            else:
+                parentName = entry.parent().name()
+                if entry.parent().parent() is None:
+                    parentName = '<black & white 2>'
+                if parentName not in self._validFolderTree.keys():
+                    return mobase.ModDataChecker.INVALID
+            
+            
+            if not entry.name() in self._validFolderTree[parentName]:
+                return mobase.ModDataChecker.INVALID
+        
+        return mobase.ModDataChecker.VALID
+
 class BlackAndWhite2SaveGame(BasicGameSaveGame):
     def __init__(self, filepath):
         super().__init__(filepath)
         self.name: str = ""
+
+    def allFiles(self) -> List[str]:
+        return [file for file in self.filepath.glob('*') if file.is_file()]
 
     def getName(self) -> str:
         with open(self._filepath.joinpath('SaveGame.inf'), 'rb') as info:
@@ -38,16 +88,22 @@ class BlackAndWhite2Game(BasicGame):
 
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
-    Version = "0.4.0"
+    Version = "0.5.0"
 
     GameName = "Black & White 2"
     GameShortName = "BW2"
     GameNexusName = "blackandwhite2"
+    GameDataPath = "%GAME_PATH%"
     GameBinary = "white.exe"
-    GameDataPath = r""
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
-    
+
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
+        return True
+
     def executables(self) -> List[mobase.ExecutableInfo]:
         execs = super().executables()
         
