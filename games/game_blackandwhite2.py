@@ -89,8 +89,6 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
     ) -> mobase.ModDataChecker.CheckReturn:
 
         for entry in tree:
-            if entry.name == "<black & white 2>":
-                return mobase.ModDataChecker.VALID
             if not entry.isDir():
                 continue
 
@@ -102,9 +100,8 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
                     parentName = "<black & white 2>"
                 if parentName not in self._validFolderTree.keys():
                     return mobase.ModDataChecker.INVALID
-
-            if not entry.name() in self._validFolderTree[parentName]:
-                return mobase.ModDataChecker.INVALID
+                if not entry.name() in self._validFolderTree[parentName]:
+                    return mobase.ModDataChecker.INVALID
 
         return mobase.ModDataChecker.VALID
 
@@ -131,7 +128,7 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         return super.getName()
 
     def getSaveGroupIdentifier(self):
-        return self._filepath.parent.parent.name
+        return self.filepath.parent.parent.name
 
 
 pstart_menu = os.getenv("ProgramData") + "\\Microsoft\\Windows\\Start Menu\\Programs"
