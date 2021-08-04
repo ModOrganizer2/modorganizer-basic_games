@@ -141,16 +141,35 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         return self._filepath.parent.parent.name
 
 
+class BlackAndWhite2LocalSavegames(mobase.LocalSavegames):
+    def __init__(self, myGameSaveDir):
+        super().__init__()
+        self._savesDir = myGameSaveDir.absolutePath()
+
+    def mappings(self, profile_save_dir):
+        m = mobase.Mapping()
+
+        m.createTarget = True
+        m.isDirectory = True
+        m.source = profile_save_dir.absolutePath()
+        m.destination = self._savesDir
+
+        return [m]
+
+    def prepareProfile(self, profile):
+        return profile.localSavesEnabled()
+
+
 pstart_menu = (
     str(os.getenv("ProgramData")) + "\\Microsoft\\Windows\\Start Menu\\Programs"
 )
 
 
-class BlackAndWhite2Game(BasicGame):
+class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
-    Version = "0.5.0"
+    Version = "0.8.0"
 
     GameName = "Black & White 2"
     GameShortName = "BW2"
@@ -165,6 +184,9 @@ class BlackAndWhite2Game(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
+        self._featureMap[mobase.LocalSavegames] = BlackAndWhite2LocalSavegames(
+            self.savesDirectory()
+        )
         return True
 
     def detectGame(self):
