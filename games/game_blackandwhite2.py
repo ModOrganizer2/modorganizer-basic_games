@@ -12,41 +12,41 @@ from ..basic_game import BasicGame, BasicGameSaveGame
 
 class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
     _validFolderTree = {
-        "<black & white 2>": ["Audio", "Data", "PlugIns", "Scripts"],
-        "Audio": ["Dialogue", "Music", "SFX"],
-        "Music": [
-            "BuildingMusic",
-            "Chant",
-            "Cutscene",
-            "Dynamic Music",
-            "Epicspell",
-            "TownAlignment",
+        "<black & white 2>": ["audio", "data", "plugins", "scripts"],
+        "audio": ["dialogue", "music", "sfx"],
+        "music": [
+            "buildingmusic",
+            "chant",
+            "cutscene",
+            "dynamic music",
+            "epicspell",
+            "townalignment",
         ],
-        "SFX": ["Atmos", "Creature", "game", "Script", "Spells", "Video", "Grass"],
-        "Data": [
-            "Art",
-            "Balance",
+        "sfx": ["atmos", "creature", "game", "script", "spells", "video", "grass"],
+        "data": [
+            "art",
+            "balance",
             "ctr",
             "effects",
-            "EncryptedShaders",
+            "encryptedshaders",
             "font",
-            "HandDemo",
-            "Interface",
+            "handdemo",
+            "interface",
             "landscape",
-            "Light Particle Effects",
-            "Lipsync",
-            "Physics",
-            "SFX",
-            "Shaders",
-            "Symbols",
-            "Text",
-            "Textures",
-            "Tutorial AVI",
-            "VisualEffects",
-            "WeatherSystem",
-            "Zones",
+            "light particle effects",
+            "lipsync",
+            "physics",
+            "sfx",
+            "shaders",
+            "symbols",
+            "text",
+            "textures",
+            "tutorial avi",
+            "visualeffects",
+            "weathersystem",
+            "zones",
         ],
-        "Art": [
+        "art": [
             "binary_anim_libs",
             "binary_animations",
             "features",
@@ -67,11 +67,11 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
             "damage",
             "siren",
         ],
-        "font": ["Asian"],
-        "Asian": ["Korean", "Traditional Chinese"],
+        "font": ["asian"],
+        "asian": ["korean", "traditional chinese"],
         "landscape": [
             "aztec",
-            "BW2",
+            "bw2",
             "egyptian",
             "generic",
             "greek",
@@ -79,29 +79,39 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
             "norse",
             "skysettings",
         ],
-        "Tutorial AVI": ["placeholder", "stills"],
-        "VisualEffects": ["textures"],
-        "Scripts": ["BW2"],
+        "tutorial avi": ["placeholder", "stills"],
+        "visualeffects": ["textures"],
+        "scripts": ["bw2"],
     }
+    _validFileLocation = {"<black & white 2>": ["exe", "dll", "ico", "ini"]}
 
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
 
         for entry in tree:
-            if not entry.isDir():
-                continue
+            entryName = entry.name().casefold()
+            if "readme" not in entryName:
+                parent = entry.parent()
+                if parent is not None:
 
-            if entry.parent() is None:
-                continue
-            else:
-                parentName = entry.parent().name()
-                if entry.parent().parent() is None:
-                    parentName = "<black & white 2>"
-                if parentName not in self._validFolderTree.keys():
-                    return mobase.ModDataChecker.INVALID
-                if not entry.name() in self._validFolderTree[parentName]:
-                    return mobase.ModDataChecker.INVALID
+                    if parent.parent() is not None:
+                        parentName = parent.name().casefold()
+                    else:
+                        parentName = "<black & white 2>"
+
+                    if not entry.isDir():
+                        if parentName in self._validFileLocation.keys():
+                            if (
+                                entry.suffix()
+                                not in self._validFileLocation[parentName]
+                            ):
+                                return mobase.ModDataChecker.INVALID
+                    else:
+                        if parentName not in self._validFolderTree.keys():
+                            return mobase.ModDataChecker.INVALID
+                        if entryName not in self._validFolderTree[parentName]:
+                            return mobase.ModDataChecker.INVALID
 
         return mobase.ModDataChecker.VALID
 
@@ -112,7 +122,7 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         self.name: str = ""
 
     def allFiles(self) -> List[str]:
-        return [file for file in self.filepath.glob("*") if file.is_file()]
+        return [str(file) for file in self._filepath.glob("*") if file.is_file()]
 
     def getName(self) -> str:
         with open(self._filepath.joinpath("SaveGame.inf"), "rb") as info:
@@ -128,10 +138,12 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         return super.getName()
 
     def getSaveGroupIdentifier(self):
-        return self.filepath.parent.parent.name
+        return self._filepath.parent.parent.name
 
 
-pstart_menu = os.getenv("ProgramData") + "\\Microsoft\\Windows\\Start Menu\\Programs"
+pstart_menu = (
+    str(os.getenv("ProgramData")) + "\\Microsoft\\Windows\\Start Menu\\Programs"
+)
 
 
 class BlackAndWhite2Game(BasicGame):
