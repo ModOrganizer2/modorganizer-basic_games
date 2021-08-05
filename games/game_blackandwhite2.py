@@ -1,13 +1,23 @@
 # -*- encoding: utf-8 -*-
 import os
+import sys
+import datetime
+import struct
+import time
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir, QFileInfo
+from PyQt5.QtCore import QDir, QFileInfo, QFile, QDateTime
+from PyQt5.QtGui import QPixmap, QPainter
 
 import mobase
 
-from ..basic_game import BasicGame, BasicGameSaveGame
+from ..basic_game import BasicGame
+from ..basic_features.basic_save_game_info import (
+    BasicGameSaveGame,
+    BasicGameSaveGameInfoWidget,
+    BasicGameSaveGameInfo,
+)
 
 
 class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
@@ -117,25 +127,62 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
 
 
 class BlackAndWhite2SaveGame(BasicGameSaveGame):
+    _saveInfLayout = {
+        "start": [0x00000000, 0x00000004],
+        "name": [0x00000004, 0x0000002C],
+        "empty": [0x0000002C, 0x00000104],
+        "land": [0x00000104, 0x00000108],
+        "date": [0x00000108, 0x00000110],
+        "empty1": [0x00000110, 0x00000114],
+        "elapsed": [0x00000114, 0x00000118],
+        "empty2": [0x00000108, 0x0000011C],
+    }
+
     def __init__(self, filepath):
         super().__init__(filepath)
+        self._filepath = Path(filepath)
         self.name: str = ""
+        self.land: int = -1
+        self.elapsed: int = 0
+        self.lastsave: int = 0
+        with open(self._filepath.joinpath("SaveGame.inf"), "rb") as info:
+            # Name embedded in "SaveGame.inf" with UTF-16 encoding
+            self.name = self.readInf(info, "name").decode("utf-16")
+            # Land number embedded in "SaveGame.inf" as an int written in binary
+            self.land = int.from_bytes(self.readInf(info, "land"), "little")
+            # Getting elapsed time in second
+            self.elapsed = int.from_bytes(self.readInf(info, "elapsed"), "little")
+            # Getting date in 100th of nanosecond need to convert NT time
+            # to UNIX time and offset localtime
+            self.lastsave = (
+                (
+                    struct.unpack("q", self.readInf(info, "date"))[0] / 10000
+                    - 11644473600000
+                )
+            ) - (time.localtime().tm_gmtoff * 1000)
+            info.close()
+
+    def readInf(self, inf, key):
+        inf.seek(self._saveInfLayout[key][0])
+        return inf.read(self._saveInfLayout[key][1] - self._saveInfLayout[key][0])
 
     def allFiles(self) -> List[str]:
-        return [str(file) for file in self._filepath.glob("*") if file.is_file()]
+        files = [str(file) for file in self._filepath.glob("./*")]
+        files.append(str(self._filepath))
+        return files
+
+    def getCreationTime(self) -> QDateTime:
+        time = QDateTime.fromMSecsSinceEpoch(self.lastsave)
+        return time
+
+    def getElapsed(self) -> str:
+        return str(datetime.timedelta(seconds=self.elapsed))
 
     def getName(self) -> str:
-        with open(self._filepath.joinpath("SaveGame.inf"), "rb") as info:
-            info.read(4)
-            name = u""
-            while True:
-                char = info.read(2)
-                name = name + char.decode("utf-16")
-                if char[0] == 0:
-                    break
-            info.close()
-            return name
-        return super.getName()
+        return self.name
+
+    def getLand(self) -> str:
+        return str(self.land)
 
     def getSaveGroupIdentifier(self):
         return self._filepath.parent.parent.name
@@ -160,7 +207,57 @@ class BlackAndWhite2LocalSavegames(mobase.LocalSavegames):
         return profile.localSavesEnabled()
 
 
-pstart_menu = (
+def getPreview(save):
+    save = BlackAndWhite2SaveGame(save)
+    pixmap = QPixmap(320, 320)
+    pixmap.fill()
+    painter = QPainter()
+    painter.begin(pixmap)
+    painter.drawText(5, 15, u"Name : " + save.getName())
+    painter.drawText(5, 30, u"Profile : " + save.getSaveGroupIdentifier()[1:])
+    painter.drawText(5, 45, u"Save at : " + save.getCreationTime().toString())
+    painter.drawText(5, 60, u"Land number : " + save.getLand())
+    painter.drawText(5, 75, u"Elapsed time : " + save.getElapsed())
+    painter.end()
+    return pixmap
+
+
+class BlackAndWhite2SaveGameInfoWidget(BasicGameSaveGameInfoWidget):
+    def setSave(self, save: mobase.ISaveGame):
+        # Resize the label to (0, 0) to hide it:
+        self.resize(0, 0)
+
+        # Retrieve the pixmap:
+        value = self._get_preview(save.getFilepath())
+
+        if value is None:
+            return
+
+        elif isinstance(value, QPixmap):
+            pixmap = value
+        else:
+            print(
+                "Failed to retrieve the preview, bad return type: {}.".format(
+                    type(value)
+                ),
+                file=sys.stderr,
+            )
+            return
+
+        # Scale the pixmap and show it:
+        pmap = pixmap.scaledToWidth(320)
+        self._label.setPixmap(pmap)
+        self.resize(pmap.width(), pmap.height())
+
+
+class BlackAndWhite2SaveGameInfo(BasicGameSaveGameInfo):
+    def getSaveGameWidget(self, parent=None):
+        if self._get_preview is not None:
+            return BasicGameSaveGameInfoWidget(parent, self._get_preview)
+        return None
+
+
+PSTART_MENU = (
     str(os.getenv("ProgramData")) + "\\Microsoft\\Windows\\Start Menu\\Programs"
 )
 
@@ -179,7 +276,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
 
-    _program_link = pstart_menu + "\\Black & White 2\\Black & White® 2.lnk"
+    _program_link = PSTART_MENU + "\\Black & White 2\\Black & White® 2.lnk"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -187,6 +284,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
         self._featureMap[mobase.LocalSavegames] = BlackAndWhite2LocalSavegames(
             self.savesDirectory()
         )
+        self._featureMap[mobase.SaveGameInfo] = BlackAndWhite2SaveGameInfo(getPreview)
         return True
 
     def detectGame(self):
@@ -226,8 +324,21 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
     def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
         profiles = list()
         for path in Path(folder.absolutePath()).glob("*/Saved Games/*"):
-            if path.name == "Autosave" or path.name == "Pictures":
+            if (
+                path.name == "Autosave"
+                or path.name == "Pictures"
+                or "_invalid" in path.name
+            ):
                 continue
+            if path.is_dir():
+                saveFolder = QDir(str(path))
+                if not saveFolder.exists("SaveGame.inf"):
+                    savePath = saveFolder.absolutePath()
+                    QFile.rename(savePath, savePath + "_invalid")
+                    continue
+            else:
+                continue
+
             profiles.append(path)
 
         return [BlackAndWhite2SaveGame(path) for path in profiles]
@@ -244,6 +355,6 @@ class BOTGGame(BlackAndWhite2Game):
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
 
     _program_link = (
-        pstart_menu
+        PSTART_MENU
         + "Black & White 2 Battle of the Gods\\Black & White® 2 Battle of the Gods.lnk"
     )
