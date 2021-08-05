@@ -209,17 +209,33 @@ class BlackAndWhite2LocalSavegames(mobase.LocalSavegames):
 
 def getPreview(save):
     save = BlackAndWhite2SaveGame(save)
+    data = [
+        u"Name : "
+        + save.getName()
+        + u" | Profile : "
+        + save.getSaveGroupIdentifier()[1:],
+        u"Save at : " + save.getCreationTime().toString(),
+        u"Land number : " + save.getLand(),
+        u"Elapsed time : " + save.getElapsed(),
+    ]
+
     pixmap = QPixmap(320, 320)
     pixmap.fill()
+
     painter = QPainter()
     painter.begin(pixmap)
-    painter.drawText(5, 15, u"Name : " + save.getName())
-    painter.drawText(5, 30, u"Profile : " + save.getSaveGroupIdentifier()[1:])
-    painter.drawText(5, 45, u"Save at : " + save.getCreationTime().toString())
-    painter.drawText(5, 60, u"Land number : " + save.getLand())
-    painter.drawText(5, 75, u"Elapsed time : " + save.getElapsed())
+    fm = painter.fontMetrics()
+    lh = fm.lineSpacing()
+    height = 0
+    width = 0
+    for toPrint in data:
+        height = height + lh
+        width = max(width, fm.boundingRect(toPrint).width() + 10)
+        painter.drawText(5, height, toPrint)
+    height = height + lh
+
     painter.end()
-    return pixmap
+    return pixmap.copy(0, 0, width, height)
 
 
 class BlackAndWhite2SaveGameInfoWidget(BasicGameSaveGameInfoWidget):
@@ -245,9 +261,8 @@ class BlackAndWhite2SaveGameInfoWidget(BasicGameSaveGameInfoWidget):
             return
 
         # Scale the pixmap and show it:
-        pmap = pixmap.scaledToWidth(320)
-        self._label.setPixmap(pmap)
-        self.resize(pmap.width(), pmap.height())
+        self._label.setPixmap(pixmap)
+        self.resize(pixmap.width(), pixmap.height())
 
 
 class BlackAndWhite2SaveGameInfo(BasicGameSaveGameInfo):
