@@ -101,7 +101,7 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
 
         for entry in tree:
             entryName = entry.name().casefold()
-            if "readme" not in entryName:
+            if "readme" not in entryName and "read me" not in entryName:
                 parent = entry.parent()
                 if parent is not None:
 
@@ -112,18 +112,14 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
 
                     if not entry.isDir():
                         if parentName in self._validFileLocation.keys():
-                            if (
-                                entry.suffix()
-                                not in self._validFileLocation[parentName]
-                            ):
-                                return mobase.ModDataChecker.INVALID
+                            if entry.suffix() in self._validFileLocation[parentName]:
+                                return mobase.ModDataChecker.VALID
                     else:
-                        if parentName not in self._validFolderTree.keys():
-                            return mobase.ModDataChecker.INVALID
-                        if entryName not in self._validFolderTree[parentName]:
-                            return mobase.ModDataChecker.INVALID
+                        if parentName in self._validFolderTree.keys():
+                            if entryName in self._validFolderTree[parentName]:
+                                return mobase.ModDataChecker.VALID
 
-        return mobase.ModDataChecker.VALID
+        return mobase.ModDataChecker.INVALID
 
 
 class BlackAndWhite2SaveGame(BasicGameSaveGame):
