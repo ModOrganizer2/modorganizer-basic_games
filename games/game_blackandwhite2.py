@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt
+from PyQt5.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt, qInfo
 from PyQt5.QtGui import QPixmap, QPainter
 
 import mobase
@@ -93,33 +93,45 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
         "visualeffects": ["textures"],
         "scripts": ["bw2"],
     }
-    _validFileLocation = {"<black & white 2>": ["exe", "dll", "ico", "ini"]}
+    _validFileLocation = {
+        "<black & white 2>": ["exe", "dll", "ico", "ini", "png", "jpeg", "jpg"]
+    }
 
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
+        qInfo("Data validation start")
+        root = tree
 
         for entry in tree:
             entryName = entry.name().casefold()
-            if "readme" not in entryName and "read me" not in entryName:
+            if (
+                "readme" not in entryName.casefold()
+                and "read me" not in entryName.casefold()
+            ):
                 parent = entry.parent()
                 if parent is not None:
 
-                    if parent.parent() is not None:
+                    if parent != root:
                         parentName = parent.name().casefold()
                     else:
+                        qInfo(str(entryName))
                         parentName = "<black & white 2>"
 
                     if not entry.isDir():
                         if parentName in self._validFileLocation.keys():
-                            if entry.suffix() in self._validFileLocation[parentName]:
-                                return mobase.ModDataChecker.VALID
+                            if (
+                                entry.suffix()
+                                not in self._validFileLocation[parentName]
+                            ):
+                                return mobase.ModDataChecker.INVALID
+
                     else:
                         if parentName in self._validFolderTree.keys():
-                            if entryName in self._validFolderTree[parentName]:
-                                return mobase.ModDataChecker.VALID
+                            if entryName not in self._validFolderTree[parentName]:
+                                return mobase.ModDataChecker.INVALID
 
-        return mobase.ModDataChecker.INVALID
+        return mobase.ModDataChecker.VALID
 
 
 class BlackAndWhite2SaveGame(BasicGameSaveGame):
@@ -296,7 +308,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
-    Version = "0.8.0"
+    Version = "0.8.5"
 
     GameName = "Black & White 2"
     GameShortName = "BW2"
