@@ -428,6 +428,6 @@ class BOTGGame(BlackAndWhite2Game):
 
     _program_link = (
         PSTART_MENU
-        + """\\Black & White 2 Battle of the Gods
-        \\Black & White® 2 Battle of the Gods.lnk"""
+        + "\\Black & White 2 Battle of the Gods"
+        "\\Black & White® 2 Battle of the Gods.lnk"
     )
