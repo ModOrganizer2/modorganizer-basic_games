@@ -427,7 +427,6 @@ class BOTGGame(BlackAndWhite2Game):
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
 
     _program_link = (
-        PSTART_MENU
-        + "\\Black & White 2 Battle of the Gods"
+        PSTART_MENU + "\\Black & White 2 Battle of the Gods"
         "\\Black & White® 2 Battle of the Gods.lnk"
     )
