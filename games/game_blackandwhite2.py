@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-import os
 import sys
 import datetime
 import struct
@@ -136,7 +135,6 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
                     if parent != root:
                         parentName = parent.name().casefold()
                     else:
-                        # qInfo(str(entryName))
                         parentName = "<black & white 2>"
 
                     if not entry.isDir():
@@ -158,7 +156,6 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
                             if entryName not in self._validFolderTree[parentName]:
                                 return mobase.ModDataChecker.INVALID
 
-        # qInfo(str(unpackagedMap))
         if unpackagedMap:
             return mobase.ModDataChecker.FIXABLE
         else:
@@ -330,11 +327,6 @@ class BlackAndWhite2SaveGameInfo(BasicGameSaveGameInfo):
         return None
 
 
-PSTART_MENU = (
-    str(os.getenv("ProgramData")) + "\\Microsoft\\Windows\\Start Menu\\Programs"
-)
-
-
 class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     Name = "Black & White 2 Support Plugin"
@@ -349,8 +341,6 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
     GameBinary = "white.exe"
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
-
-    _program_link = PSTART_MENU + "\\Black & White 2\\Black & White® 2.lnk"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -389,12 +379,6 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
                 except WindowsError:
                     winreg.CloseKey(key)
                     break
-
-        program_path = Path(self._program_link)
-        if program_path.exists():
-            installation_path = Path(QFileInfo(self._program_link).symLinkTarget())
-            if installation_path.exists():
-                self.setGamePath(installation_path.parent)
 
         return
 
@@ -449,13 +433,8 @@ class BOTGGame(BlackAndWhite2Game):
     Name = "Black & White 2 Battle of the Gods Support Plugin"
 
     GameName = "Black & White 2 Battle of the Gods"
-    _DisplayName = "Black & White® 2 Battle of the Gods.lnk"
+    _DisplayName = "Black & White® 2 Battle of the Gods"
     GameShortName = "BOTG"
     GameBinary = "BattleOfTheGods.exe"
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2 - Battle of the Gods"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
-
-    _program_link = (
-        PSTART_MENU + "\\Black & White 2 Battle of the Gods"
-        "\\Black & White® 2 Battle of the Gods.lnk"
-    )
