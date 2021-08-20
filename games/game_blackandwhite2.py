@@ -4,6 +4,7 @@ import sys
 import datetime
 import struct
 import time
+import winreg
 from pathlib import Path
 from typing import List
 
@@ -341,6 +342,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
     Version = "1.0.0"
 
     GameName = "Black & White 2"
+    _DisplayName = "Black & White® 2"
     GameShortName = "BW2"
     GameNexusName = "blackandwhite2"
     GameDataPath = "%GAME_PATH%"
@@ -361,6 +363,32 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     def detectGame(self):
         super().detectGame()
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            "SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\",
+        ) as key:
+            index = 0
+            while True:
+                try:
+                    hKey = winreg.EnumKey(key, index)
+                    hKey = winreg.OpenKey(key, hKey)
+
+                    try:
+                        keyVal = winreg.QueryValueEx(hKey, "DisplayName")[0]
+                        if keyVal == self._DisplayName:
+                            self.setGamePath(
+                                winreg.QueryValueEx(hKey, "InstallLocation")[0]
+                            )
+                            winreg.CloseKey(hKey)
+                            winreg.CloseKey(key)
+                            return
+                    except FileNotFoundError:
+                        pass
+                    winreg.CloseKey(hKey)
+                    index += 1
+                except WindowsError:
+                    winreg.CloseKey(key)
+                    break
 
         program_path = Path(self._program_link)
         if program_path.exists():
@@ -421,6 +449,7 @@ class BOTGGame(BlackAndWhite2Game):
     Name = "Black & White 2 Battle of the Gods Support Plugin"
 
     GameName = "Black & White 2 Battle of the Gods"
+    _DisplayName = "Black & White® 2 Battle of the Gods.lnk"
     GameShortName = "BOTG"
     GameBinary = "BattleOfTheGods.exe"
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2 - Battle of the Gods"
