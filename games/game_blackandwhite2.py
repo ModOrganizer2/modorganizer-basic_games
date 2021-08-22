@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt, qInfo
+from PyQt5.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt
 from PyQt5.QtGui import QPixmap, QPainter
 
 import mobase
@@ -94,28 +94,48 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
         "scripts": ["bw2"],
     }
     _validFileLocation = {
-        "<black & white 2>": ["exe", "dll", "ico", "ini", "png", "jpeg", "jpg"]
+        "<black & white 2>": ["exe", "dll", "ico", "png", "jpeg", "jpg"]
     }
+    _mapFile = ["chl", "bmp", "bwe", "ter", "pat", "xml", "wal", "txt"]
+    _fileIgnore = ["readme", "read me", "meta.ini", "thumbs.db", "backup", ".png"]
+
+    def fix(self, tree: mobase.IFileTree):
+        toMove = []
+        for entry in tree:
+            if any([sub in entry.name().casefold() for sub in self._fileIgnore]):
+                continue
+            elif entry.suffix() == "chl":
+                toMove.append((entry, "/Scripts/BW2/"))
+            elif entry.suffix() == "bmp":
+                toMove.append((entry, "/Data/"))
+            elif entry.suffix() == "txt":
+                toMove.append((entry, "/Scripts/"))
+            else:
+                toMove.append((entry, "/Data/landscape/BW2/"))
+
+        for (entry, path) in toMove:
+            tree.move(entry, path, policy=mobase.IFileTree.MERGE)
+
+        return tree
 
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        qInfo("Data validation start")
+        # qInfo("Data validation start")
         root = tree
+        unpackagedMap = False
 
         for entry in tree:
             entryName = entry.name().casefold()
-            if (
-                "readme" not in entryName.casefold()
-                and "read me" not in entryName.casefold()
-            ):
+            canIgnore = any([sub in entryName for sub in self._fileIgnore])
+            if not canIgnore:
                 parent = entry.parent()
                 if parent is not None:
 
                     if parent != root:
                         parentName = parent.name().casefold()
                     else:
-                        qInfo(str(entryName))
+                        # qInfo(str(entryName))
                         parentName = "<black & white 2>"
 
                     if not entry.isDir():
@@ -124,14 +144,24 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
                                 entry.suffix()
                                 not in self._validFileLocation[parentName]
                             ):
-                                return mobase.ModDataChecker.INVALID
-
+                                if (
+                                    entry.suffix() in self._mapFile
+                                    or entryName == "map.txt"
+                                ):
+                                    unpackagedMap = True
+                                else:
+                                    return mobase.ModDataChecker.INVALID
                     else:
+                        unpackagedMap = False
                         if parentName in self._validFolderTree.keys():
                             if entryName not in self._validFolderTree[parentName]:
                                 return mobase.ModDataChecker.INVALID
 
-        return mobase.ModDataChecker.VALID
+        # qInfo(str(unpackagedMap))
+        if unpackagedMap:
+            return mobase.ModDataChecker.FIXABLE
+        else:
+            return mobase.ModDataChecker.VALID
 
 
 class BlackAndWhite2SaveGame(BasicGameSaveGame):
@@ -308,7 +338,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
-    Version = "0.8.5"
+    Version = "1.0.1"
 
     GameName = "Black & White 2"
     GameShortName = "BW2"
@@ -397,6 +427,6 @@ class BOTGGame(BlackAndWhite2Game):
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
 
     _program_link = (
-        PSTART_MENU
-        + "Black & White 2 Battle of the Gods\\Black & White® 2 Battle of the Gods.lnk"
+        PSTART_MENU + "\\Black & White 2 Battle of the Gods"
+        "\\Black & White® 2 Battle of the Gods.lnk"
     )
