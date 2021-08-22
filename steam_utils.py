@@ -73,7 +73,7 @@ def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
         A list of LibraryFolder, for each library found.
     """
 
-    with open(library_vdf_path, "r") as f:
+    with open(library_vdf_path, "r", encoding="utf-8") as f:
         info = vdf.load(f)
 
     library_folders = []
