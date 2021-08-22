@@ -1,5 +1,6 @@
 from ..basic_game import BasicGame
 
+
 class SubnauticaGame(BasicGame):
 
     Name = "Subnautica Support Plugin"
