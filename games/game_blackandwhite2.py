@@ -338,7 +338,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
-    Version = "1.0.0"
+    Version = "1.0.1"
 
     GameName = "Black & White 2"
     GameShortName = "BW2"
