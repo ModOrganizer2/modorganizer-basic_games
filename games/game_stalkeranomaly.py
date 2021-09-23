@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+from enum import IntEnum
 
 from PyQt5.QtCore import QDir, QFileInfo
 
@@ -74,6 +75,105 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
         return tree
 
 
+class Content(IntEnum):
+    INTERFACE = 0
+    TEXTURE = 1
+    MESH = 2
+    SCRIPT = 3
+    SOUND = 4
+    MCM = 5
+    CONFIG = 6
+
+
+class StalkerAnomalyModDataContent(mobase.ModDataContent):
+    def __init__(self):
+        super().__init__()
+
+    def getAllContents(self) -> List[mobase.ModDataContent.Content]:
+        return [
+            mobase.ModDataContent.Content(Content.INTERFACE, "Interface", ":/MO/gui/content/interface"),
+            mobase.ModDataContent.Content(Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
+            mobase.ModDataContent.Content(Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
+            mobase.ModDataContent.Content(Content.SCRIPT, "Scripts", ":/MO/gui/content/script"),
+            mobase.ModDataContent.Content(Content.SOUND, "Sounds", ":/MO/gui/content/sound"),
+            mobase.ModDataContent.Content(Content.MCM, "MCM", ":/MO/gui/content/menu"),
+            mobase.ModDataContent.Content(Content.CONFIG, "Configs", ":/MO/gui/content/inifile"),
+        ]
+
+    def findFileExt(
+        self, entry: mobase.FileTreeEntry, ext: List[str],
+        ignore: Optional[List[str]] = []
+    ) -> bool:
+        for e in entry:
+            if e.isDir():
+                if e.name().lower() in ignore:
+                    continue
+                if self.findFileExt(e, ext):
+                    return True
+            elif e.isFile():
+                if e.suffix().lower() in ext:
+                    return True
+
+        return False
+
+    def findFilePart(
+        self, entry: mobase.FileTreeEntry, string: str
+    ) -> bool:
+        for e in entry:
+            if e.isDir():
+                if self.findFilePart(e, string):
+                    return True
+            elif e.isFile():
+                if string in e.name().lower():
+                    return True
+
+        return False
+
+    def getContentsFor(
+        self, tree: mobase.IFileTree
+    ) -> List[int]:
+        content: List[int] = []
+        gamedata: mobase.FileTreeEntry = tree.find("gamedata")
+        if not gamedata:
+            return []
+
+        textures: mobase.FileTreeEntry = gamedata.find("textures")
+        if textures:
+            if self.findFileExt(textures, ["dds", "thm"], ["ui"]):
+                content.append(Content.TEXTURE)
+            ui: mobase.FileTreeEntry = textures.find("ui")
+            if ui:
+                if self.findFileExt(ui, ["dds", "thm"]):
+                    content.append(Content.INTERFACE)
+
+        meshes: mobase.FileTreeEntry = gamedata.find("meshes")
+        if meshes:
+            if self.findFileExt(meshes, ["omf", "ogf"]):
+                content.append(Content.MESH)
+
+        scripts: mobase.FileTreeEntry = gamedata.find("scripts")
+        if scripts:
+            if self.findFileExt(scripts, ["script"]):
+                content.append(Content.SCRIPT)
+            if self.findFilePart(scripts, "_mcm"):
+                content.append(Content.MCM)
+
+        sounds: mobase.FileTreeEntry = gamedata.find("sounds")
+        if sounds:
+            if self.findFileExt(sounds, ["ogg"]):
+                content.append(Content.SOUND)
+
+        configs: mobase.FileTreeEntry = gamedata.find("configs")
+        if configs:
+            if self.findFileExt(configs, ["ltx"], ["ui"]):
+                content.append(Content.CONFIG)
+            ui: mobase.FileTreeEntry = gamedata.find("ui")
+            if ui:
+                if self.findFileExt(ui, ["xml"]):
+                    content.append(Content.INTERFACE)
+
+        return content
+
 
 class StalkerAnomalySaveGame(BasicGameSaveGame):
     def allFiles(self) -> List[str]:
@@ -106,6 +206,7 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer):
         BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
+        self._featureMap[mobase.ModDataContent] = StalkerAnomalyModDataContent()
         return True
 
     def executables(self):
