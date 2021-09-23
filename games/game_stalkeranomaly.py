@@ -23,13 +23,24 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
 
+    def hasValidFolders(
+        self, tree: mobase.FileTreeEntry
+    ) -> bool:
+        for e in tree:
+            if e.isDir():
+                if e.name().lower() in self._valid_folders:
+                    return True
+
+        return False
+
     def findLostDir(
         self, tree: mobase.IFileTree
     ) -> mobase.FileTreeEntry:
         if len(tree) == 1:
             sub: mobase.FileTreeEntry = tree[0]
             if sub.isDir():
-                return sub
+                if self.hasValidFolders(sub):
+                    return sub
 
     def findLostData(
         self, tree: mobase.IFileTree
@@ -43,14 +54,11 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
 
         return lost_db
 
-
     def dataLooksValid(
         self, tree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        for e in tree:
-            if e.isDir():
-                if e.name().lower() in self._valid_folders:
-                    return mobase.ModDataChecker.VALID
+        if self.hasValidFolders(tree):
+            return mobase.ModDataChecker.VALID
 
         if self.findLostDir(tree):
             return mobase.ModDataChecker.FIXABLE
