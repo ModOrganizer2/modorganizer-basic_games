@@ -23,9 +23,7 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
 
-    def hasValidFolders(
-        self, tree: mobase.FileTreeEntry
-    ) -> bool:
+    def hasValidFolders(self, tree: mobase.FileTreeEntry) -> bool:
         for e in tree:
             if e.isDir():
                 if e.name().lower() in self._valid_folders:
@@ -33,18 +31,14 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
 
         return False
 
-    def findLostDir(
-        self, tree: mobase.IFileTree
-    ) -> mobase.FileTreeEntry:
+    def findLostDir(self, tree: mobase.IFileTree) -> mobase.FileTreeEntry:
         if len(tree) == 1:
             sub: mobase.FileTreeEntry = tree[0]
             if sub.isDir():
                 if self.hasValidFolders(sub):
                     return sub
 
-    def findLostData(
-        self, tree: mobase.IFileTree
-    ) -> List[mobase.FileTreeEntry]:
+    def findLostData(self, tree: mobase.IFileTree) -> List[mobase.FileTreeEntry]:
         lost_db: List[mobase.FileTreeEntry] = []
 
         for e in tree:
@@ -114,18 +108,17 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
             mobase.ModDataContent.Content(
                 Content.SOUND, "Sounds", ":/MO/gui/content/sound"
             ),
-            mobase.ModDataContent.Content(
-                Content.MCM, "MCM", ":/MO/gui/content/menu"
-            ),
+            mobase.ModDataContent.Content(Content.MCM, "MCM", ":/MO/gui/content/menu"),
             mobase.ModDataContent.Content(
                 Content.CONFIG, "Configs", ":/MO/gui/content/inifile"
             ),
         ]
 
     def findFileExt(
-        self, entry: mobase.FileTreeEntry,
+        self,
+        entry: mobase.FileTreeEntry,
         ext: List[str],
-        ignore: Optional[List[str]] = []
+        ignore: Optional[List[str]] = [],
     ) -> bool:
         for e in entry:
             if e.isDir():
@@ -139,10 +132,7 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
         return False
 
-    def findFilePart(
-        self, entry: mobase.FileTreeEntry,
-        string: str
-    ) -> bool:
+    def findFilePart(self, entry: mobase.FileTreeEntry, string: str) -> bool:
         for e in entry:
             if e.isDir():
                 if self.findFilePart(e, string):
@@ -153,9 +143,7 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
         return False
 
-    def getContentsFor(
-        self, tree: mobase.IFileTree
-    ) -> List[int]:
+    def getContentsFor(self, tree: mobase.IFileTree) -> List[int]:
         content: List[int] = []
         gamedata: mobase.FileTreeEntry = tree.find("gamedata")
         if not gamedata:
