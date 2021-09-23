@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from enum import IntEnum
 
 from PyQt5.QtCore import QDir, QFileInfo
@@ -53,11 +53,6 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
         return mobase.ModDataChecker.INVALID
 
     def fix(self, tree: mobase.IFileTree) -> mobase.IFileTree:
-        lost_dir = self.findLostDir(tree)
-        if lost_dir:
-            tree.merge(lost_dir)
-            lost_dir.detach()
-
         lost_db = self.findLostData(tree)
         if lost_db:
             rfolder = tree.addDirectory("db").addDirectory("mods")
