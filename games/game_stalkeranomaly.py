@@ -23,7 +23,7 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
 
-    def hasValidFolders(self, tree: mobase.FileTreeEntry) -> bool:
+    def hasValidFolders(self, tree: mobase.IFileTree) -> bool:
         for e in tree:
             if e.isDir():
                 if e.name().lower() in self._valid_folders:
@@ -31,15 +31,14 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
 
         return False
 
-    def findLostDir(self, tree: mobase.IFileTree) -> mobase.FileTreeEntry:
+    def findLostDir(self, tree: mobase.IFileTree) -> mobase.IFileTree:
         if len(tree) == 1:
-            sub: mobase.FileTreeEntry = tree[0]
-            if sub.isDir():
-                if self.hasValidFolders(sub):
-                    return sub
+            sub: mobase.IFileTree = tree[0]
+            if isinstance(sub, mobase.IFileTree) and self.hasValidFolders(sub):
+                return sub
 
-    def findLostData(self, tree: mobase.IFileTree) -> List[mobase.FileTreeEntry]:
-        lost_db: List[mobase.FileTreeEntry] = []
+    def findLostData(self, tree: mobase.IFileTree) -> List[mobase.IFileTree]:
+        lost_db: List[mobase.IFileTree] = []
 
         for e in tree:
             if e.isFile():
@@ -116,11 +115,11 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
     def findFileExt(
         self,
-        entry: mobase.FileTreeEntry,
+        tree: mobase.IFileTree,
         ext: List[str],
         ignore: Optional[List[str]] = [],
     ) -> bool:
-        for e in entry:
+        for e in tree:
             if e.isDir():
                 if e.name().lower() in ignore:
                     continue
@@ -132,7 +131,7 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
         return False
 
-    def findFilePart(self, entry: mobase.FileTreeEntry, string: str) -> bool:
+    def findFilePart(self, entry: mobase.IFileTree, string: str) -> bool:
         for e in entry:
             if e.isDir():
                 if self.findFilePart(e, string):
@@ -145,43 +144,43 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
     def getContentsFor(self, tree: mobase.IFileTree) -> List[int]:
         content: List[int] = []
-        gamedata: mobase.FileTreeEntry = tree.find("gamedata")
+        gamedata: mobase.IFileTree = tree.find("gamedata")
         if not gamedata:
             return []
 
-        textures: mobase.FileTreeEntry = gamedata.find("textures")
+        textures: mobase.IFileTree = gamedata.find("textures")
         if textures:
             if self.findFileExt(textures, ["dds", "thm"], ["ui"]):
                 content.append(Content.TEXTURE)
-            ui: mobase.FileTreeEntry = textures.find("ui")
+            ui: mobase.IFileTree = textures.find("ui")
             if ui:
                 if self.findFileExt(ui, ["dds", "thm"]):
                     content.append(Content.INTERFACE)
 
-        meshes: mobase.FileTreeEntry = gamedata.find("meshes")
+        meshes: mobase.IFileTree = gamedata.find("meshes")
         if meshes:
             if self.findFileExt(meshes, ["omf", "ogf"]):
                 content.append(Content.MESH)
 
-        scripts: mobase.FileTreeEntry = gamedata.find("scripts")
+        scripts: mobase.IFileTree = gamedata.find("scripts")
         if scripts:
             if self.findFileExt(scripts, ["script"]):
                 content.append(Content.SCRIPT)
             if self.findFilePart(scripts, "_mcm"):
                 content.append(Content.MCM)
 
-        sounds: mobase.FileTreeEntry = gamedata.find("sounds")
+        sounds: mobase.IFileTree = gamedata.find("sounds")
         if sounds:
             if self.findFileExt(sounds, ["ogg"]):
                 content.append(Content.SOUND)
 
-        configs: mobase.FileTreeEntry = gamedata.find("configs")
+        configs: mobase.IFileTree = gamedata.find("configs")
         if configs:
             if self.findFileExt(configs, ["ltx"], ["ui"]):
                 content.append(Content.CONFIG)
-            ui: mobase.FileTreeEntry = gamedata.find("ui")
-            if ui:
-                if self.findFileExt(ui, ["xml"]):
+            config_ui: mobase.IFileTree = configs.find("ui")
+            if config_ui:
+                if self.findFileExt(config_ui, ["xml"]):
                     content.append(Content.INTERFACE)
 
         return content
