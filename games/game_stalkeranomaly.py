@@ -13,13 +13,35 @@ from ..basic_game import BasicGame
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
     _valid_folders: List[str] = [
-        "db",
         "appdata",
+        "bin",
+        "db",
         "gamedata",
     ]
 
     def __init__(self):
         super().__init__()
+
+    def findLostDir(
+        self, tree: mobase.IFileTree
+    ) -> mobase.FileTreeEntry:
+        if len(tree) == 1:
+            sub: mobase.FileTreeEntry = tree[0]
+            if sub.isDir():
+                return sub
+
+    def findLostData(
+        self, tree: mobase.IFileTree
+    ) -> List[mobase.FileTreeEntry]:
+        lost_db: List[mobase.FileTreeEntry] = []
+
+        for e in tree:
+            if e.isFile():
+                if e.suffix().lower().startswith("db"):
+                    lost_db.append(e)
+
+        return lost_db
+
 
     def dataLooksValid(
         self, tree: mobase.IFileTree
@@ -29,7 +51,28 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
                 if e.name().lower() in self._valid_folders:
                     return mobase.ModDataChecker.VALID
 
+        if self.findLostDir(tree):
+            return mobase.ModDataChecker.FIXABLE
+
+        if self.findLostData(tree):
+            return mobase.ModDataChecker.FIXABLE
+
         return mobase.ModDataChecker.INVALID
+
+    def fix(self, tree: mobase.IFileTree) -> mobase.IFileTree:
+        lost_dir = self.findLostDir(tree)
+        if lost_dir:
+            tree.merge(lost_dir)
+            lost_dir.detach()
+
+        lost_db = self.findLostData(tree)
+        if lost_db:
+            rfolder = tree.addDirectory("db").addDirectory("mods")
+            for r in lost_db:
+                rfolder.insert(r, mobase.IFileTree.REPLACE)
+
+        return tree
+
 
 
 class StalkerAnomalySaveGame(BasicGameSaveGame):
