@@ -99,17 +99,32 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
     def getAllContents(self) -> List[mobase.ModDataContent.Content]:
         return [
-            mobase.ModDataContent.Content(Content.INTERFACE, "Interface", ":/MO/gui/content/interface"),
-            mobase.ModDataContent.Content(Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
-            mobase.ModDataContent.Content(Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
-            mobase.ModDataContent.Content(Content.SCRIPT, "Scripts", ":/MO/gui/content/script"),
-            mobase.ModDataContent.Content(Content.SOUND, "Sounds", ":/MO/gui/content/sound"),
-            mobase.ModDataContent.Content(Content.MCM, "MCM", ":/MO/gui/content/menu"),
-            mobase.ModDataContent.Content(Content.CONFIG, "Configs", ":/MO/gui/content/inifile"),
+            mobase.ModDataContent.Content(
+                Content.INTERFACE, "Interface", ":/MO/gui/content/interface"
+            ),
+            mobase.ModDataContent.Content(
+                Content.TEXTURE, "Textures", ":/MO/gui/content/texture"
+            ),
+            mobase.ModDataContent.Content(
+                Content.MESH, "Meshes", ":/MO/gui/content/mesh"
+            ),
+            mobase.ModDataContent.Content(
+                Content.SCRIPT, "Scripts", ":/MO/gui/content/script"
+            ),
+            mobase.ModDataContent.Content(
+                Content.SOUND, "Sounds", ":/MO/gui/content/sound"
+            ),
+            mobase.ModDataContent.Content(
+                Content.MCM, "MCM", ":/MO/gui/content/menu"
+            ),
+            mobase.ModDataContent.Content(
+                Content.CONFIG, "Configs", ":/MO/gui/content/inifile"
+            ),
         ]
 
     def findFileExt(
-        self, entry: mobase.FileTreeEntry, ext: List[str],
+        self, entry: mobase.FileTreeEntry,
+        ext: List[str],
         ignore: Optional[List[str]] = []
     ) -> bool:
         for e in entry:
@@ -125,7 +140,8 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
         return False
 
     def findFilePart(
-        self, entry: mobase.FileTreeEntry, string: str
+        self, entry: mobase.FileTreeEntry,
+        string: str
     ) -> bool:
         for e in entry:
             if e.isDir():
