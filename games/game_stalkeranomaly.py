@@ -188,7 +188,7 @@ class StalkerAnomalySaveGame(BasicGameSaveGame):
 class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     Name = "STALKER Anomaly"
     Author = "Qudix"
-    Version = "0.3.1"
+    Version = "0.4.0"
     Description = "Adds support for STALKER Anomaly"
 
     GameName = "STALKER Anomaly"
