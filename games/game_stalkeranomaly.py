@@ -238,10 +238,10 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
         self._featureMap[mobase.ModDataContent] = StalkerAnomalyModDataContent()
         self._featureMap[mobase.SaveGameInfo] = StalkerAnomalySaveGameInfo()
-        organizer.onAboutToRun(lambda _str : self.aboutToRun(_str))
+        organizer.onAboutToRun(lambda _str: self.aboutToRun(_str))
         return True
 
-    def aboutToRun(self, _str: str):
+    def aboutToRun(self, _str: str) -> bool:
         gamedir = self.gameDirectory()
         if gamedir.exists():
             # For mappings
@@ -251,7 +251,7 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
             dbg_path = Path(self._gamePath, "gamedata/configs/cache_dbg.ltx")
             if not dbg_path.exists():
                 dbg_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(dbg_path, "w", encoding="utf-8") as file:
+                with open(dbg_path, "w", encoding="utf-8") as file:  # noqa
                     pass
         return True
 
