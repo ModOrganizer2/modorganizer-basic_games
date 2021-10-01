@@ -224,9 +224,10 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     GameShortName = "stalkeranomaly"
     GameBinary = "AnomalyLauncher.exe"
     GameDataPath = ""
+    GameDocumentsDirectory = "%GAME_PATH%/appdata"
 
     GameSaveExtension = "scop"
-    GameSavesDirectory = "%GAME_PATH%/appdata/savedgames"
+    GameSavesDirectory = "%GAME_DOCUMENTS%/savedgames"
 
     def __init__(self):
         BasicGame.__init__(self)
@@ -237,9 +238,24 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
         self._featureMap[mobase.ModDataContent] = StalkerAnomalyModDataContent()
         self._featureMap[mobase.SaveGameInfo] = StalkerAnomalySaveGameInfo()
+        organizer.onAboutToRun(lambda _str : self.aboutToRun(_str))
         return True
 
-    def executables(self):
+    def aboutToRun(self, _str: str):
+        gamedir = self.gameDirectory()
+        if gamedir.exists():
+            # For mappings
+            gamedir.mkdir("appdata")
+            # The game will crash if this file exists in the
+            # virtual tree rather than the game dir
+            dbg_path = Path(self._gamePath, "gamedata/configs/cache_dbg.ltx")
+            if not dbg_path.exists():
+                dbg_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(dbg_path, "w", encoding="utf-8") as file:
+                    pass
+        return True
+
+    def executables(self) -> List[mobase.ExecutableInfo]:
         info = [
             ["Anomaly Launcher", "AnomalyLauncher.exe"],
             ["Anomaly (DX11-AVX)", "bin/AnomalyDX11AVX.exe"],
@@ -264,11 +280,10 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         ]
 
     def mappings(self) -> List[mobase.Mapping]:
-        self.gameDirectory().mkdir("appdata")
-
+        appdata = self.gameDirectory().filePath("appdata")
         m = mobase.Mapping()
         m.createTarget = True
         m.isDirectory = True
-        m.source = self.gameDirectory().filePath("appdata")
-        m.destination = self.gameDirectory().filePath("appdata")
+        m.source = appdata
+        m.destination = appdata
         return [m]
