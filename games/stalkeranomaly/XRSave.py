@@ -82,17 +82,23 @@ class XRSave:
                 self.readObject(stream)
 
     def fetchInfo(self):
-        save_clean = self.filepath.name.split(".scop", 1)[0]
-        save_split = save_clean.split(" - ", 1)
-        self.user = save_split[0]
-        save_end = save_split[1].split("_", 1)
-        if len(save_end) > 1:
-            self.save_fmt = f"{save_end[0]} (#{save_end[1]})".title()
-        else:
-            self.save_fmt = f"{save_end[0]}".title()
+        self.splitInfo()
         self.time = self.filepath.stat().st_mtime
         self.time_date = datetime.fromtimestamp(self.time)
         self.time_fmt = self.time_date.strftime("%I:%M %m/%d/%Y")
+
+    def splitInfo(self):
+        save_clean = self.filepath.name.split(".scop", 1)[0]
+        save_split = save_clean.split(" - ", 1)
+        self.user = save_split[0]
+        if len(save_split) > 1:
+            save_end = save_split[1].split("_", 1)
+            if len(save_end) > 1:
+                self.save_fmt = f"{save_end[0]} (#{save_end[1]})".title()
+            else:
+                self.save_fmt = f"{save_end[0]}".title()
+        else:
+            self.save_fmt = "Unknown"
 
     def readFile(self, file) -> Optional[XRStream]:
         size = self.filepath.stat().st_size
