@@ -222,6 +222,8 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
 
     GameName = "STALKER Anomaly"
     GameShortName = "stalkeranomaly"
+    GameNexusName = "stalkeranomaly"
+    GameNexusId = 3743
     GameBinary = "AnomalyLauncher.exe"
     GameDataPath = ""
     GameDocumentsDirectory = "%GAME_PATH%/appdata"
