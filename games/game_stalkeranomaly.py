@@ -4,12 +4,18 @@ from pathlib import Path
 from typing import List
 from enum import IntEnum
 
-from PyQt5.QtCore import QDir, QFileInfo
+from PyQt5.QtCore import Qt, QDir, QFileInfo
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 import mobase
 
-from ..basic_features.basic_save_game_info import BasicGameSaveGame
+from ..basic_features.basic_save_game_info import (
+    BasicGameSaveGame,
+    BasicGameSaveGameInfo,
+)
 from ..basic_game import BasicGame
+
+from .stalkeranomaly import XRSave
 
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
@@ -19,9 +25,6 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
         "db",
         "gamedata",
     ]
-
-    def __init__(self):
-        super().__init__()
 
     def hasValidFolders(self, tree: mobase.IFileTree) -> bool:
         for e in tree:
@@ -74,9 +77,6 @@ class Content(IntEnum):
 
 class StalkerAnomalyModDataContent(mobase.ModDataContent):
     content: List[int] = []
-
-    def __init__(self):
-        super().__init__()
 
     def getAllContents(self) -> List[mobase.ModDataContent.Content]:
         return [
@@ -133,28 +133,103 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
 
 class StalkerAnomalySaveGame(BasicGameSaveGame):
+    _filepath: Path
+
+    xr_save: XRSave
+
+    def __init__(self, filepath: Path):
+        super().__init__(filepath)
+        self._filepath = filepath
+        self.xr_save = XRSave(self._filepath)
+
+    def getName(self) -> str:
+        xr_save = self.xr_save
+        player = xr_save.player
+        if player:
+            name = player.character_name_str
+            time = xr_save.time_fmt
+            return f"{name}, {xr_save.save_fmt} [{time}]"
+        return ""
+
     def allFiles(self) -> List[str]:
-        filepath = self.getFilepath()
-        return [
-            filepath,
-            filepath.replace("scop", "scoc"),
-            filepath.replace("scop", "dds"),
-        ]
+        filepath = str(self._filepath)
+        paths = [filepath]
+        scoc = filepath.replace(".scop", ".scoc")
+        if Path(scoc).exists():
+            paths.append(scoc)
+        dds = filepath.replace(".scop", ".dds")
+        if Path(dds).exists():
+            paths.append(dds)
+        return paths
+
+
+class StalkerAnomalySaveGameInfoWidget(mobase.ISaveGameInfoWidget):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        layout = QVBoxLayout()
+        self._labelSave = self.newLabel(layout)
+        self._labelName = self.newLabel(layout)
+        self._labelFaction = self.newLabel(layout)
+        self._labelHealth = self.newLabel(layout)
+        self._labelMoney = self.newLabel(layout)
+        self._labelRank = self.newLabel(layout)
+        self._labelRep = self.newLabel(layout)
+        self.setLayout(layout)
+        palette = self.palette()
+        palette.setColor(self.backgroundRole(), Qt.black)
+        self.setAutoFillBackground(True)
+        self.setPalette(palette)
+        self.setWindowFlags(Qt.ToolTip | Qt.BypassGraphicsProxyWidget)  # type: ignore
+
+    def newLabel(self, layout: QVBoxLayout) -> QLabel:
+        label = QLabel()
+        label.setAlignment(Qt.AlignLeft)
+        palette = label.palette()
+        palette.setColor(label.foregroundRole(), Qt.white)
+        label.setPalette(palette)
+        layout.addWidget(label)
+        layout.addStretch()
+        return label
+
+    def setSave(self, save: mobase.ISaveGame):
+        self.resize(240, 32)
+        if not isinstance(save, StalkerAnomalySaveGame):
+            return
+        xr_save = save.xr_save
+        player = xr_save.player
+        if player:
+            self._labelSave.setText(f"Save: {xr_save.save_fmt}")
+            self._labelName.setText(f"Name: {player.character_name_str}")
+            self._labelFaction.setText(f"Faction: {xr_save.getFaction()}")
+            self._labelHealth.setText(f"Health: {player.health:.2f}%")
+            self._labelMoney.setText(f"Money: {player.money} RU")
+            self._labelRank.setText(f"Rank: {xr_save.getRank()} ({player.rank})")
+            self._labelRep.setText(
+                f"Reputation: {xr_save.getReputation()} ({player.reputation})"
+            )
+
+
+class StalkerAnomalySaveGameInfo(BasicGameSaveGameInfo):
+    def getSaveGameWidget(self, parent=None):
+        return StalkerAnomalySaveGameInfoWidget(parent)
 
 
 class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
     Name = "STALKER Anomaly"
     Author = "Qudix"
-    Version = "0.4.0"
+    Version = "0.5.0"
     Description = "Adds support for STALKER Anomaly"
 
     GameName = "STALKER Anomaly"
     GameShortName = "stalkeranomaly"
+    GameNexusName = "stalkeranomaly"
+    GameNexusId = 3743
     GameBinary = "AnomalyLauncher.exe"
     GameDataPath = ""
+    GameDocumentsDirectory = "%GAME_PATH%/appdata"
 
     GameSaveExtension = "scop"
-    GameSavesDirectory = "%GAME_PATH%/appdata/savedgames"
+    GameSavesDirectory = "%GAME_DOCUMENTS%/savedgames"
 
     def __init__(self):
         BasicGame.__init__(self)
@@ -164,42 +239,39 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
         self._featureMap[mobase.ModDataContent] = StalkerAnomalyModDataContent()
+        self._featureMap[mobase.SaveGameInfo] = StalkerAnomalySaveGameInfo()
+        organizer.onAboutToRun(lambda _str: self.aboutToRun(_str))
         return True
 
-    def executables(self):
+    def aboutToRun(self, _str: str) -> bool:
+        gamedir = self.gameDirectory()
+        if gamedir.exists():
+            # For mappings
+            gamedir.mkdir("appdata")
+            # The game will crash if this file exists in the
+            # virtual tree rather than the game dir
+            dbg_path = Path(self._gamePath, "gamedata/configs/cache_dbg.ltx")
+            if not dbg_path.exists():
+                dbg_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(dbg_path, "w", encoding="utf-8") as file:  # noqa
+                    pass
+        return True
+
+    def executables(self) -> List[mobase.ExecutableInfo]:
+        info = [
+            ["Anomaly Launcher", "AnomalyLauncher.exe"],
+            ["Anomaly (DX11-AVX)", "bin/AnomalyDX11AVX.exe"],
+            ["Anomaly (DX11)", "bin/AnomalyDX11.exe"],
+            ["Anomaly (DX10-AVX)", "bin/AnomalyDX10AVX.exe"],
+            ["Anomaly (DX10)", "bin/AnomalyDX10.exe"],
+            ["Anomaly (DX9-AVX)", "bin/AnomalyDX9AVX.exe"],
+            ["Anomaly (DX9)", "bin/AnomalyDX9.exe"],
+            ["Anomaly (DX8-AVX)", "bin/AnomalyDX8AVX.exe"],
+            ["Anomaly (DX8)", "bin/AnomalyDX8.exe"],
+        ]
+        gamedir = self.gameDirectory()
         return [
-            mobase.ExecutableInfo(
-                "Anomaly Launcher",
-                QFileInfo(self.gameDirectory(), "AnomalyLauncher.exe"),
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX11-AVX)",
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX11AVX.exe"),
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX11)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX11.exe")
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX10-AVX)",
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX10AVX.exe"),
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX10)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX10.exe")
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX9-AVX)",
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX9AVX.exe"),
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX9)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX9.exe")
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX8-AVX)",
-                QFileInfo(self.gameDirectory(), "bin/AnomalyDX8AVX.exe"),
-            ),
-            mobase.ExecutableInfo(
-                "Anomaly (DX8)", QFileInfo(self.gameDirectory(), "bin/AnomalyDX8.exe")
-            ),
+            mobase.ExecutableInfo(inf[0], QFileInfo(gamedir, inf[1])) for inf in info
         ]
 
     def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
@@ -210,11 +282,10 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         ]
 
     def mappings(self) -> List[mobase.Mapping]:
-        self.gameDirectory().mkdir("appdata")
-
+        appdata = self.gameDirectory().filePath("appdata")
         m = mobase.Mapping()
         m.createTarget = True
         m.isDirectory = True
-        m.source = self.gameDirectory().filePath("appdata")
-        m.destination = self.gameDirectory().filePath("appdata")
+        m.source = appdata
+        m.destination = appdata
         return [m]
