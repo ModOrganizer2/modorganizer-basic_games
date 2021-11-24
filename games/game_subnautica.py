@@ -9,7 +9,7 @@ class SubnauticaGame(BasicGame):
 
     GameName = "Subnautica"
     GameShortName = "subnautica"
-    GaneNexusHame = "subnautica"
+    GameNexusName = "subnautica"
     GameSteamId = 264710
     GameBinary = "Subnautica.exe"
     GameDataPath = "QMods"
