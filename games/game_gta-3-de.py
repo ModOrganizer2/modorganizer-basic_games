@@ -9,6 +9,7 @@ import mobase
 
 from ..basic_game import BasicGame
 
+
 class GTA3DefinitiveEditionGame(BasicGame):
 
     Name = "Grand Theft Auto III - Definitive Edition Support Plugin"
