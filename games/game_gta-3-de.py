@@ -1,11 +1,25 @@
 import os
 
-from PyQt5.QtCore import QDir
-from PyQt5.QtCore import QFileInfo
+from pathlib import Path
+from PyQt5.QtCore import QDir, QFileInfo
 
 import mobase
 
 from ..basic_game import BasicGame
+
+
+class GTA3DefinitiveEditionModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        for entry in tree:
+            if Path(entry.name().casefold()).suffix == ".pak":
+                return mobase.ModDataChecker.VALID
+
+        return mobase.ModDataChecker.INVALID
 
 
 class GTA3DefinitiveEditionGame(BasicGame):
@@ -25,6 +39,10 @@ class GTA3DefinitiveEditionGame(BasicGame):
     )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = GTA3DefinitiveEditionModDataChecker()
 
     def executables(self):
         return [

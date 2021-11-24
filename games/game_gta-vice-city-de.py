@@ -1,14 +1,27 @@
 import os
 
-from PyQt5.QtCore import QDir
-from PyQt5.QtCore import QFileInfo
+from pathlib import Path
+from PyQt5.QtCore import QDir,QFileInfo
 
 import mobase
 
 from ..basic_game import BasicGame
 
 
-class GTASanAndreasDefinitiveEditionGame(BasicGame):
+class GTAViceCitysDefinitiveEditionModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        for entry in tree:
+            if Path(entry.name().casefold()).suffix == ".pak":
+                return mobase.ModDataChecker.VALID
+
+        return mobase.ModDataChecker.INVALID
+
+class GTAViceCityDefinitiveEditionGame(BasicGame):
 
     Name = "Grand Theft Auto: Vice City - Definitive Edition Support Plugin"
     Author = "dekart811"
@@ -25,6 +38,11 @@ class GTASanAndreasDefinitiveEditionGame(BasicGame):
     )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = GTAViceCitysDefinitiveEditionModDataChecker()
+        return True
 
     def executables(self):
         return [
