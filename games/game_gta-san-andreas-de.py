@@ -9,6 +9,7 @@ import mobase
 
 from ..basic_game import BasicGame
 
+
 class GTASanAndreasDefinitiveEditionGame(BasicGame):
 
     Name = "Grand Theft Auto: San Andreas - Definitive Edition Support Plugin"
