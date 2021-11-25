@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import shutil
+import sys
 from pathlib import Path
 from typing import Callable, Dict, Generic, List, Optional, TypeVar, Union
 
@@ -202,6 +203,8 @@ class BasicGameMappings:
     savegameExtension: BasicGameMapping[str]
     steamAPPId: BasicGameOptionsMapping[str]
     gogAPPId: BasicGameOptionsMapping[str]
+    originManifestIds: BasicGameOptionsMapping[str]
+    originWatcherExecutables: BasicGameMapping[List[str]]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -299,6 +302,20 @@ class BasicGameMappings:
         self.gogAPPId = BasicGameOptionsMapping(
             game, "GameGogId", "gogAPPId", default=lambda g: "", apply_fn=ids_apply
         )
+        self.originManifestIds = BasicGameOptionsMapping(
+            game,
+            "GameOriginManifestIds",
+            "originManifestIds",
+            default=lambda g: "",
+            apply_fn=ids_apply,
+        )
+        self.originWatcherExecutables = BasicGameMapping(
+            game,
+            "GameOriginWatcherExecutables",
+            "originWatcherExecutables",
+            apply_fn=lambda s: [s] if isinstance(s, str) else s,
+            default=lambda g: [],
+        )
 
 
 class BasicGame(mobase.IPluginGame):
@@ -307,17 +324,20 @@ class BasicGame(mobase.IPluginGame):
     to make it easier to create game plugins without having to implement
     all the methods of mobase.IPluginGame."""
 
-    # List of steam and GOG games:
+    # List of steam, GOG, and origin games:
     steam_games: Dict[str, Path]
     gog_games: Dict[str, Path]
+    origin_games: Dict[str, Path]
 
     @staticmethod
     def setup():
         from .gog_utils import find_games as find_gog_games
         from .steam_utils import find_games as find_steam_games
+        from .origin_utils import find_games as find_origin_games
 
         BasicGame.steam_games = find_steam_games()
         BasicGame.gog_games = find_gog_games()
+        BasicGame.origin_games = find_origin_games()
 
     # File containing the plugin:
     _fromName: str
@@ -349,10 +369,29 @@ class BasicGame(mobase.IPluginGame):
     def is_gog(self) -> bool:
         return self._mappings.gogAPPId.has_value()
 
+    def is_origin(self) -> bool:
+        return self._mappings.originManifestIds.has_value()
+
     # IPlugin interface:
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
+        if self._mappings.originWatcherExecutables.get():
+            from .origin_utils import OriginWatcher
+
+            self.origin_watcher = OriginWatcher(
+                self._mappings.originWatcherExecutables.get()
+            )
+            if not self._organizer.onAboutToRun(
+                lambda appName: self.origin_watcher.spawn_origin_watcher()
+            ):
+                print("Failed to register onAboutToRun callback!", file=sys.stderr)
+                return False
+            if not self._organizer.onFinishedRun(
+                lambda appName, result: self.origin_watcher.stop_origin_watcher()
+            ):
+                print("Failed to register onFinishedRun callback!", file=sys.stderr)
+                return False
         return True
 
     def name(self) -> str:
@@ -388,6 +427,11 @@ class BasicGame(mobase.IPluginGame):
         for gog_id in self._mappings.gogAPPId.get():
             if gog_id in BasicGame.gog_games:
                 self.setGamePath(BasicGame.gog_games[gog_id])
+                return
+
+        for origin_manifest_id in self._mappings.originManifestIds.get():
+            if origin_manifest_id in BasicGame.origin_games:
+                self.setGamePath(BasicGame.origin_games[origin_manifest_id])
                 return
 
     def gameName(self) -> str:
@@ -523,6 +567,9 @@ class BasicGame(mobase.IPluginGame):
         for gogid, gogpath in BasicGame.gog_games.items():
             if gogpath == path:
                 self._mappings.steamAPPId.set_value(gogid)
+        for originid, originpath in BasicGame.origin_games.items():
+            if originpath == path:
+                self._mappings.originManifestIds.set_value(originid)
 
     def documentsDirectory(self) -> QDir:
         return self._mappings.documentsDirectory.get()
