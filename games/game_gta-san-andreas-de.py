@@ -8,6 +8,20 @@ import mobase
 from ..basic_game import BasicGame
 
 
+class GTASanAndreasDefinitiveEditionModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        for entry in tree:
+            if Path(entry.name().casefold()).suffix == ".pak":
+                return mobase.ModDataChecker.VALID
+
+        return mobase.ModDataChecker.INVALID
+
+
 class GTASanAndreasDefinitiveEditionGame(BasicGame):
 
     Name = "Grand Theft Auto: San Andreas - Definitive Edition Support Plugin"
@@ -25,6 +39,11 @@ class GTASanAndreasDefinitiveEditionGame(BasicGame):
     )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = GTASanAndreasDefinitiveEditionModDataChecker()
+        return True
 
     def executables(self):
         return [
