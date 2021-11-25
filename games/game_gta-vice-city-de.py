@@ -8,6 +8,19 @@ import mobase
 from ..basic_game import BasicGame
 
 
+class GTAViceCitysDefinitiveEditionModDataChecker(mobase.ModDataChecker):
+    def __init__(self):
+        super().__init__()
+
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        for entry in tree:
+            if Path(entry.name().casefold()).suffix == ".pak":
+                return mobase.ModDataChecker.VALID
+
+        return mobase.ModDataChecker.INVALID
+
 class GTAViceCityDefinitiveEditionGame(BasicGame):
 
     Name = "Grand Theft Auto: Vice City - Definitive Edition Support Plugin"
@@ -25,6 +38,11 @@ class GTAViceCityDefinitiveEditionGame(BasicGame):
     )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.ModDataChecker] = GTAViceCitysDefinitiveEditionModDataChecker()
+        return True
 
     def executables(self):
         return [
