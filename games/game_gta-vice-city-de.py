@@ -8,7 +8,7 @@ import mobase
 from ..basic_game import BasicGame
 
 
-class GTASanAndreasDefinitiveEditionGame(BasicGame):
+class GTAViceCityDefinitiveEditionGame(BasicGame):
 
     Name = "Grand Theft Auto: Vice City - Definitive Edition Support Plugin"
     Author = "dekart811"
