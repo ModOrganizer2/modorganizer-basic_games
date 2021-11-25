@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import shutil
+import sys
 from pathlib import Path
 from typing import Callable, Dict, Generic, List, Optional, TypeVar, Union
 
@@ -203,6 +204,7 @@ class BasicGameMappings:
     steamAPPId: BasicGameOptionsMapping[str]
     gogAPPId: BasicGameOptionsMapping[str]
     originManifestIds: BasicGameOptionsMapping[str]
+    originWatcherExecutables: BasicGameMapping[List[str]]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -301,7 +303,18 @@ class BasicGameMappings:
             game, "GameGogId", "gogAPPId", default=lambda g: "", apply_fn=ids_apply
         )
         self.originManifestIds = BasicGameOptionsMapping(
-            game, "GameOriginManifestIds", "originManifestIds", default=lambda g: "", apply_fn=ids_apply
+            game,
+            "GameOriginManifestIds",
+            "originManifestIds",
+            default=lambda g: "",
+            apply_fn=ids_apply,
+        )
+        self.originWatcherExecutables = BasicGameMapping(
+            game,
+            "GameOriginWatcherExecutables",
+            "originWatcherExecutables",
+            apply_fn=lambda s: [s] if isinstance(s, str) else s,
+            default=lambda g: [],
         )
 
 
@@ -363,6 +376,22 @@ class BasicGame(mobase.IPluginGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
+        if self._mappings.originWatcherExecutables.get():
+            from .origin_utils import OriginWatcher
+
+            self.origin_watcher = OriginWatcher(
+                self._mappings.originWatcherExecutables.get()
+            )
+            if not self._organizer.onAboutToRun(
+                lambda appName: self.origin_watcher.spawn_origin_watcher()
+            ):
+                print("Failed to register onAboutToRun callback!", file=sys.stderr)
+                return False
+            if not self._organizer.onFinishedRun(
+                lambda appName, result: self.origin_watcher.stop_origin_watcher()
+            ):
+                print("Failed to register onFinishedRun callback!", file=sys.stderr)
+                return False
         return True
 
     def name(self) -> str:
