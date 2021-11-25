@@ -3,11 +3,10 @@ import os
 from PyQt5.QtCore import QDir
 from PyQt5.QtCore import QFileInfo
 
-from typing import List, Optional
-
 import mobase
 
 from ..basic_game import BasicGame
+
 
 class GTASanAndreasDefinitiveEditionGame(BasicGame):
 
@@ -17,10 +16,13 @@ class GTASanAndreasDefinitiveEditionGame(BasicGame):
 
     GameName = "GTA: Vice City - Definitive Edition"
     GameShortName = "grandtheftautothetrilogy"
-    GameNexusHame = "grandtheftautothetrilogy"
+    GameNexusName = "grandtheftautothetrilogy"
     GameBinary = "Gameface/Binaries/Win64/ViceCity.exe"
     GameDataPath = "Gameface/Content/Paks/~mods"
-    GameDocumentsDirectory = "%USERPROFILE%/Documents/Rockstar Games/GTA Vice City Definitive Edition/Config/WindowsNoEditor"
+    GameDocumentsDirectory = (
+        "%USERPROFILE%/Documents/Rockstar Games/"
+        "GTA Vice City Definitive Edition/Config/WindowsNoEditor"
+    )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
 
