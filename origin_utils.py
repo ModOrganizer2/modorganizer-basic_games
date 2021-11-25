@@ -6,7 +6,6 @@ import os
 import psutil
 import threading
 import time
-import sys
 
 from pathlib import Path
 from typing import Dict, List
