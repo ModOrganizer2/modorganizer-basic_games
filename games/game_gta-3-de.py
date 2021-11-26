@@ -43,6 +43,7 @@ class GTA3DefinitiveEditionGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = GTA3DefinitiveEditionModDataChecker()
+        return True
 
     def executables(self):
         return [
