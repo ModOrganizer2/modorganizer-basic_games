@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(basic_games LANGUAGES NONE)
+project(basic_games LANGUAGES CXX)
 set(project_type python_module_plugin)
 set(enable_warnings OFF)
 set(create_translations OFF)
