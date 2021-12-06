@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 from typing import Callable, Dict, Generic, List, Optional, TypeVar, Union
 
-from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
-from PyQt5.QtGui import QIcon
+from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt6.QtGui import QIcon
 
 import mobase
 
@@ -19,12 +19,12 @@ def replace_variables(value: str, game: "BasicGame") -> str:
     if value.find("%DOCUMENTS%") != -1:
         value = value.replace(
             "%DOCUMENTS%",
-            QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+            QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
         )
     if value.find("%USERPROFILE%") != -1:
         value = value.replace(
             "%USERPROFILE%",
-            QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+            QStandardPaths.writableLocation(QStandardPaths.StandardLocation.HomeLocation),
         )
     if value.find("%GAME_DOCUMENTS%") != -1:
         value = value.replace(
@@ -211,11 +211,11 @@ class BasicGameMappings:
 
         folders = [
             "{}/My Games/{}".format(
-                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+                QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
                 game.gameName(),
             ),
             "{}/{}".format(
-                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
+                QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
                 game.gameName(),
             ),
         ]

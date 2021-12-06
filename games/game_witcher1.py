@@ -2,7 +2,7 @@
 from typing import List
 from pathlib import Path
 
-from PyQt5.QtCore import QFileInfo, QDir
+from PyQt6.QtCore import QFileInfo, QDir
 
 import mobase
 

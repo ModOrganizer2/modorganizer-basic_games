@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import mobase
-from PyQt5.QtCore import QFileInfo
+from PyQt6.QtCore import QFileInfo
 from ..basic_game import BasicGame
 from typing import List
 

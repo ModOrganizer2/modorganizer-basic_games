@@ -2,7 +2,7 @@
 
 import struct
 
-from PyQt5.QtGui import QImage
+from PyQt6.QtGui import QImage
 
 import mobase
 

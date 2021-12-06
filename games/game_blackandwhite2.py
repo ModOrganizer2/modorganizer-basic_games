@@ -7,8 +7,8 @@ import time
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt
-from PyQt5.QtGui import QPixmap, QPainter
+from PyQt6.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt
+from PyQt6.QtGui import QPixmap, QPainter
 
 import mobase
 
