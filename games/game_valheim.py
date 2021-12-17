@@ -98,6 +98,7 @@ class ValheimGameModDataChecker(mobase.ModDataChecker):
             "BepInExPack_Valheim",
         },
         valid={
+            "meta.ini",  # Included in installed mod folder.
             "BepInEx",
             "doorstop_libs",
             "unstripped_corlib",
