@@ -31,13 +31,16 @@ class VampireModDataChecker(mobase.ModDataChecker):
             "vdata",
         ]
 
-    def dataLooksValid(self, tree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, tree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         for entry in tree:
             if not entry.isDir():
                 continue
             if entry.name().casefold() in self.validDirNames:
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.INVALID
+
 
 class VampireSaveGame(BasicGameSaveGame):
     _filepath: Path
@@ -47,6 +50,7 @@ class VampireSaveGame(BasicGameSaveGame):
         self._filepath = filepath
         self.name = None
         self.elapsedTime = None
+
 
 class VampireLocalSavegames(mobase.LocalSavegames):
     def __init__(self, myGameSaveDir):
@@ -64,6 +68,7 @@ class VampireLocalSavegames(mobase.LocalSavegames):
 
     def prepareProfile(self, profile):
         return profile.localSavesEnabled()
+
 
 class VampireTheMasqueradeBloodlinesGame(BasicGame):
     Name = "Vampire - The Masquerade: Bloodlines Support Plugin"
@@ -87,7 +92,9 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = VampireModDataChecker()
         self._featureMap[mobase.SaveGameInfo] = VampireSaveGame(self.savesDirectory())
-        self._featureMap[mobase.LocalSavegames] = VampireLocalSavegames(self.savesDirectory())
+        self._featureMap[mobase.LocalSavegames] = VampireLocalSavegames(
+            self.savesDirectory()
+        )
         return True
 
     def initializeProfile(self, path: QDir, settings: int):
