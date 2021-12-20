@@ -134,6 +134,7 @@ class DebugTable:
 class OverwriteSync:
     organizer: mobase.IOrganizer
     game: mobase.IPluginGame
+    search_file_contents: bool = True
 
     overwrite_file_pattern: Iterable[str] = ["BepInEx/config/*"]
     """File pattern (glob) in overwrite folder."""
@@ -149,17 +150,6 @@ class OverwriteSync:
     def __init__(self, organizer: mobase.IOrganizer, game: mobase.IPluginGame) -> None:
         self.organizer = organizer
         self.game = game
-
-    def register_event_handler(self):
-        self.organizer.onUserInterfaceInitialized(lambda win: self.sync())
-        self.organizer.onFinishedRun(self.game_finished_event_handler)
-
-    def game_finished_event_handler(self, app_path: str, *args) -> None:
-        """Sync overwrite folder with mods after game was closed."""
-        if Path(app_path) == Path(
-            self.game.gameDirectory().absolutePath(), self.game.binaryName()
-        ):
-            self.sync()
 
     def sync(self) -> None:
         """Sync the Overwrite folder (back) to the mods."""
@@ -235,10 +225,11 @@ class OverwriteSync:
         file_name = file_path.stem
         # matching metric: combined length of partial matches per mod.
         matching_mods = self._get_matching_mods(file_name, mod_dll_map)
-        if len(matching_mods) == 0 and self.content_match:
-            # Get mod name from file content.
-            long_mod_name = self.content_match.match_content(file_path)
-            matching_mods = self._get_matching_mods(long_mod_name, mod_dll_map)
+        if len(matching_mods) == 0:
+            if self.search_file_contents and self.content_match:
+                # Get mod name from file content.
+                long_mod_name = self.content_match.match_content(file_path)
+                matching_mods = self._get_matching_mods(long_mod_name, mod_dll_map)
         if len(matching_mods) == 1:
             # Only a single mod match found.
             return matching_mods[0][0]
@@ -458,8 +449,8 @@ class ValheimGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = ValheimGameModDataChecker()
-        self.overwrite_sync = OverwriteSync(organizer=self._organizer, game=self)
-        self.overwrite_sync.register_event_handler()
+        self._overwrite_sync = OverwriteSync(organizer=self._organizer, game=self)
+        self._register_event_handler()
         return True
 
     def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
@@ -467,3 +458,40 @@ class ValheimGame(BasicGame):
             mobase.ExecutableForcedLoadSetting(self.binaryName(), lib).withEnabled(True)
             for lib in self.forced_libraries
         ]
+
+    def settings(self) -> list[mobase.PluginSetting]:
+        settings = super().settings()
+        settings.extend(
+            [
+                mobase.PluginSetting(
+                    "sync_overwrite", "Sync overwrite with mods", True
+                ),
+                mobase.PluginSetting(
+                    "search_overwrite_file_content",
+                    "Search content of files in overwrite for matching mod",
+                    True,
+                ),
+            ]
+        )
+        return settings
+
+    def _register_event_handler(self):
+        self._organizer.onUserInterfaceInitialized(lambda win: self._sync_overwrite())
+        self._organizer.onFinishedRun(self._game_finished_event_handler)
+
+    def _game_finished_event_handler(self, app_path: str, *args) -> None:
+        """Sync overwrite folder with mods after game was closed."""
+        if Path(app_path) == Path(
+            self.gameDirectory().absolutePath(), self.binaryName()
+        ):
+            self._sync_overwrite()
+
+    def _sync_overwrite(self) -> None:
+        if self._organizer.pluginSetting(self.name(), "sync_overwrite") is not False:
+            self._overwrite_sync.search_file_contents = (
+                self._organizer.pluginSetting(
+                    self.name(), "search_overwrite_file_content"
+                )
+                is not False
+            )
+            self._overwrite_sync.sync()
