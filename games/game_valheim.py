@@ -11,8 +11,11 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Optional, TextIO, Union
 
+from PyQt5.QtCore import QDir
+
 import mobase
 
+from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 
 
@@ -431,6 +434,51 @@ class ValheimGameModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
+class ValheimSaveGame(BasicGameSaveGame):
+    def getName(self) -> str:
+        return f"[{self.getSaveGroupIdentifier().rstrip('s')}] {self._filepath.stem}"
+
+    def getSaveGroupIdentifier(self) -> str:
+        return self._filepath.parent.name
+
+    def allFiles(self) -> list[str]:
+        files = super().allFiles()
+        files.extend(
+            self._filepath.with_suffix(suffix).as_posix()
+            for suffix in [self._filepath.suffix + ".old"]
+        )
+        return files
+
+
+class ValheimWorldSaveGame(ValheimSaveGame):
+    def allFiles(self) -> list[str]:
+        files = super().allFiles()
+        files.extend(
+            self._filepath.with_suffix(suffix).as_posix()
+            for suffix in [".db", ".db.old"]
+        )
+        return files
+
+
+class ValheimLocalSavegames(mobase.LocalSavegames):
+    def __init__(self, myGameSaveDir):
+        super().__init__()
+        self._savesDir = myGameSaveDir.absolutePath()
+
+    def mappings(self, profile_save_dir):
+        return [
+            mobase.Mapping(
+                source=profile_save_dir.absolutePath(),
+                destination=self._savesDir,
+                is_directory=True,
+                create_target=True,
+            )
+        ]
+
+    def prepareProfile(self, profile):
+        return profile.localSavesEnabled()
+
+
 class ValheimGame(BasicGame):
 
     Name = "Valheim Support Plugin"
@@ -443,12 +491,16 @@ class ValheimGame(BasicGame):
     GameSteamId = [892970, 896660, 1223920]
     GameBinary = "valheim.exe"
     GameDataPath = ""
+    GameSavesDirectory = r"%USERPROFILE%/AppData/LocalLow/IronGate/Valheim"
 
     forced_libraries = ["winhttp.dll"]
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = ValheimGameModDataChecker()
+        self._featureMap[mobase.LocalSavegames] = ValheimLocalSavegames(
+            self.savesDirectory()
+        )
         self._overwrite_sync = OverwriteSync(organizer=self._organizer, game=self)
         self._register_event_handler()
         return True
@@ -458,6 +510,13 @@ class ValheimGame(BasicGame):
             mobase.ExecutableForcedLoadSetting(self.binaryName(), lib).withEnabled(True)
             for lib in self.forced_libraries
         ]
+
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
+        save_games = super().listSaves(folder)
+        path = Path(folder.absolutePath())
+        save_games.extend(ValheimSaveGame(f) for f in path.glob("characters/*.fch"))
+        save_games.extend(ValheimWorldSaveGame(f) for f in path.glob("worlds/*.fwl"))
+        return save_games
 
     def settings(self) -> list[mobase.PluginSetting]:
         settings = super().settings()
