@@ -1,7 +1,7 @@
 import os
 
 from pathlib import Path
-from PyQt6.QtCore import QDir,QFileInfo
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
@@ -20,6 +20,7 @@ class GTAViceCitysDefinitiveEditionModDataChecker(mobase.ModDataChecker):
                 return mobase.ModDataChecker.VALID
 
         return mobase.ModDataChecker.INVALID
+
 
 class GTAViceCityDefinitiveEditionGame(BasicGame):
 
@@ -41,7 +42,9 @@ class GTAViceCityDefinitiveEditionGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = GTAViceCitysDefinitiveEditionModDataChecker()
+        self._featureMap[
+            mobase.ModDataChecker
+        ] = GTAViceCitysDefinitiveEditionModDataChecker()
         return True
 
     def executables(self):
