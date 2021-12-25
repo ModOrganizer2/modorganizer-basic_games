@@ -501,10 +501,13 @@ class BasicGame(mobase.IPluginGame):
     def initializeProfile(self, path: QDir, settings: int):
         if settings & mobase.ProfileSetting.CONFIGURATION:
             for iniFile in self.iniFiles():
-                shutil.copyfile(
-                    self.documentsDirectory().absoluteFilePath(iniFile),
-                    path.absoluteFilePath(QFileInfo(iniFile).fileName()),
-                )
+                try:
+                    shutil.copyfile(
+                        self.documentsDirectory().absoluteFilePath(iniFile),
+                        path.absoluteFilePath(QFileInfo(iniFile).fileName()),
+                    )
+                except FileNotFoundError:
+                    Path(path.absoluteFilePath(QFileInfo(iniFile).fileName())).touch()
 
     def primarySources(self):
         return []
