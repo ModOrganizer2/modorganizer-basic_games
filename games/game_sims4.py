@@ -1,7 +1,7 @@
-from PyQt5.QtCore import QDir
 from ..basic_game import BasicGame
 
 import mobase
+
 
 class TS4Game(BasicGame):
 
