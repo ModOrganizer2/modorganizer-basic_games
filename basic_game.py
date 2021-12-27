@@ -473,6 +473,9 @@ class BasicGame(mobase.IPluginGame):
     def getLauncherName(self) -> str:
         return self._mappings.launcherName.get()
 
+    def getSupportURL(self) -> str:
+        return self._mappings.supportURL.get()
+
     def executables(self) -> List[mobase.ExecutableInfo]:
         execs = []
         if self.getLauncherName():
