@@ -26,6 +26,7 @@ class DivinityOriginalSinGame(BasicGame):
     GameSavesDirectory = (
         "%USERPROFILE%/Documents/Larian Studios/Divinity Original Sin/PlayerProfiles"
     )
+    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Divinity:-Original-Sin"
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

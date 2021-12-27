@@ -86,6 +86,7 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
     GameDocumentsDirectory = "%GAME_PATH%/vampire/cfg"
     GameSavesDirectory = "%GAME_PATH%/vampire/SAVE"
     GameSaveExtension = "sav"
+    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Vampire:-The-Masquerade-%E2%80%90-Bloodlines"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
