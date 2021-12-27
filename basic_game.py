@@ -205,6 +205,7 @@ class BasicGameMappings:
     gogAPPId: BasicGameOptionsMapping[str]
     originManifestIds: BasicGameOptionsMapping[str]
     originWatcherExecutables: BasicGameMapping[List[str]]
+    supportURL: BasicGameMapping[str]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -315,6 +316,9 @@ class BasicGameMappings:
             "originWatcherExecutables",
             apply_fn=lambda s: [s] if isinstance(s, str) else s,
             default=lambda g: [],
+        )
+        self.supportURL = BasicGameMapping(
+            game, "GameSupportURL", "supportURL", default=lambda g: ""
         )
 
 
