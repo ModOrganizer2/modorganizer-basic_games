@@ -74,7 +74,10 @@ class Witcher1Game(BasicGame):
     GameSaveExtension = "TheWitcherSave"
     GameDocumentsDirectory = "%DOCUMENTS%/The Witcher"
     GameSavesDirectory = "%GAME_DOCUMENTS%/saves"
-    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-The-Witcher"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-The-Witcher"
+    )
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)

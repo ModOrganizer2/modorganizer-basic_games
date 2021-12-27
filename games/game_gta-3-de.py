@@ -39,7 +39,10 @@ class GTA3DefinitiveEditionGame(BasicGame):
     )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
-    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Grand-Theft-Auto:-The-Trilogy-%E2%80%90-The-Definitive-Edition"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Grand-Theft-Auto:-The-Trilogy-%E2%80%90-The-Definitive-Edition"
+    )
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)

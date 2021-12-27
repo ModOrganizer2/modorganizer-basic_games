@@ -17,7 +17,10 @@ class DA2Game(BasicGame):
     GameSteamId = 1238040
     GameOriginManifestIds = ["OFB-EAST:59474", "DR:201797000"]
     GameOriginWatcherExecutables = ("DragonAge2.exe",)
-    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Dragon-Age-II"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Dragon-Age-II"
+    )
 
     def version(self):
         # Don't forget to import mobase!

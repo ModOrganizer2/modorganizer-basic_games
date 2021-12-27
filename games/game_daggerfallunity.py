@@ -50,4 +50,7 @@ class DaggerfallUnityGame(BasicGame):
     GameBinary = "DaggerfallUnity.exe"
     GameLauncher = "DaggerfallUnity.exe"
     GameDataPath = "%GAME_PATH%/DaggerfallUnity_Data/StreamingAssets"
-    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Daggerfall-Unity"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Daggerfall-Unity"
+    )

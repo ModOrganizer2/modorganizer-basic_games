@@ -20,7 +20,10 @@ class Starsector(BasicGame):
     GameBinary = "starsector.exe"
     GameDataPath = "mods"
     GameSavesDirectory = "%GAME_PATH%/saves"
-    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Starsector"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Starsector"
+    )
 
     def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
         return [

@@ -38,7 +38,10 @@ class KerbalSpaceProgramGame(BasicGame):
     GameDataPath = "GameData"
     GameSavesDirectory = "%GAME_PATH%/saves"
     GameSaveExtension = "sfs"
-    GameSupportURL = r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Kerbal-Space-Program"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Kerbal-Space-Program"
+    )
 
     def init(self, organizer):
         super().init(organizer)
