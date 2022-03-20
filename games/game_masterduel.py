@@ -8,12 +8,16 @@ import mobase
 
 from ..basic_game import BasicGame
 
+
 class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
 
     Name = "Yu-Gi-Oh! Master Duel Support Plugin"
     Author = "The Conceptionist & uwx"
     Version = "1.0.2"
-    Description = "Adds support for basic Yu-Gi-Oh! Master Duel mods.\nEligible folders for mods are \"0000\" and \"AssetBundle\"."
+    Description = (
+        "Adds support for basic Yu-Gi-Oh! Master Duel mods.\n"
+        'Eligible folders for mods are "0000" and "AssetBundle".'
+    )
 
     GameName = "Yu-Gi-Oh! Master Duel"
     GameShortName = "masterduel"
@@ -34,22 +38,25 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
             ).withArgument("-popupwindow"),
         ]
 
-    # dataDirectory returns the specific LocalData folder because this is where most mods will go to
+    # dataDirectory returns the specific LocalData folder because
+    # this is where most mods will go to
     def dataDirectory(self) -> QDir:
         return QDir(self.userDataDir())
 
     _userDataDirCached: Optional[str] = None
 
-    # Gets the LocalData/xxxxxxxxx directory. This directory has a different, unique, 8-character hex name for each
-    # user.
+    # Gets the LocalData/xxxxxxxxx directory. This directory has a different,
+    # unique, 8-character hex name for each user.
     def userDataDir(self) -> str:
         if self._userDataDirCached is not None:
             return self._userDataDirCached
 
         dir = self.gameDirectory()
-        dir.cd('LocalData')
+        dir.cd("LocalData")
 
-        subdirs = dir.entryList(filters=cast(QDir.Filters, QDir.Dirs | QDir.NoDotAndDotDot))
+        subdirs = dir.entryList(
+            filters=cast(QDir.Filters, QDir.Dirs | QDir.NoDotAndDotDot)
+        )
         dir.cd(subdirs[0])
 
         self._userDataDirCached = dir.absolutePath()
@@ -66,7 +73,9 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
             m.createTarget = False
             m.isDirectory = True
             m.source = join(modsPath, modName, "AssetBundle")
-            m.destination = self.gameDirectory().filePath(join("masterduel_Data", "StreamingAssets", "AssetBundle"))
+            m.destination = self.gameDirectory().filePath(
+                join("masterduel_Data", "StreamingAssets", "AssetBundle")
+            )
             mappings.append(m)
 
         return mappings

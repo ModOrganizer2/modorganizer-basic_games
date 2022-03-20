@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QDir
 from ..basic_game import BasicGame
+
 
 class ValkyriaChroniclesGame(BasicGame):
     Name = "Valkyria Chronicles Support Plugin"
