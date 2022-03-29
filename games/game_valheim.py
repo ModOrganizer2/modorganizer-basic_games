@@ -548,6 +548,8 @@ class ValheimGame(BasicGame):
             self._sync_overwrite()
 
     def _sync_overwrite(self) -> None:
+        if self._organizer.managedGame() is not self:
+            return
         if self._organizer.pluginSetting(self.name(), "sync_overwrite") is not False:
             self._overwrite_sync.search_file_contents = (
                 self._organizer.pluginSetting(
