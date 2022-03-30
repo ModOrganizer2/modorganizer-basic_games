@@ -65,14 +65,16 @@ class FileRegexPatterns:
 
 @dataclass
 class FilePatterns:
-    """File (glob pattern) definitions for the `BasicGameModDataChecker`.
+    """File definitions for the `BasicGameModDataChecker`.
+    Glob pattern supported (without subfolders).
+
     Match files / folders with e.g. `.regex.move.match`.
     Fields match `.regex`.
     """
 
     set_as_root: Optional[Iterable[str]] = None
     """If a folder from this set is found, it will be set as new root dir (unfolded) and
-    its contents checked again.
+    its contents are checked again.
     """
 
     valid: Optional[Iterable[str]] = None
@@ -130,7 +132,7 @@ class FilePatterns:
 
 class BasicModDataChecker(mobase.ModDataChecker):
     """Game feature that is used to check and fix the content of a data tree
-    via simple files patterns.
+    via simple glob files patterns (without subfolders).
     """
 
     file_patterns: FilePatterns
