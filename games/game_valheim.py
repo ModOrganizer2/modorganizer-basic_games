@@ -327,7 +327,7 @@ class ValheimGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = BasicModDataChecker(
-            set_as_root=[
+            unfold=[
                 "BepInExPack_Valheim",
             ],
             valid=[

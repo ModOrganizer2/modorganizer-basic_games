@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import fnmatch
 import re
+import sys
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass, field, fields
-from typing import Optional, Protocol
-
+from typing import MutableMapping, Optional, TypedDict, overload
 
 import mobase
 
@@ -26,56 +25,39 @@ def convert_entry_to_tree(entry: mobase.FileTreeEntry) -> Optional[mobase.IFileT
     return None
 
 
-class HasGlobPatterns(Protocol):
-    set_as_root: Optional[Iterable[str]]
-    valid: Optional[Iterable[str]]
-    delete: Optional[Iterable[str]]
-    move: Optional[Iterable[str]]
-
-
-@dataclass
-class FileRegexPatterns:
+class RegexPatternDict(dict, MutableMapping[str, re.Pattern]):
     """Regex patterns for validation in `BasicModDataChecker`."""
 
-    set_as_root: Optional[re.Pattern] = None
-    valid: Optional[re.Pattern] = None
-    delete: Optional[re.Pattern] = None
-    move: Optional[re.Pattern] = None
-
     @classmethod
-    def from_glob_patterns(cls, glob_patterns: HasGlobPatterns) -> FileRegexPatterns:
-        """Returns an instance of `FileRegexPatterns`,
-        with the glob pattern fields in `glob_patterns` translated to regex.
+    def from_glob_patterns(cls, glob_patterns: GlobPatternDict) -> RegexPatternDict:
+        """Returns an instance of `RegexPatternDict`, with the `glob_patterns`
+        translated to regex.
         """
         return cls(
-            **{
-                f.name: (
-                    cls.regex_from_glob_list(value)
-                    if (value := getattr(glob_patterns, f.name))
-                    else None
-                )
-                for f in fields(FileRegexPatterns)
-            }
+            (
+                key,
+                cls.regex_from_glob_list(value)
+                if isinstance(value, Iterable)
+                else None,
+            )
+            for key, value in glob_patterns.items()
         )
 
-    @staticmethod
-    def regex_from_glob_list(glob_list: Iterable[str]) -> re.Pattern:
-        """Returns a regex pattern form a list of glob patterns.
+    def get_match_index(self, key: str, search_str: str) -> Optional[int]:
+        """Get the index of the matched group if the `self[key]` matches `search_str`.
 
-        Every pattern has a capturing group,
-        so that `match.lastindex - 1` will give the `file_list` index.
+        Returns:
+            The 0-based index of the matched group or None for no match.
         """
-        return re.compile(
-            f'(?:{"|".join(f"({fnmatch.translate(f)})" for f in glob_list)})', re.I
-        )
+        if (pattern := self.get(key)) is None:
+            return None
+        else:
+            return self.match_index_of_pattern(search_str, pattern)
 
     @staticmethod
-    def get_match_index(search_str: str, pattern: re.Pattern) -> Optional[int]:
-        """Get the index of the matched group if `search_str` matches `pattern`.
-
-        Args:
-            search_str: the string to search
-            pattern: a pattern from `FileRegexPatterns`.
+    def match_index_of_pattern(search_str: str, pattern: re.Pattern) -> Optional[int]:
+        """Get the index of the matched group if `search_str` matches `pattern`
+        (from this dict).
 
         Returns:
             The 0-based index of the matched group or None for no match.
@@ -84,58 +66,141 @@ class FileRegexPatterns:
             return None
         return match.lastindex - 1
 
+    @staticmethod
+    def regex_from_glob_list(glob_list: Iterable[str]) -> re.Pattern:
+        """Returns a regex pattern form a list of glob patterns.
 
-@dataclass
+        Every pattern has a capturing group, so that `match.lastindex - 1` will
+        give the `glob_list` index.
+        """
+        return re.compile(
+            f'(?:{"|".join(f"({fnmatch.translate(f)})" for f in glob_list)})', re.I
+        )
+
+
+class GlobPatternDict(TypedDict, total=False):
+    """See: `BasicModDataChecker`"""
+
+    unfold: Iterable[str] | None
+    valid: Iterable[str] | None
+    delete: Iterable[str] | None
+    move: MutableMapping[str, str] | None
+
+
 class BasicModDataChecker(mobase.ModDataChecker):
     """Game feature that is used to check and fix the content of a data tree
     via simple file definitions.
 
     The file definitions support glob pattern (without subfolders) and are checked in
-    order.
-    """
+    definition order (passed either as dict or kwargs).
 
-    set_as_root: Optional[Iterable[str]] = None
-    """If a folder from this set is found, it will be set as new root dir (unfolded) and
-    its contents are checked again.
-    """
+    Args:
+        file_patterns (optional): An dict with the keys below or as kwargs:
 
-    valid: Optional[Iterable[str]] = None
-    """Files and folders in the right path.
-    Check result: `mobase.ModDataChecker.VALID`.
-    """
+        unfold (optional): Folders to unfold (remove and move contents to parent),
+            after being checked and fixed recursively.
 
-    delete: Optional[Iterable[str]] = None
-    """Files/folders to delete. Check result: `mobase.ModDataChecker.FIXABLE`."""
+        valid (optional): Files and folders in the right path.
+            Check result: `mobase.ModDataChecker.VALID`.
 
-    move: Optional[dict[str, str]] = None
-    """Files/folders to move and their target.
+        delete (optional): Files/folders to delete.
+            Check result: `mobase.ModDataChecker.FIXABLE`.
 
-    If the path ends with `/` or `\\`, the entry will be inserted
-    in the corresponding directory instead of replacing it.
+        move (optional): Files/folders to move and their target.
+            If the path ends with `/` or `\\`, the entry will be inserted
+            in the corresponding directory instead of replacing it.
 
-    Check result: `mobase.ModDataChecker.FIXABLE`.
+            Check result: `mobase.ModDataChecker.FIXABLE`.
 
-    Example::
+        Example::
 
-        {"*.ext": "path/to/target_folder/"}
+            BasicModDataChecker(
+                valid=["valid_folder", "*.ext1"]
+                move={"*.ext2": "path/to/target_folder/"}
+            )
+
+            BasicModDataChecker(
+                {
+                    "valid": ["valid_folder", "*.ext1"],
+                    "move": {"*.ext2": "path/to/target_folder/"}
+                }
+            )
 
     See Also:
         `mobase.IFileTree.move`
     """
 
-    _regex: FileRegexPatterns = field(init=False, repr=False)
+    file_patterns = None  # type: GlobPatternDict
+    """Use `update_patterns` for modifications."""
+
+    _regex: RegexPatternDict
     """The regex patterns derived from the file (glob) patterns."""
 
-    _move_targets: Sequence[str] = field(init=False, repr=False)
+    _move_targets: Sequence[str]
 
-    def __post_init__(self):
-        self.update_patterns()
+    # Overloads as workaround for **kwargs: Unpack[GlobPatternDict]
+    @overload
+    def __init__(
+        self,
+        *,
+        unfold: Iterable[str] | None = None,
+        valid: Iterable[str] | None = None,
+        delete: Iterable[str] | None = None,
+        move: dict[str, str] | None = None,
+    ):
+        ...
 
-    def update_patterns(self):
-        """Update patterns after init field changes."""
-        self._regex = FileRegexPatterns.from_glob_patterns(self)
-        if self.move:
-            self._move_targets = list(self.move.values())
+    @overload
+    def __init__(
+        self,
+        file_patterns: Optional[GlobPatternDict] = None,
+        *,
+        unfold: Iterable[str] | None = None,
+        valid: Iterable[str] | None = None,
+        delete: Iterable[str] | None = None,
+        move: dict[str, str] | None = None,
+    ):
+        ...
+
+    def __init__(
+        self, file_patterns: Optional[GlobPatternDict] = None, **kwargs
+    ):  # Unpack[GlobPatternDict]
+        super().__init__()
+        # Init with copy from class var
+        self.file_patterns = fp.copy() if (fp := self.file_patterns) else {}
+        self.update_patterns(file_patterns, **kwargs)
+
+    @overload
+    def update_patterns(
+        self,
+        *,
+        unfold: Iterable[str] | None = None,
+        valid: Iterable[str] | None = None,
+        delete: Iterable[str] | None = None,
+        move: dict[str, str] | None = None,
+    ):
+        ...
+
+    @overload
+    def update_patterns(
+        self,
+        file_patterns: Optional[GlobPatternDict] = None,
+        *,
+        unfold: Iterable[str] | None = None,
+        valid: Iterable[str] | None = None,
+        delete: Iterable[str] | None = None,
+        move: dict[str, str] | None = None,
+    ):
+        ...
+
+    def update_patterns(self, file_patterns=None, **kwargs):  # Unpack[GlobPatternDict]
+        """Update file patterns."""
+        if file_patterns:
+            self.file_patterns.update(file_patterns)
+        self.file_patterns.update(kwargs)
+        self._regex = RegexPatternDict.from_glob_patterns(self.file_patterns)
+        if move_map := self.file_patterns.get("move"):
+            self._move_targets = list(move_map.values())
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
@@ -143,16 +208,17 @@ class BasicModDataChecker(mobase.ModDataChecker):
         status = mobase.ModDataChecker.INVALID
         for entry in filetree:
             name = entry.name().casefold()
-            regex = self._regex
-            if regex.set_as_root and regex.set_as_root.match(name):
-                return mobase.ModDataChecker.FIXABLE
-            elif regex.valid and regex.valid.match(name):
-                if status is not mobase.ModDataChecker.FIXABLE:
-                    status = mobase.ModDataChecker.VALID
-            elif (regex.move and regex.move.match(name)) or (
-                regex.delete and regex.delete.match(name)
-            ):
-                status = mobase.ModDataChecker.FIXABLE
+            for key, regex in self._regex.items():
+                if not regex or not regex.match(name):
+                    continue
+                if key == "unfold":
+                    return mobase.ModDataChecker.FIXABLE
+                elif key == "valid":
+                    if status is not mobase.ModDataChecker.FIXABLE:
+                        status = mobase.ModDataChecker.VALID
+                elif key in ("move", "delete"):
+                    status = mobase.ModDataChecker.FIXABLE
+                break
             else:
                 return mobase.ModDataChecker.INVALID
         return status
@@ -160,33 +226,29 @@ class BasicModDataChecker(mobase.ModDataChecker):
     def fix(self, filetree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
         for entry in list(filetree):
             name = entry.name().casefold()
-            regex = self._regex
-            if regex.set_as_root and regex.set_as_root.match(name):
-                new_root = convert_entry_to_tree(entry)
-                return self.fix(new_root) if new_root else None
-            elif regex.valid and regex.valid.match(name):
-                continue
-            elif regex.delete and regex.delete.match(name):
-                entry.detach()
-            elif regex.move:
-                move_target = self._find_move_target(name)
-                if move_target is not None:
-                    filetree.move(entry, move_target)
+            # Fix entries in pattern definition order.
+            for key, regex in self._regex.items():
+                if not regex or not regex.match(name) or key == "valid":
+                    continue
+                if key == "unfold":
+                    if (folder_tree := convert_entry_to_tree(entry)) is not None:
+                        if folder_tree:  # Not empty
+                            # Recursively fix subtree and unfold.
+                            if not (fixed_folder_tree := self.fix(folder_tree)):
+                                return None
+                            filetree.merge(fixed_folder_tree)
+                        folder_tree.detach()
+                    else:
+                        print(f"Cannot unfold {name}!", file=sys.stderr)
+                elif key == "delete":
+                    entry.detach()
+                elif key == "move":
+                    if (move_target := self._get_move_target(name)) is not None:
+                        filetree.move(entry, move_target)
+                break
         return filetree
 
-    def _find_move_target(self, filename: str) -> Optional[str]:
-        """Find a matching file pattern (key) from `.move` and return the target (value).
-
-        Args:
-            filename: the file name to match.
-
-        Returns:
-            The move target or None for no match or no `.move` pattern.
-        """
-        if (
-            self._regex.move
-            and (i := self._regex.get_match_index(filename, self._regex.move))
-            is not None
-        ):
-            return self._move_targets[i]
-        return None
+    def _get_move_target(self, filename: str) -> Optional[str]:
+        if (i := self._regex.get_match_index("move", filename)) is None:
+            return None
+        return self._move_targets[i]
