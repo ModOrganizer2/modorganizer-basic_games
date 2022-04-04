@@ -63,7 +63,8 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | S.T.A.L.K.E.R. Anomaly — [MOD](https://www.stalker-anomaly.com/) | [Qudix](https://github.com/Qudix) | [game_stalkeranomaly.py](games/game_stalkeranomaly.py) | <ul><li>mod data checker</li></ul> |
 | Stardew Valley — [GOG](https://www.gog.com/game/stardew_valley) / [STEAM](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), [Holt59](https://github.com/holt59/) | [game_stardewvalley.py](games/game_stardewvalley.py) | <ul><li>mod data checker</li></ul> |
 | STAR WARS™ Empire at War: Gold Pack - [GOG](https://www.gog.com/game/star_wars_empire_at_war_gold_pack) / [STEAM](https://store.steampowered.com/app/32470/) | [erri120](https://github.com/erri120) | <ul><li>Empire at War: [game_starwars-empire-at-war.py](games/game_starwars-empire-at-war.py)</li><li>Force of Corruption: [game_starwars-empire-at-war-foc.py](games/game_starwars-empire-at-war-foc.py)</li></ul> | |
-| Subnautica — [STEAM](https://store.steampowered.com/app/264710/) / [Epic](https://store.epicgames.com/p/subnautica) | dekart811 | [game_subnautica.py](games/game_subnautica.py) | |
+| Subnautica — [STEAM](https://store.steampowered.com/app/264710/) / [Epic](https://store.epicgames.com/p/subnautica) | [dekart811](https://github.com/dekart811), [Zash](https://github.com/ZashIn) | [game_subnautica.py](games/game_subnautica.py) | <ul><li>mod data checker</li><li>save game preview</li></ul> |
+| Subnautica: Below Zero — [STEAM](https://store.steampowered.com/app/848450/) | [dekart811](https://github.com/dekart811), [Zash](https://github.com/ZashIn) | [game_subnautica-below-zero.py](games/game_subnautica-below-zero.py) | <ul><li>mod data checker</li><li>save game preview</li></ul> |
 | Valheim — [STEAM](https://store.steampowered.com/app/892970/Valheim/) | [Zash](https://github.com/ZashIn) | [game_valheim.py](games/game_valheim.py) | <ul><li>mod data checker</li><li>overwrite config sync</li><li>save game support (no preview)</li></ul> |
 | The Witcher: Enhanced Edition - [GOG](https://www.gog.com/game/the_witcher) / [STEAM](https://store.steampowered.com/app/20900/The_Witcher_Enhanced_Edition_Directors_Cut/) | [erri120](https://github.com/erri120) | [game_witcher1.py](games/game_witcher1.py) | <ul><li>save game parsing (no preview)</li></ul> |
 | The Witcher 3: Wild Hunt — [GOG](https://www.gog.com/game/the_witcher_3_wild_hunt) / [STEAM](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | [Holt59](https://github.com/holt59/) | [game_witcher3.py](games/game_witcher3.py) | <ul><li>save game preview</li></ul> |
@@ -181,7 +182,7 @@ The meta-plugin provides some useful extra feature:
 3. **Basic mod data checker** (Python):
   Check and fix different mod archive layouts for an automatic installation with the proper
   file structure, using simple (glob) patterns via `BasicModDataChecker`.
-  See [games/game_valheim.py](games/game_valheim.py) for an example.
+  See [games/game_valheim.py](games/game_valheim.py) and [game_subnautica.py](games/game_subnautica.py) for an example.
 
 Game IDs can be found here:
 
