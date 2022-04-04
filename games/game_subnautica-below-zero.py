@@ -9,14 +9,14 @@ class SubnauticaBelowZeroGame(game_subnautica.SubnauticaGame):
 
     Name = "Subnautica Below Zero Support Plugin"
     Author = "dekart811, Zash"
-    Version = "2.0"
+    Version = "2.1"
 
     GameName = "Subnautica: Below Zero"
     GameShortName = "subnauticabelowzero"
     GameNexusName = "subnauticabelowzero"
     GameSteamId = 848450
     GameBinary = "SubnauticaZero.exe"
-    GameDataPath = ""
+    GameDataPath = "_ROOT"
     GameDocumentsDirectory = "%GAME_PATH%"
     GameSupportURL = (
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
