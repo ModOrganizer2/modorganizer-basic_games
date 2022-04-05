@@ -224,13 +224,17 @@ class BasicModDataChecker(mobase.ModDataChecker):
         return status
 
     def fix(self, filetree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
+        print(f"{self.file_patterns}")
+        print(self._regex)
         for entry in list(filetree):
-            name = entry.name().casefold()
+            name = entry.name()
             # Fix entries in pattern definition order.
             for key, regex in self._regex.items():
-                if not regex or not regex.match(name) or key == "valid":
+                if not regex or not regex.match(name):
                     continue
-                if key == "unfold":
+                if key == "valid":
+                    break
+                elif key == "unfold":
                     if (folder_tree := convert_entry_to_tree(entry)) is not None:
                         if folder_tree:  # Not empty
                             # Recursively fix subtree and unfold.
