@@ -139,7 +139,7 @@ class BasicModDataChecker(mobase.ModDataChecker):
     _move_targets: Sequence[str]
     """Target paths from `file_patterns["move"]`."""
 
-    def __init__(self, file_patterns: Optional[GlobPatternDict]):
+    def __init__(self, file_patterns: Optional[GlobPatternDict] = None):
         super().__init__()
         # Init with copy from class var by default (for unique instance var).
         self.set_patterns(file_patterns or (self.default_file_patterns.copy()))
