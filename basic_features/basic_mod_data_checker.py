@@ -5,7 +5,7 @@ import fnmatch
 import re
 import sys
 from collections.abc import Iterable, Sequence
-from typing import MutableMapping, Optional, TypedDict, overload
+from typing import ClassVar, MutableMapping, Optional, TypedDict
 
 import mobase
 
@@ -49,10 +49,9 @@ class RegexPatternDict(dict, MutableMapping[str, re.Pattern]):
         Returns:
             The 0-based index of the matched group or None for no match.
         """
-        if (pattern := self.get(key)) is None:
-            return None
-        else:
+        if pattern := self.get(key):
             return self.match_index_of_pattern(search_str, pattern)
+        return None
 
     @staticmethod
     def match_index_of_pattern(search_str: str, pattern: re.Pattern) -> Optional[int]:
@@ -62,9 +61,9 @@ class RegexPatternDict(dict, MutableMapping[str, re.Pattern]):
         Returns:
             The 0-based index of the matched group or None for no match.
         """
-        if not (match := pattern.match(search_str)) or match.lastindex is None:
-            return None
-        return match.lastindex - 1
+        if (match := pattern.match(search_str)) and match.lastindex:
+            return match.lastindex - 1
+        return None
 
     @staticmethod
     def regex_from_glob_list(glob_list: Iterable[str]) -> re.Pattern:
@@ -91,115 +90,73 @@ class BasicModDataChecker(mobase.ModDataChecker):
     """Game feature that is used to check and fix the content of a data tree
     via simple file definitions.
 
-    The file definitions support glob pattern (without subfolders) and are checked in
-    definition order (passed either as dict or kwargs).
+    The file definitions support glob pattern (without subfolders) and are
+    checked and fixed in definition order of the `file_patterns` dict.
 
     Args:
-        file_patterns (optional): An dict with the keys below or as kwargs:
+        file_patterns (optional): A dict (GlobPatternDict) with the following keys::
 
-        unfold (optional): Folders to unfold (remove and move contents to parent),
-            after being checked and fixed recursively.
+            {
+                "unfold": [ "list of folders to unfold" ],
+                    # (remove and move contents to parent), after being checked and
+                    # fixed recursively.
+                    # Check result: `mobase.ModDataChecker.VALID`.
 
-        valid (optional): Files and folders in the right path.
-            Check result: `mobase.ModDataChecker.VALID`.
+                "valid": [ "list of files and folders in the right path." ],
+                    # Check result: `mobase.ModDataChecker.VALID`.
 
-        delete (optional): Files/folders to delete.
-            Check result: `mobase.ModDataChecker.FIXABLE`.
+                "delete": [ "list of files/folders to delete." ],
+                    # Check result: `mobase.ModDataChecker.FIXABLE`.
 
-        move (optional): Files/folders to move and their target.
-            If the path ends with `/` or `\\`, the entry will be inserted
-            in the corresponding directory instead of replacing it.
-
-            Check result: `mobase.ModDataChecker.FIXABLE`.
+                "move": {"Files/folders to move": "target path"}
+                    # If the path ends with `/` or `\\`, the entry will be inserted
+                    # in the corresponding directory instead of replacing it.
+                    # Check result: `mobase.ModDataChecker.FIXABLE`.
+            }
 
         Example::
 
             BasicModDataChecker(
-                valid=["valid_folder", "*.ext1"]
-                move={"*.ext2": "path/to/target_folder/"}
-            )
-
-            BasicModDataChecker(
                 {
-                    "valid": ["valid_folder", "*.ext1"],
+                    "valid": ["valid_folder", "*.ext1"]
                     "move": {"*.ext2": "path/to/target_folder/"}
                 }
             )
 
     See Also:
-        `mobase.IFileTree.move`
+        `mobase.IFileTree.move` for the `"move"` target path specs.
     """
 
-    file_patterns = None  # type: GlobPatternDict
-    """Use `update_patterns` for modifications."""
+    default_file_patterns: ClassVar[GlobPatternDict] = {}
+    """Default for `file_patterns` - for subclasses."""
+
+    _file_patterns: GlobPatternDict
+    """Private `file_patterns`, updated together with `._regex` and `._move_targets`."""
 
     _regex: RegexPatternDict
     """The regex patterns derived from the file (glob) patterns."""
 
     _move_targets: Sequence[str]
+    """Target paths from `file_patterns["move"]`."""
 
-    # Overloads as workaround for **kwargs: Unpack[GlobPatternDict]
-    @overload
-    def __init__(
-        self,
-        *,
-        unfold: Iterable[str] | None = None,
-        valid: Iterable[str] | None = None,
-        delete: Iterable[str] | None = None,
-        move: dict[str, str] | None = None,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        file_patterns: Optional[GlobPatternDict] = None,
-        *,
-        unfold: Iterable[str] | None = None,
-        valid: Iterable[str] | None = None,
-        delete: Iterable[str] | None = None,
-        move: dict[str, str] | None = None,
-    ):
-        ...
-
-    def __init__(
-        self, file_patterns: Optional[GlobPatternDict] = None, **kwargs
-    ):  # Unpack[GlobPatternDict]
+    def __init__(self, file_patterns: Optional[GlobPatternDict]):
         super().__init__()
-        # Init with copy from class var
-        self.file_patterns = fp.copy() if (fp := self.file_patterns) else {}
-        self.update_patterns(file_patterns, **kwargs)
+        # Init with copy from class var by default (for unique instance var).
+        self.set_patterns(file_patterns or (self.default_file_patterns.copy()))
 
-    @overload
-    def update_patterns(
-        self,
-        *,
-        unfold: Iterable[str] | None = None,
-        valid: Iterable[str] | None = None,
-        delete: Iterable[str] | None = None,
-        move: dict[str, str] | None = None,
-    ):
-        ...
+    def set_patterns(self, file_patterns: GlobPatternDict):
+        """Sets the file patterns, replacing previous/default values and order."""
+        self._file_patterns = file_patterns
+        self.update_patterns()
 
-    @overload
-    def update_patterns(
-        self,
-        file_patterns: Optional[GlobPatternDict] = None,
-        *,
-        unfold: Iterable[str] | None = None,
-        valid: Iterable[str] | None = None,
-        delete: Iterable[str] | None = None,
-        move: dict[str, str] | None = None,
-    ):
-        ...
-
-    def update_patterns(self, file_patterns=None, **kwargs):  # Unpack[GlobPatternDict]
-        """Update file patterns."""
+    def update_patterns(self, file_patterns: Optional[GlobPatternDict] = None):
+        """Update file patterns. Preserves previous/default definition
+        (check/fix) order.
+        """
         if file_patterns:
-            self.file_patterns.update(file_patterns)
-        self.file_patterns.update(kwargs)
-        self._regex = RegexPatternDict.from_glob_patterns(self.file_patterns)
-        if move_map := self.file_patterns.get("move"):
+            self._file_patterns.update(file_patterns)
+        self._regex = RegexPatternDict.from_glob_patterns(self._file_patterns)
+        if move_map := self._file_patterns.get("move"):
             self._move_targets = list(move_map.values())
 
     def dataLooksValid(
@@ -224,8 +181,6 @@ class BasicModDataChecker(mobase.ModDataChecker):
         return status
 
     def fix(self, filetree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
-        print(f"{self.file_patterns}")
-        print(self._regex)
         for entry in list(filetree):
             name = entry.name()
             # Fix entries in pattern definition order.

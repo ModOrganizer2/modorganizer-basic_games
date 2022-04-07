@@ -327,50 +327,52 @@ class ValheimGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = BasicModDataChecker(
-            unfold=[
-                "BepInExPack_Valheim",
-            ],
-            valid=[
-                "meta.ini",  # Included in installed mod folder.
-                "BepInEx",
-                "doorstop_libs",
-                "unstripped_corlib",
-                "doorstop_config.ini",
-                "start_game_bepinex.sh",
-                "start_server_bepinex.sh",
-                "winhttp.dll",
-                #
-                "InSlimVML",
-                "valheim_Data",
-                "inslimvml.ini",
-                #
-                "unstripped_managed",
-                #
-                "AdvancedBuilder",
-            ],
-            delete=[
-                "*.txt",
-                "*.md",
-                "icon.png",
-                "license",
-                "manifest.json",
-            ],
-            move={
-                "*_VML.dll": "InSlimVML/Mods/",
-                #
-                "plugins": "BepInEx/",
-                "*.dll": "BepInEx/plugins/",
-                "config": "BepInEx/",
-                "*.cfg": "BepInEx/config/",
-                #
-                "CustomTextures": "BepInEx/plugins/",
-                "*.png": "BepInEx/plugins/CustomTextures/",
-                #
-                "Builds": "AdvancedBuilder/",
-                "*.vbuild": "AdvancedBuilder/Builds/",
-                #
-                "*.assets": "valheim_Data/",
-            },
+            {
+                "unfold": [
+                    "BepInExPack_Valheim",
+                ],
+                "valid": [
+                    "meta.ini",  # Included in installed mod folder.
+                    "BepInEx",
+                    "doorstop_libs",
+                    "unstripped_corlib",
+                    "doorstop_config.ini",
+                    "start_game_bepinex.sh",
+                    "start_server_bepinex.sh",
+                    "winhttp.dll",
+                    #
+                    "InSlimVML",
+                    "valheim_Data",
+                    "inslimvml.ini",
+                    #
+                    "unstripped_managed",
+                    #
+                    "AdvancedBuilder",
+                ],
+                "delete": [
+                    "*.txt",
+                    "*.md",
+                    "icon.png",
+                    "license",
+                    "manifest.json",
+                ],
+                "move": {
+                    "*_VML.dll": "InSlimVML/Mods/",
+                    #
+                    "plugins": "BepInEx/",
+                    "*.dll": "BepInEx/plugins/",
+                    "config": "BepInEx/",
+                    "*.cfg": "BepInEx/config/",
+                    #
+                    "CustomTextures": "BepInEx/plugins/",
+                    "*.png": "BepInEx/plugins/CustomTextures/",
+                    #
+                    "Builds": "AdvancedBuilder/",
+                    "*.vbuild": "AdvancedBuilder/Builds/",
+                    #
+                    "*.assets": "valheim_Data/",
+                },
+            }
         )
         self._featureMap[mobase.LocalSavegames] = ValheimLocalSavegames(
             self.savesDirectory()
