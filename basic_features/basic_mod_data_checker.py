@@ -199,6 +199,7 @@ class BasicModDataChecker(mobase.ModDataChecker):
                         folder_tree.detach()
                     else:
                         print(f"Cannot unfold {name}!", file=sys.stderr)
+                        return None
                 elif key == "delete":
                     entry.detach()
                 elif key == "move":
