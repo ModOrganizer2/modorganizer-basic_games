@@ -17,10 +17,11 @@ class DA2Game(BasicGame):
     GameSteamId = 1238040
     GameOriginManifestIds = ["OFB-EAST:59474", "DR:201797000"]
     GameOriginWatcherExecutables = ("DragonAge2.exe",)
+    GameEaDesktopId = [70784, 1002980]
 
     def version(self):
         # Don't forget to import mobase!
-        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.final)
+        return mobase.VersionInfo(1, 0, 1, mobase.ReleaseType.final)
 
     def savesDirectory(self):
         return QDir(self.documentsDirectory().absoluteFilePath("gamesaves"))

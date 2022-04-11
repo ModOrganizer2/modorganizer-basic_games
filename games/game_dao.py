@@ -10,7 +10,7 @@ class DAOriginsGame(BasicGame):
 
     Name = "Dragon Age Origins Support Plugin"
     Author = "Patchier"
-    Version = "1.1.0"
+    Version = "1.1.1"
 
     GameName = "Dragon Age: Origins"
     GameShortName = "dragonage"
@@ -20,6 +20,7 @@ class DAOriginsGame(BasicGame):
     GameSaveExtension = "das"
     GameSteamId = [17450, 47810]
     GameGogId = 1949616134
+    GameEaDesktopId = [70377, 70843]
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
