@@ -11,6 +11,7 @@ class SubnauticaGame(BasicGame):
     GameShortName = "subnautica"
     GameNexusName = "subnautica"
     GameSteamId = 264710
+    GameEpicId = "Jaguar"
     GameBinary = "Subnautica.exe"
     GameDataPath = "QMods"
     GameDocumentsDirectory = "%GAME_PATH%"

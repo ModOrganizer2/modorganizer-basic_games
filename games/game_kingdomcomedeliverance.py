@@ -18,6 +18,7 @@ class KingdomComeDeliveranceGame(BasicGame):
     GameNexusId = 2298
     GameSteamId = [379430]
     GameGogId = [1719198803]
+    GameEpicId = "Eel"
     GameBinary = "bin/Win64/KingdomCome.exe"
     GameDataPath = "mods"
     GameSaveExtension = "whs"
