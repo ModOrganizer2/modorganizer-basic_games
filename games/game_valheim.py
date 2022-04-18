@@ -421,6 +421,8 @@ class ValheimGameModDataChecker(mobase.ModDataChecker):
             if regex.set_as_root and regex.set_as_root.match(name):
                 new_root = convert_entry_to_tree(entry)
                 return self.fix(new_root) if new_root else None
+            elif regex.valid and regex.valid.match(name):
+                continue
             elif regex.delete and regex.delete.match(name):
                 entry.detach()
             elif regex.move and (match := regex.move.match(name)):
@@ -483,7 +485,7 @@ class ValheimGame(BasicGame):
 
     Name = "Valheim Support Plugin"
     Author = "Zash"
-    Version = "1.1.0"
+    Version = "1.1.1"
 
     GameName = "Valheim"
     GameShortName = "valheim"

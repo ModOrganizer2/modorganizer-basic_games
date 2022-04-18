@@ -249,12 +249,12 @@ def getPreview(save):
     save = BlackAndWhite2SaveGame(save)
     lines = [
         [
-            (u"Name : " + save.getName(), Qt.AlignLeft),
-            (u"| Profile : " + save.getSaveGroupIdentifier()[1:], Qt.AlignLeft),
+            ("Name : " + save.getName(), Qt.AlignLeft),
+            ("| Profile : " + save.getSaveGroupIdentifier()[1:], Qt.AlignLeft),
         ],
-        [(u"Land number : " + save.getLand(), Qt.AlignLeft)],
-        [(u"Saved at : " + save.getCreationTime().toString(), Qt.AlignLeft)],
-        [(u"Elapsed time : " + save.getElapsed(), Qt.AlignLeft)],
+        [("Land number : " + save.getLand(), Qt.AlignLeft)],
+        [("Saved at : " + save.getCreationTime().toString(), Qt.AlignLeft)],
+        [("Elapsed time : " + save.getElapsed(), Qt.AlignLeft)],
     ]
 
     pixmap = QPixmap(320, 320)
