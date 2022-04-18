@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-from PyQt5.QtCore import QFileInfo, QDir
+from PyQt6.QtCore import QFileInfo, QDir
 from typing import List, Optional, cast
 from os.path import join, exists
 

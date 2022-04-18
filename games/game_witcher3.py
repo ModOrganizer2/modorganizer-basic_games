@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir
+from PyQt6.QtCore import QDir
 
 import mobase
 

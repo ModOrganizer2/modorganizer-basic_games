@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import List
 from enum import IntEnum
 
-from PyQt5.QtCore import Qt, QDir, QFileInfo
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtCore import Qt, QDir, QFileInfo
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 import mobase
 

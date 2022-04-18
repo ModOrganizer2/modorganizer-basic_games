@@ -1,7 +1,7 @@
 import os
 import re
 
-from PyQt5.QtCore import QDir
+from PyQt6.QtCore import QDir
 
 from ..basic_game import BasicGame
 
