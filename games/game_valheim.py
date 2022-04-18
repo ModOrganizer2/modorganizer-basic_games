@@ -11,7 +11,7 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Optional, TextIO, Union
 
-from PyQt5.QtCore import QDir
+from PyQt6.QtCore import QDir
 
 import mobase
 

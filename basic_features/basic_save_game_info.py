@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from PyQt5.QtCore import QDateTime, Qt
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtCore import QDateTime, Qt
+from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 import mobase
 

@@ -79,7 +79,7 @@ You need to create a class that inherits `BasicGame` and put it in a `game_XX.py
 Below is an example for The Witcher 3 (see also [games/game_witcher3.py](games/game_witcher3.py)):
 
 ```python
-from PyQt5.QtCore import QDir
+from PyQt6.QtCore import QDir
 from ..basic_game import BasicGame
 
 
@@ -106,7 +106,7 @@ to the `version` method, see the table below). If you override the method, you d
 not have to provide the attribute:
 
 ```python
-from PyQt5.QtCore import QDir
+from PyQt6.QtCore import QDir
 from ..basic_game import BasicGame
 
 import mobase

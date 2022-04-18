@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 
 import mobase
 

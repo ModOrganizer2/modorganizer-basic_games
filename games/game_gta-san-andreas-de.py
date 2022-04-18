@@ -1,7 +1,7 @@
 import os
 
 from pathlib import Path
-from PyQt5.QtCore import QDir, QFileInfo
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
