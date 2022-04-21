@@ -1,23 +1,23 @@
 # -*- encoding: utf-8 -*-
-import os
-import sys
 import datetime
+import os
 import struct
+import sys
 import time
 from pathlib import Path
 from typing import List
 
-from PyQt6.QtCore import QDir, QFileInfo, QFile, QDateTime, Qt
-from PyQt6.QtGui import QPixmap, QPainter
+from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
+from PyQt6.QtGui import QPainter, QPixmap
 
 import mobase
 
-from ..basic_game import BasicGame
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
-    BasicGameSaveGameInfoWidget,
     BasicGameSaveGameInfo,
+    BasicGameSaveGameInfoWidget,
 )
+from ..basic_game import BasicGame
 
 
 class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):

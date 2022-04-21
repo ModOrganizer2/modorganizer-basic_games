@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
-from typing import List
 from pathlib import Path
+from typing import List
 
-from PyQt6.QtCore import QFileInfo, QDir
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 

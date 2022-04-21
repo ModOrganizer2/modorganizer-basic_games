@@ -1,11 +1,11 @@
 # -*- encoding: utf-8 -*-
 import os
-import mobase
+from pathlib import Path
+from typing import List
 
 from PyQt6.QtCore import QDir
 
-from typing import List
-from pathlib import Path
+import mobase
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 

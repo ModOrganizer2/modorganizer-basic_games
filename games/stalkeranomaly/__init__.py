@@ -2,19 +2,19 @@
 # flake8: noqa
 
 from .XRIO import XRReader, XRStream
-from .XRMath import IVec3, IVec4, IFlag
+from .XRMath import IFlag, IVec3, IVec4
 from .XRNET import XRNETState
 from .XRObject import (
-    XRFlag,
     XRAbstract,
-    XRVisual,
     XRBoneData,
-    XRSkeleton,
-    XRObject,
+    XRCreatureAbstract,
+    XRCreatureActor,
     XRDynamicObject,
     XRDynamicObjectVisual,
-    XRCreatureAbstract,
+    XRFlag,
+    XRObject,
+    XRSkeleton,
     XRTraderAbstract,
-    XRCreatureActor,
+    XRVisual,
 )
 from .XRSave import XRSave

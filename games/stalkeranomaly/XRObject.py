@@ -1,11 +1,11 @@
 # -*- encoding: utf-8 -*-
 
 import io
-from typing import List
 from enum import IntFlag
+from typing import List
 
 from .XRIO import XRReader
-from .XRMath import IVec3, IFlag
+from .XRMath import IFlag, IVec3
 from .XRNET import XRNETState
 
 

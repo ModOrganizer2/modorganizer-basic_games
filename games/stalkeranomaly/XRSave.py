@@ -2,13 +2,14 @@
 
 import io
 import struct
-import lzokay
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
 
-from .XRObject import XRCreatureActor, XRFlag
+import lzokay
+
 from .XRIO import XRReader, XRStream
+from .XRObject import XRCreatureActor, XRFlag
 
 
 class XRSave:

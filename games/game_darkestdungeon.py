@@ -208,7 +208,9 @@ class DarkestDungeonGame(BasicGame):
     def savesDirectory(self) -> QDir:
         documentsSaves = QDir(
             "{}/Darkest".format(
-                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation)
+                QStandardPaths.writableLocation(
+                    QStandardPaths.StandardLocation.DocumentsLocation
+                )
             )
         )
         if self.is_steam():

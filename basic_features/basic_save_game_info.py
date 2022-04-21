@@ -41,17 +41,19 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         layout = QVBoxLayout()
         self._label = QLabel()
         palette = self._label.palette()
-        palette.setColor(self._label.foregroundRole(), Qt.white)
+        palette.setColor(self._label.foregroundRole(), Qt.GlobalColor.white)
         self._label.setPalette(palette)
         layout.addWidget(self._label)
         self.setLayout(layout)
 
         palette = self.palette()
-        palette.setColor(self.backgroundRole(), Qt.black)
+        palette.setColor(self.backgroundRole(), Qt.GlobalColor.black)
         self.setAutoFillBackground(True)
         self.setPalette(palette)
 
-        self.setWindowFlags(Qt.ToolTip | Qt.BypassGraphicsProxyWidget)  # type: ignore
+        self.setWindowFlags(
+            Qt.WindowType.ToolTip | Qt.WindowType.BypassGraphicsProxyWidget
+        )
 
     def setSave(self, save: mobase.ISaveGame):
         # Resize the label to (0, 0) to hide it:

@@ -1,7 +1,8 @@
 from PyQt6.QtCore import QDir
-from ..basic_game import BasicGame
 
 import mobase
+
+from ..basic_game import BasicGame
 
 
 class DA2Game(BasicGame):
