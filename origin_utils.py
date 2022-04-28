@@ -3,13 +3,13 @@
 # Heavily influenced by https://github.com/erri120/GameFinder
 
 import os
-import psutil
 import threading
 import time
-
 from pathlib import Path
 from typing import Dict, List
 from urllib import parse
+
+import psutil
 
 
 class OriginWatcher:

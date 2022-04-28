@@ -1,10 +1,10 @@
 # -*- encoding: utf-8 -*-
 
+from enum import IntEnum
 from pathlib import Path
 from typing import List
-from enum import IntEnum
 
-from PyQt6.QtCore import Qt, QDir, QFileInfo
+from PyQt6.QtCore import QDir, QFileInfo, Qt
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 import mobase
@@ -14,7 +14,6 @@ from ..basic_features.basic_save_game_info import (
     BasicGameSaveGameInfo,
 )
 from ..basic_game import BasicGame
-
 from .stalkeranomaly import XRSave
 
 
@@ -176,16 +175,18 @@ class StalkerAnomalySaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self._labelRep = self.newLabel(layout)
         self.setLayout(layout)
         palette = self.palette()
-        palette.setColor(self.backgroundRole(), Qt.black)
+        palette.setColor(self.backgroundRole(), Qt.GlobalColor.black)
         self.setAutoFillBackground(True)
         self.setPalette(palette)
-        self.setWindowFlags(Qt.ToolTip | Qt.BypassGraphicsProxyWidget)  # type: ignore
+        self.setWindowFlags(
+            Qt.WindowType.ToolTip | Qt.WindowType.BypassGraphicsProxyWidget
+        )
 
     def newLabel(self, layout: QVBoxLayout) -> QLabel:
         label = QLabel()
-        label.setAlignment(Qt.AlignLeft)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         palette = label.palette()
-        palette.setColor(label.foregroundRole(), Qt.white)
+        palette.setColor(label.foregroundRole(), Qt.GlobalColor.white)
         label.setPalette(palette)
         layout.addWidget(label)
         layout.addStretch()

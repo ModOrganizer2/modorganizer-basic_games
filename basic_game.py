@@ -19,12 +19,16 @@ def replace_variables(value: str, game: "BasicGame") -> str:
     if value.find("%DOCUMENTS%") != -1:
         value = value.replace(
             "%DOCUMENTS%",
-            QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
+            QStandardPaths.writableLocation(
+                QStandardPaths.StandardLocation.DocumentsLocation
+            ),
         )
     if value.find("%USERPROFILE%") != -1:
         value = value.replace(
             "%USERPROFILE%",
-            QStandardPaths.writableLocation(QStandardPaths.StandardLocation.HomeLocation),
+            QStandardPaths.writableLocation(
+                QStandardPaths.StandardLocation.HomeLocation
+            ),
         )
     if value.find("%GAME_DOCUMENTS%") != -1:
         value = value.replace(
@@ -211,11 +215,15 @@ class BasicGameMappings:
 
         folders = [
             "{}/My Games/{}".format(
-                QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
+                QStandardPaths.writableLocation(
+                    QStandardPaths.StandardLocation.DocumentsLocation
+                ),
                 game.gameName(),
             ),
             "{}/{}".format(
-                QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation),
+                QStandardPaths.writableLocation(
+                    QStandardPaths.StandardLocation.DocumentsLocation
+                ),
                 game.gameName(),
             ),
         ]
@@ -332,8 +340,8 @@ class BasicGame(mobase.IPluginGame):
     @staticmethod
     def setup():
         from .gog_utils import find_games as find_gog_games
-        from .steam_utils import find_games as find_steam_games
         from .origin_utils import find_games as find_origin_games
+        from .steam_utils import find_games as find_steam_games
 
         BasicGame.steam_games = find_steam_games()
         BasicGame.gog_games = find_gog_games()

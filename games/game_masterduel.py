@@ -1,8 +1,9 @@
 # -*- encoding: utf-8 -*-
 
-from PyQt5.QtCore import QFileInfo, QDir
-from typing import List, Optional, cast
-from os.path import join, exists
+from os.path import exists, join
+from typing import List, Optional
+
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
@@ -54,9 +55,7 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
         dir = self.gameDirectory()
         dir.cd("LocalData")
 
-        subdirs = dir.entryList(
-            filters=cast(QDir.Filters, QDir.Dirs | QDir.NoDotAndDotDot)
-        )
+        subdirs = dir.entryList(filters=QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot)
         dir.cd(subdirs[0])
 
         self._userDataDirCached = dir.absolutePath()
