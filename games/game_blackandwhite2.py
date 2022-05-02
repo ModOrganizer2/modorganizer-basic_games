@@ -354,8 +354,12 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     _program_link = PSTART_MENU + "\\Black & White 2\\Black & White® 2.lnk"
 
+    def __init__(self):
+        BasicGame.__init__(self)
+        mobase.IPluginFileMapper.__init__(self)
+
     def init(self, organizer: mobase.IOrganizer) -> bool:
-        super().init(organizer)
+        BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
         self._featureMap[mobase.LocalSavegames] = BlackAndWhite2LocalSavegames(
             self.savesDirectory()
