@@ -611,7 +611,8 @@ class BasicGame(mobase.IPluginGame):
 
         path = Path(path)
 
-        # Check if we have a matching steam, GOG, Origin or EA Desktop id and set the index accordingly:
+        # Check if we have a matching steam, GOG, Origin or EA Desktop id and set the
+        # index accordingly:
         for steamid, steampath in BasicGame.steam_games.items():
             if steampath == path:
                 self._mappings.steamAPPId.set_value(steamid)

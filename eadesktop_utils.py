@@ -4,7 +4,7 @@ import configparser
 import os
 import xml.etree.ElementTree as et
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 
 def find_games() -> Dict[str, Path]:
@@ -18,9 +18,11 @@ def find_games() -> Dict[str, Path]:
     games: Dict[str, Path] = {}
 
     local_app_data_path = os.path.expandvars("%LocalAppData%")
-    ea_desktop_settings_path = Path(local_app_data_path).joinpath("Electronic Arts", "EA Desktop")
+    ea_desktop_settings_path = Path(local_app_data_path).joinpath(
+        "Electronic Arts", "EA Desktop"
+    )
 
-    if not ea_desktop_settings_path.exists:
+    if not ea_desktop_settings_path.exists():
         return games
 
     user_ini, *_ = list(ea_desktop_settings_path.glob("user_*.ini"))
@@ -44,8 +46,10 @@ def find_games() -> Dict[str, Path]:
         # numeric ID. There are, in some cases, also name IDs but we do not
         # consider these.
         content_id = root.find(".//contentIDs/contentID[1]")
-        game_id = content_id.text
-        games[game_id] = game_dir
+
+        if content_id and content_id.text:
+            game_id = content_id.text
+            games[game_id] = game_dir
 
     return games
 
