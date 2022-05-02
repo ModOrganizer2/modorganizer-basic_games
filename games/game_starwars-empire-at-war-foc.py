@@ -23,6 +23,10 @@ class StarWarsEmpireAtWarGame(BasicGame):
     # using StarWarsG.exe instead of swfoc.exe because it has an icon
     GameBinary = "corruption/StarWarsG.exe"
     GameDataPath = "corruption/Data"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Star-Wars:-Empire-At-War"
+    )
 
     def executables(self) -> List[mobase.ExecutableInfo]:
         return [

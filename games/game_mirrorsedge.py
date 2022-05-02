@@ -16,3 +16,7 @@ class MirrorsEdgeGame(BasicGame):
     GameGogId = 1893001152
     GameBinary = "Binaries/MirrorsEdge.exe"
     GameDataPath = "TdGame"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Mirror's-Edge"
+    )

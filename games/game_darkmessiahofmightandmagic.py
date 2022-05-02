@@ -22,6 +22,10 @@ class DarkMessiahOfMightAndMagicGame(BasicGame):
     GameSteamId = 2100
     GameBinary = "mm.exe"
     GameDataPath = "mm"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Dark-Messiah-of-Might-&-Magic"
+    )
 
     GameDocumentsDirectory = "%GAME_PATH%/mm"
     GameSavesDirectory = "%GAME_PATH%/mm/SAVE"

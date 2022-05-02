@@ -321,6 +321,9 @@ class ValheimGame(BasicGame):
     GameBinary = "valheim.exe"
     GameDataPath = ""
     GameSavesDirectory = r"%USERPROFILE%/AppData/LocalLow/IronGate/Valheim"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Valheim"
+    )
 
     _forced_libraries = ["winhttp.dll"]
 

@@ -62,6 +62,10 @@ class ZeusAndPoseidonGame(BasicGame):
     GameDocumentsDirectory = "%GAME_PATH%"
     GameSavesDirectory = "%GAME_PATH%/Save"
     GameSaveExtension = "sav"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Zeus%EF%BC%8BPoseidon"
+    )
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

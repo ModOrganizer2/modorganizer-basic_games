@@ -15,6 +15,10 @@ class SubnauticaGame(BasicGame):
     GameBinary = "Subnautica.exe"
     GameDataPath = "QMods"
     GameDocumentsDirectory = "%GAME_PATH%"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Subnautica"
+    )
 
     def iniFiles(self):
         return ["doorstop_config.ini"]

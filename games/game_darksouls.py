@@ -18,3 +18,7 @@ class DarkSoulsGame(BasicGame):
     GameDocumentsDirectory = "%DOCUMENTS%/NBGI/DarkSouls"
     GameSavesDirectory = "%DOCUMENTS%/NBGI/DarkSouls"
     GameSaveExtension = "sl2"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Dark-Souls"
+    )

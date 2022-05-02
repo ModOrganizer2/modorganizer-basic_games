@@ -73,6 +73,10 @@ class DungeonSiegeIIGame(BasicGame):
     GameSavesDirectory = "%GAME_DOCUMENTS%/Save"
     GameDocumentsDirectory = "%DOCUMENTS%/My Games/Dungeon Siege 2"
     GameSaveExtension = "ds2party"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Dungeon-Siege-II"
+    )
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

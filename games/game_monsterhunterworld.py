@@ -16,3 +16,7 @@ class MonsterHunterWorldGame(BasicGame):
     GameDataPath = "%GAME_PATH%"
     GameSaveExtension = "dat"
     GameSteamId = 582010
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Monster-Hunter:-World"
+    )

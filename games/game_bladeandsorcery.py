@@ -12,3 +12,7 @@ class BaSGame(BasicGame):
     GameBinary = "BladeAndSorcery.exe"
     GameDataPath = r"BladeAndSorcery_Data\StreamingAssets\Mods"
     GameSteamId = 629730
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Blade-&-Sorcery"
+    )

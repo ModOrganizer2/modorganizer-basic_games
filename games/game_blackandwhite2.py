@@ -347,6 +347,10 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
     GameBinary = "white.exe"
     GameDocumentsDirectory = "%DOCUMENTS%/Black & White 2"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Profiles"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Black-&-White-2"
+    )
 
     _program_link = PSTART_MENU + "\\Black & White 2\\Black & White® 2.lnk"
 

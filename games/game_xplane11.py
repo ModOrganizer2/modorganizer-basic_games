@@ -11,3 +11,7 @@ class XP11Game(BasicGame):
     GameShortName = "xp11"
     GameBinary = r"X-Plane.exe"
     GameDataPath = r""
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-X%E2%80%90Plane-11"
+    )

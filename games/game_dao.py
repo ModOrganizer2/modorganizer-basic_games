@@ -21,6 +21,10 @@ class DAOriginsGame(BasicGame):
     GameSteamId = [17450, 47810]
     GameGogId = 1949616134
     GameEaDesktopId = [70377, 70843]
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Dragon-Age:-Origins"
+    )
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

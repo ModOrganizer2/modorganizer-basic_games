@@ -16,3 +16,7 @@ class Cyberpunk2077Game(BasicGame):
     GameSaveExtension = "dat"
     GameSteamId = 1091500
     GameGogId = 1423049311
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Cyberpunk-2077"
+    )

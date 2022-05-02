@@ -16,6 +16,10 @@ class MSFS2020Game(BasicGame):
     GameShortName = "msfs2020"
     GameBinary = r"FlightSimulator.exe"
     GameSteamId = [1250410]
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Microsoft-Flight-Simulator-(2020)"
+    )
 
     def dataDirectory(self) -> QDir:
         # Find and use package path specified in Asobo engine options

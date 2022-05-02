@@ -16,3 +16,7 @@ class NoMansSkyGame(BasicGame):
     GameGogId = 1242384383
     GameBinary = "DDDA.exe"
     GameDataPath = "nativePC"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Dragon's-Dogma:-Dark-Arisen"
+    )

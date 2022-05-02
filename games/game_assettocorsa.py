@@ -13,3 +13,7 @@ class AssettoCorsaGame(BasicGame):
     GameDataPath = r""
     GameSteamId = 244210
     GameDocumentsDirectory = "%DOCUMENTS%/Assetto Corsa"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Assetto-Corsa"
+    )

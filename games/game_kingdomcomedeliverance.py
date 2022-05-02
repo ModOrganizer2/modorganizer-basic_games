@@ -24,6 +24,10 @@ class KingdomComeDeliveranceGame(BasicGame):
     GameSaveExtension = "whs"
     GameDocumentsDirectory = "%GAME_PATH%"
     GameSavesDirectory = "%USERPROFILE%/Saved Games/kingdomcome/saves"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Kingdom-Come:-Deliverance"
+    )
 
     def iniFiles(self):
         return ["custom.cfg", "system.cfg", "user.cfg"]

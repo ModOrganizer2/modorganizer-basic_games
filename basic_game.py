@@ -211,6 +211,7 @@ class BasicGameMappings:
     originWatcherExecutables: BasicGameMapping[List[str]]
     epicAPPId: BasicGameOptionsMapping[str]
     eaDesktopContentId: BasicGameOptionsMapping[str]
+    supportURL: BasicGameMapping[str]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -335,6 +336,9 @@ class BasicGameMappings:
             "eaDesktopContentId",
             default=lambda g: "",
             apply_fn=ids_apply,
+        )
+        self.supportURL = BasicGameMapping(
+            game, "GameSupportURL", "supportURL", default=lambda g: ""
         )
 
 
@@ -516,6 +520,9 @@ class BasicGame(mobase.IPluginGame):
 
     def getLauncherName(self) -> str:
         return self._mappings.launcherName.get()
+
+    def getSupportURL(self) -> str:
+        return self._mappings.supportURL.get()
 
     def executables(self) -> List[mobase.ExecutableInfo]:
         execs = []
