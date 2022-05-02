@@ -158,6 +158,7 @@ class Witcher3Game(BasicGame):
 | GameOriginManifestIds | Origin Manifest ID of the game (Optional) | `originManifestIds` | `List[str]` or `str` |
 | GameOriginWatcherExecutables | Executables to watch for Origin DRM (Optional) | `originWatcherExecutables` | `List[str]` or `str` |
 | GameEpicId | Epic ID (`AppName`) of the game (Optional) | `epicAPPId` | `List[str]` or `str` |
+| GameEaDesktopId | EA Desktop ID of the game (Optional) | `eaDesktopContentId` | `List[str]` or `str` or `int` |
 
 You can use the following variables for `str`:
 
@@ -169,9 +170,11 @@ You can use the following variables for `str`:
 
 The meta-plugin provides some useful extra feature:
 
-1. **Automatic Steam, GOG, Origin and Epic game detection:** If you provide Steam, GOG, Origin or Epic IDs for the game
-   (via `GameSteamId`, `GameGogId`, `GameOriginManifestIds`, or `GameEpicId`), the game will be listed in the list of
-   available games when creating a new MO2 instance (if the game is installed via Steam, GOG, Origin or Epic Games / Legendary).
+1. **Automatic Steam, GOG, Origin, Epic Games and EA Desktop detection:** If you provide
+  Steam, GOG, Origin or Epic IDs for the game (via `GameSteamId`, `GameGogId`,
+  `GameOriginManifestIds`, `GameEpicId` or `GameEaDesktopId`), the game will be listed
+  in the list of available games when creating a new MO2 instance (if the game is
+  installed via Steam, GOG, Origin, Epic Games / Legendary or EA Desktop).
 2. **Basic save game preview:** If you use the Python version, and if you can easily obtain a picture (file)
   for any saves, you can provide basic save-game preview by using the `BasicGameSaveGameInfo`.
   See [games/game_witcher3.py](games/game_witcher3.py) for  more details.
@@ -184,5 +187,6 @@ Game IDs can be found here:
 - For Epic Games (`AppName`) from:
   - `C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\` (.item files)
   - or: `C:\ProgramData\Epic\EpicGamesLauncher\UnrealEngineLauncher\LauncherInstalled.dat`
-- For Legendary (alt. Epic launcher) via command `legendary list-games`  
+- For Legendary (alt. Epic launcher) via command `legendary list-games`
     or from: `%USERPROFILE%\.config\legendary\installed.json`
+- For EA Desktop from `<EA Games install location>\<game title>\__Installer\installerdata.xml`

@@ -210,6 +210,7 @@ class BasicGameMappings:
     originManifestIds: BasicGameOptionsMapping[str]
     originWatcherExecutables: BasicGameMapping[List[str]]
     epicAPPId: BasicGameOptionsMapping[str]
+    eaDesktopContentId: BasicGameOptionsMapping[str]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -328,6 +329,13 @@ class BasicGameMappings:
         self.epicAPPId = BasicGameOptionsMapping(
             game, "GameEpicId", "epicAPPId", default=lambda g: "", apply_fn=ids_apply
         )
+        self.eaDesktopContentId = BasicGameOptionsMapping(
+            game,
+            "GameEaDesktopId",
+            "eaDesktopContentId",
+            default=lambda g: "",
+            apply_fn=ids_apply,
+        )
 
 
 class BasicGame(mobase.IPluginGame):
@@ -341,9 +349,11 @@ class BasicGame(mobase.IPluginGame):
     gog_games: Dict[str, Path]
     origin_games: Dict[str, Path]
     epic_games: Dict[str, Path]
+    eadesktop_games: Dict[str, Path]
 
     @staticmethod
     def setup():
+        from .eadesktop_utils import find_games as find_eadesktop_games
         from .epic_utils import find_games as find_epic_games
         from .gog_utils import find_games as find_gog_games
         from .origin_utils import find_games as find_origin_games
@@ -353,6 +363,7 @@ class BasicGame(mobase.IPluginGame):
         BasicGame.gog_games = find_gog_games()
         BasicGame.origin_games = find_origin_games()
         BasicGame.epic_games = find_epic_games()
+        BasicGame.eadesktop_games = find_eadesktop_games()
 
     # File containing the plugin:
     _fromName: str
@@ -389,6 +400,9 @@ class BasicGame(mobase.IPluginGame):
 
     def is_epic(self) -> bool:
         return self._mappings.epicAPPId.has_value()
+
+    def is_eadesktop(self) -> bool:
+        return self._mappings.eaDesktopContentId.has_value()
 
     # IPlugin interface:
 
@@ -457,6 +471,11 @@ class BasicGame(mobase.IPluginGame):
                 self.setGamePath(BasicGame.epic_games[epic_id])
                 return
 
+        for eadesktop_content_id in self._mappings.eaDesktopContentId.get():
+            if eadesktop_content_id in BasicGame.eadesktop_games:
+                self.setGamePath(BasicGame.eadesktop_games[eadesktop_content_id])
+                return
+
     def gameName(self) -> str:
         return self._mappings.gameName.get()
 
@@ -488,6 +507,9 @@ class BasicGame(mobase.IPluginGame):
 
     def epicAPPId(self) -> str:
         return self._mappings.epicAPPId.current()
+
+    def eaDesktopContentId(self) -> str:
+        return self._mappings.eaDesktopContentId.current()
 
     def binaryName(self) -> str:
         return self._mappings.binaryName.get()
@@ -589,7 +611,7 @@ class BasicGame(mobase.IPluginGame):
 
         path = Path(path)
 
-        # Check if we have a matching steam ID or GOG id and set the index accordingly:
+        # Check if we have a matching steam, GOG, Origin or EA Desktop id and set the index accordingly:
         for steamid, steampath in BasicGame.steam_games.items():
             if steampath == path:
                 self._mappings.steamAPPId.set_value(steamid)
@@ -602,6 +624,9 @@ class BasicGame(mobase.IPluginGame):
         for epicid, epicpath in BasicGame.epic_games.items():
             if epicpath == path:
                 self._mappings.epicAPPId.set_value(epicid)
+        for eadesktopid, eadesktoppath in BasicGame.eadesktop_games.items():
+            if eadesktoppath == path:
+                self._mappings.eaDesktopContentId.set_value(eadesktopid)
 
     def documentsDirectory(self) -> QDir:
         return self._mappings.documentsDirectory.get()

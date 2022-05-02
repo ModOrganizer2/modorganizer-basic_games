@@ -1,0 +1,56 @@
+# -*- encoding: utf-8 -*-
+
+import configparser
+import os
+import xml.etree.ElementTree as et
+from pathlib import Path
+from typing import Dict, List
+
+
+def find_games() -> Dict[str, Path]:
+    """
+    Find the list of EA Desktop games installed.
+
+    Returns:
+        A mapping from EA Desktop content IDs to install locations for available
+        EA Desktop games.
+    """
+    games: Dict[str, Path] = {}
+
+    local_app_data_path = os.path.expandvars("%LocalAppData%")
+    ea_desktop_settings_path = Path(local_app_data_path).joinpath("Electronic Arts", "EA Desktop")
+
+    if not ea_desktop_settings_path.exists:
+        return games
+
+    user_ini, *_ = list(ea_desktop_settings_path.glob("user_*.ini"))
+
+    # The INI file in its current form has no section headers.
+    # So we wrangle the input to add it all under a fake section.
+    with open(user_ini) as f:
+        ini_content = "[mod_organizer]\n" + f.read()
+
+    config = configparser.ConfigParser()
+    config.read_string(ini_content)
+
+    install_path = Path(config.get("mod_organizer", "user.downloadinplacedir"))
+
+    for game_dir in install_path.iterdir():
+        installer_file = game_dir.joinpath("__Installer", "installerdata.xml")
+        xml_tree = et.parse(installer_file)
+        root = xml_tree.getroot()
+
+        # For all manifest files the following XPath expression returns the
+        # numeric ID. There are, in some cases, also name IDs but we do not
+        # consider these.
+        content_id = root.find(".//contentIDs/contentID[1]")
+        game_id = content_id.text
+        games[game_id] = game_dir
+
+    return games
+
+
+if __name__ == "__main__":
+    games = find_games()
+    for k, v in games.items():
+        print("Found game with id {} at {}.".format(k, v))
