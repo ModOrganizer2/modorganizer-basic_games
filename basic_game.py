@@ -209,6 +209,7 @@ class BasicGameMappings:
     gogAPPId: BasicGameOptionsMapping[str]
     originManifestIds: BasicGameOptionsMapping[str]
     originWatcherExecutables: BasicGameMapping[List[str]]
+    epicAPPId: BasicGameOptionsMapping[str]
 
     @staticmethod
     def _default_documents_directory(game):
@@ -324,6 +325,9 @@ class BasicGameMappings:
             apply_fn=lambda s: [s] if isinstance(s, str) else s,
             default=lambda g: [],
         )
+        self.epicAPPId = BasicGameOptionsMapping(
+            game, "GameEpicId", "epicAPPId", default=lambda g: "", apply_fn=ids_apply
+        )
 
 
 class BasicGame(mobase.IPluginGame):
@@ -332,13 +336,15 @@ class BasicGame(mobase.IPluginGame):
     to make it easier to create game plugins without having to implement
     all the methods of mobase.IPluginGame."""
 
-    # List of steam, GOG, and origin games:
+    # List of steam, GOG, origin and Epic games:
     steam_games: Dict[str, Path]
     gog_games: Dict[str, Path]
     origin_games: Dict[str, Path]
+    epic_games: Dict[str, Path]
 
     @staticmethod
     def setup():
+        from .epic_utils import find_games as find_epic_games
         from .gog_utils import find_games as find_gog_games
         from .origin_utils import find_games as find_origin_games
         from .steam_utils import find_games as find_steam_games
@@ -346,6 +352,7 @@ class BasicGame(mobase.IPluginGame):
         BasicGame.steam_games = find_steam_games()
         BasicGame.gog_games = find_gog_games()
         BasicGame.origin_games = find_origin_games()
+        BasicGame.epic_games = find_epic_games()
 
     # File containing the plugin:
     _fromName: str
@@ -379,6 +386,9 @@ class BasicGame(mobase.IPluginGame):
 
     def is_origin(self) -> bool:
         return self._mappings.originManifestIds.has_value()
+
+    def is_epic(self) -> bool:
+        return self._mappings.epicAPPId.has_value()
 
     # IPlugin interface:
 
@@ -442,6 +452,11 @@ class BasicGame(mobase.IPluginGame):
                 self.setGamePath(BasicGame.origin_games[origin_manifest_id])
                 return
 
+        for epic_id in self._mappings.epicAPPId.get():
+            if epic_id in BasicGame.epic_games:
+                self.setGamePath(BasicGame.epic_games[epic_id])
+                return
+
     def gameName(self) -> str:
         return self._mappings.gameName.get()
 
@@ -470,6 +485,9 @@ class BasicGame(mobase.IPluginGame):
 
     def gogAPPId(self) -> str:
         return self._mappings.gogAPPId.current()
+
+    def epicAPPId(self) -> str:
+        return self._mappings.epicAPPId.current()
 
     def binaryName(self) -> str:
         return self._mappings.binaryName.get()
@@ -581,6 +599,9 @@ class BasicGame(mobase.IPluginGame):
         for originid, originpath in BasicGame.origin_games.items():
             if originpath == path:
                 self._mappings.originManifestIds.set_value(originid)
+        for epicid, epicpath in BasicGame.epic_games.items():
+            if epicpath == path:
+                self._mappings.epicAPPId.set_value(epicid)
 
     def documentsDirectory(self) -> QDir:
         return self._mappings.documentsDirectory.get()

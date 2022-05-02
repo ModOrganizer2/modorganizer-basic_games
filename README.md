@@ -55,13 +55,14 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | Divinity: Original Sin (Enhanced Edition) — [STEAM](https://store.steampowered.com/app/373420/Divinity_Original_Sin__Enhanced_Edition/) | [LostDragonist](https://github.com/LostDragonist/) | [game_divinityoriginalsinee.py](games/game_divinityoriginalsinee.py) | <ul><li>save game preview</li><li>mod data checker</li></ul> |
 | Dragon's Dogma: Dark Arisen — [GOG](https://www.gog.com/game/dragons_dogma_dark_arisen) / [STEAM](https://store.steampowered.com/app/367500/Dragons_Dogma_Dark_Arisen/) | [EzioTheDeadPoet](https://github.com/EzioTheDeadPoet) | [game_dragonsdogmadarkarisen.py](games/game_dragonsdogmadarkarisen.py) | |
 | Dungeon Siege II — [GOG](https://www.gog.com/game/dungeon_siege_collection) / [STEAM](https://store.steampowered.com/app/39200/Dungeon_Siege_II/) | [Holt59](https://github.com/holt59/) | [game_dungeonsiege2.py](games/game_dungeonsiege2.py) | <ul><li>mod data checker</li></ul> |
-| Kingdom Come: Deliverance — [GOG](https://www.gog.com/game/kingdom_come_deliverance) / [STEAM](https://store.steampowered.com/app/379430/Kingdom_Come_Deliverance/)| [Silencer711](https://github.com/Silencer711) | [game_kingdomcomedeliverance.py](games/game_kingdomcomedeliverance.py) | <ul><li>profile specific cfg files</li></ul>|
+| Kingdom Come: Deliverance — [GOG](https://www.gog.com/game/kingdom_come_deliverance) / [STEAM](https://store.steampowered.com/app/379430/Kingdom_Come_Deliverance/) / [Epic](https://store.epicgames.com/p/kingdom-come-deliverance) | [Silencer711](https://github.com/Silencer711) | [game_kingdomcomedeliverance.py](games/game_kingdomcomedeliverance.py) | <ul><li>profile specific cfg files</li></ul>|
 | Mirror's Edge — [GOG](https://www.gog.com/game/mirrors_edge) / [STEAM](https://store.steampowered.com/app/17410/Mirrors_Edge)|[EzioTheDeadPoet](https://eziothedeadpoet.github.io/AboutMe/)|[game_mirrorsedge.py](games/game_mirrorsedge.py)| |
 | Mount & Blade II: Bannerlord — [GOG](https://www.gog.com/game/mount_blade_ii_bannerlord) / [STEAM](https://store.steampowered.com/app/261550/Mount__Blade_II_Bannerlord/) | [Holt59](https://github.com/holt59/) | [game_mountandblade2.py](games/game_mountandblade2.py) | <ul><li>mod data checker</li></ul> |
 | No Man's Sky - [GOG](https://www.gog.com/game/no_mans_sky) / [Steam](https://store.steampowered.com/app/275850/No_Mans_Sky/)|[EzioTheDeadPoet](https://eziothedeadpoet.github.io/AboutMe/)|[game_nomanssky.py](games/game_nomanssky.py)| |
 | S.T.A.L.K.E.R. Anomaly — [MOD](https://www.stalker-anomaly.com/) | [Qudix](https://github.com/Qudix) | [game_stalkeranomaly.py](games/game_stalkeranomaly.py) | <ul><li>mod data checker</li></ul> |
 | Stardew Valley — [GOG](https://www.gog.com/game/stardew_valley) / [STEAM](https://store.steampowered.com/app/413150/Stardew_Valley/) | [Syer10](https://github.com/Syer10), [Holt59](https://github.com/holt59/) | [game_stardewvalley.py](games/game_stardewvalley.py) | <ul><li>mod data checker</li></ul> |
 | STAR WARS™ Empire at War: Gold Pack - [GOG](https://www.gog.com/game/star_wars_empire_at_war_gold_pack) / [STEAM](https://store.steampowered.com/app/32470/) | [erri120](https://github.com/erri120) | <ul><li>Empire at War: [game_starwars-empire-at-war.py](games/game_starwars-empire-at-war.py)</li><li>Force of Corruption: [game_starwars-empire-at-war-foc.py](games/game_starwars-empire-at-war-foc.py)</li></ul> | |
+| Subnautica — [STEAM](https://store.steampowered.com/app/264710/) / [Epic](https://store.epicgames.com/p/subnautica) | dekart811 | [game_subnautica.py](games/game_subnautica.py) | |
 | Valheim — [STEAM](https://store.steampowered.com/app/892970/Valheim/) | [Zash](https://github.com/ZashIn) | [game_valheim.py](games/game_valheim.py) | <ul><li>mod data checker</li><li>overwrite config sync</li><li>save game support (no preview)</li></ul>
 | The Witcher: Enhanced Edition - [GOG](https://www.gog.com/game/the_witcher) / [STEAM](https://store.steampowered.com/app/20900/The_Witcher_Enhanced_Edition_Directors_Cut/) | [erri120](https://github.com/erri120) | [game_witcher1.py](games/game_witcher1.py) | <ul><li>save game parsing (no preview)</li></ul> |
 | The Witcher 3: Wild Hunt — [GOG](https://www.gog.com/game/the_witcher_3_wild_hunt) / [STEAM](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | [Holt59](https://github.com/holt59/) | [game_witcher3.py](games/game_witcher3.py) | <ul><li>save game preview</li></ul> |
@@ -155,6 +156,7 @@ class Witcher3Game(BasicGame):
 | GameGogId | GOG ID of the game (Optional) | `gogAPPId` | `List[str]` or `str` or `int` |
 | GameOriginManifestIds | Origin Manifest ID of the game (Optional) | `originManifestIds` | `List[str]` or `str` |
 | GameOriginWatcherExecutables | Executables to watch for Origin DRM (Optional) | `originWatcherExecutables` | `List[str]` or `str` |
+| GameEpicId | Epic ID (`AppName`) of the game (Optional) | `epicAPPId` | `List[str]` or `str` |
 
 You can use the following variables for `str`:
 
@@ -166,9 +168,9 @@ You can use the following variables for `str`:
 
 The meta-plugin provides some useful extra feature:
 
-1. **Automatic Steam, GOG, and Origin game detection:** If you provide Steam, GOG, or Origin IDs for the game (via
-  `GameSteamId`, `GameGogId`, or `GameOriginManifestIds`), the game will be listed in the list of available games when creating a new
-  MO2 instance (if the game is installed via Steam or GOG).
+1. **Automatic Steam, GOG, Origin and Epic game detection:** If you provide Steam, GOG, Origin or Epic IDs for the game
+   (via `GameSteamId`, `GameGogId`, `GameOriginManifestIds`, or `GameEpicId`), the game will be listed in the list of
+   available games when creating a new MO2 instance (if the game is installed via Steam, GOG, Origin or Epic Games / Legendary).
 2. **Basic save game preview:** If you use the Python version, and if you can easily obtain a picture (file)
   for any saves, you can provide basic save-game preview by using the `BasicGameSaveGameInfo`.
   See [games/game_witcher3.py](games/game_witcher3.py) for  more details.
@@ -177,4 +179,9 @@ Game IDs can be found here:
 
 - For Steam on [Steam Database](https://steamdb.info/)
 - For GOG on [GOG Database](https://www.gogdb.org/)
-- For Origin from C:\ProgramData\Origin\LocalContent (.mfst files)
+- For Origin from `C:\ProgramData\Origin\LocalContent` (.mfst files)
+- For Epic Games (`AppName`) from:
+  - `C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\` (.item files)
+  - or: `C:\ProgramData\Epic\EpicGamesLauncher\UnrealEngineLauncher\LauncherInstalled.dat`
+- For Legendary (alt. Epic launcher) via command `legendary list-games`  
+    or from: `%USERPROFILE%\.config\legendary\installed.json`
