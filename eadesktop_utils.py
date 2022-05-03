@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import configparser
+from configparser import NoOptionError
 import os
 import xml.etree.ElementTree as et
 from pathlib import Path
@@ -35,21 +36,28 @@ def find_games() -> Dict[str, Path]:
     config = configparser.ConfigParser()
     config.read_string(ini_content)
 
-    install_path = Path(config.get("mod_organizer", "user.downloadinplacedir"))
+    try:
+        install_path = Path(config.get("mod_organizer", "user.downloadinplacedir"))
+    except NoOptionError:
+        install_path = Path(os.environ["ProgramW6432"]) / "EA Games"
+        config.set("mod_organizer", "user.downloadinplacedir", install_path.__str__())
 
     for game_dir in install_path.iterdir():
-        installer_file = game_dir.joinpath("__Installer", "installerdata.xml")
-        xml_tree = et.parse(installer_file)
-        root = xml_tree.getroot()
+        try:
+            installer_file = game_dir.joinpath("__Installer", "installerdata.xml")
+            xml_tree = et.parse(installer_file)
+            root = xml_tree.getroot()
 
-        # For all manifest files the following XPath expression returns the
-        # numeric ID. There are, in some cases, also name IDs but we do not
-        # consider these.
-        content_id = root.find(".//contentIDs/contentID[1]")
+            # For all manifest files the following XPath expression returns the
+            # numeric ID. There are, in some cases, also name IDs but we do not
+            # consider these.
+            content_id = root.find(".//contentIDs/contentID[1]")
 
-        if content_id and content_id.text:
-            game_id = content_id.text
-            games[game_id] = game_dir
+            if content_id and content_id.text:
+                game_id = content_id.text
+                games[game_id] = game_dir
+        except FileNotFoundError:
+            pass
 
     return games
 
