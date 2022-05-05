@@ -553,7 +553,7 @@ class BasicGame(mobase.IPluginGame):
             for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
         ]
 
-    def initializeProfile(self, path: QDir, settings: int):
+    def initializeProfile(self, path: QDir, settings: mobase.ProfileSetting):
         if settings & mobase.ProfileSetting.CONFIGURATION:
             for iniFile in self.iniFiles():
                 try:

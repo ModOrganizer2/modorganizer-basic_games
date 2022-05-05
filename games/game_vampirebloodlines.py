@@ -102,7 +102,7 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
         )
         return True
 
-    def initializeProfile(self, path: QDir, settings: int):
+    def initializeProfile(self, path: QDir, settings: mobase.ProfileSetting):
         # Create .cfg files if they don't exist
         for iniFile in self.iniFiles():
             iniPath = self.documentsDirectory().absoluteFilePath(iniFile)

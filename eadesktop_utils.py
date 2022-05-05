@@ -1,9 +1,9 @@
 # -*- encoding: utf-8 -*-
 
 import configparser
-from configparser import NoOptionError
 import os
 import xml.etree.ElementTree as et
+from configparser import NoOptionError
 from pathlib import Path
 from typing import Dict
 

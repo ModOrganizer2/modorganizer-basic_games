@@ -66,7 +66,7 @@ class GTAViceCityDefinitiveEditionGame(BasicGame):
     def iniFiles(self):
         return ["GameUserSettings.ini", "CustomSettings.ini"]
 
-    def initializeProfile(self, path: QDir, settings: int):
+    def initializeProfile(self, path: QDir, settings: mobase.ProfileSetting):
         # Create the mods directory if it doesn't exist
         modsPath = self.dataDirectory().absolutePath()
         if not os.path.exists(modsPath):
