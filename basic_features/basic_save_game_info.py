@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable
 
 from PyQt6.QtCore import QDateTime, Qt
 from PyQt6.QtGui import QImage, QPixmap
@@ -28,12 +28,12 @@ class BasicGameSaveGame(mobase.ISaveGame):
     def getSaveGroupIdentifier(self) -> str:
         return ""
 
-    def allFiles(self) -> List[str]:
+    def allFiles(self) -> list[str]:
         return [self.getFilepath()]
 
 
 class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
-    def __init__(self, parent: QWidget, get_preview: Callable[[str], str]):
+    def __init__(self, parent: QWidget, get_preview: Callable[[Path], Path | None]):
         super().__init__(parent)
 
         self._get_preview = get_preview
@@ -60,7 +60,7 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self.resize(0, 0)
 
         # Retrieve the pixmap:
-        value = self._get_preview(save.getFilepath())
+        value = self._get_preview(Path(save.getFilepath()))
 
         if value is None:
             return
@@ -89,7 +89,7 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
 
 
 class BasicGameSaveGameInfo(mobase.SaveGameInfo):
-    def __init__(self, get_preview: Optional[Callable[[str], str]] = None):
+    def __init__(self, get_preview: Callable[[Path], Path | None] | None = None):
         super().__init__()
         self._get_preview = get_preview
 

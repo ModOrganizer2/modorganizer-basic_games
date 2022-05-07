@@ -1,5 +1,3 @@
-import os
-
 import mobase
 
 from ..basic_features import BasicGameSaveGameInfo
@@ -33,6 +31,6 @@ class DA2Game(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: os.path.split(s)[0] + "/screen.dds"
+            lambda s: s.parent.joinpath("screen.dds")
         )
         return True

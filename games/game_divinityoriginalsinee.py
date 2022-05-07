@@ -94,7 +94,7 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".lsv", ".png")
+            lambda s: s.with_suffix(".png")
         )
         self._featureMap[
             mobase.ModDataChecker

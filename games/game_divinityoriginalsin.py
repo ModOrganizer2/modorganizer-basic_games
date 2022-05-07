@@ -34,6 +34,6 @@ class DivinityOriginalSinGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".lsv", ".png")  # Not confirmed
+            lambda s: s.with_suffix(".png")  # Not confirmed
         )
         return True

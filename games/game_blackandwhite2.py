@@ -300,7 +300,7 @@ class BlackAndWhite2SaveGameInfoWidget(BasicGameSaveGameInfoWidget):
         self.resize(0, 0)
 
         # Retrieve the pixmap:
-        value = self._get_preview(save.getFilepath())
+        value = self._get_preview(Path(save.getFilepath()))
 
         if value is None:
             return

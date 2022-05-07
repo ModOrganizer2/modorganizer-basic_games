@@ -42,7 +42,7 @@ class Witcher3Game(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".sav", ".png")
+            lambda s: s.with_suffix(".png")
         )
         return True
 
