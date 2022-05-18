@@ -5,7 +5,7 @@ import os
 from collections.abc import Iterable
 from pathlib import Path
 
-from PyQt5.QtCore import QDir, qWarning
+from PyQt6.QtCore import QDir, qWarning
 
 import mobase
 
