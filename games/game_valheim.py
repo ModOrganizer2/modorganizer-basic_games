@@ -312,7 +312,7 @@ class ValheimGame(BasicGame):
 
     Name = "Valheim Support Plugin"
     Author = "Zash"
-    Version = "1.2"
+    Version = "1.2.1"
 
     GameName = "Valheim"
     GameShortName = "valheim"
