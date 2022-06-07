@@ -57,8 +57,9 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
         subdirs = dir.entryList(
             filters=cast(QDir.Filters, QDir.Dirs | QDir.NoDotAndDotDot)
         )
+        list.reverse(subdirs)
         dir.cd(subdirs[0])
-
+        
         self._userDataDirCached = dir.absolutePath()
         return self._userDataDirCached
 
