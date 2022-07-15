@@ -6,6 +6,7 @@ from PyQt5.QtCore import QDir
 
 from ..basic_game import BasicGame
 
+
 class Fallout2Game(BasicGame):
     Name = "Fallout 2 - Support Plugin"
     Author = "mrowrpurr"
@@ -50,4 +51,3 @@ class Fallout2Game(BasicGame):
         if os.path.exists(fallout2_cfg_path):
             self.updateFallout2cfg()
         super().initializeProfile(path, settings)
-
