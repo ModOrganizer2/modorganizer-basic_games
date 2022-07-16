@@ -42,7 +42,7 @@ class Fallout2Game(BasicGame):
         config["system"]["master_dat"] = os.path.join(game_directory, "master.dat")
         config["system"]["master_patches"] = os.path.join(game_directory, "data")
         with open(fallout2_cfg_path, "w") as configfile:
-            config.write(configfile)
+            config.write(configfile, space_around_delimiters=False)
 
     def initializeProfile(self, path: QDir, settings: int):
         # Update fallout2.cfg, if present
