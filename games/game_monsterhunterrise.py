@@ -11,5 +11,5 @@ class MonsterHunterRiseGame(BasicGame):
     GameBinary = "MonsterHunterRise.exe"
     GameDataPath = "%GAME_PATH%"
     GameSaveExtension = "bin"
-    GameNexusId = 848
+    GameNexusId = 4095
     GameSteamId = 1446780
