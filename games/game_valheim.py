@@ -312,7 +312,7 @@ class ValheimGame(BasicGame):
 
     Name = "Valheim Support Plugin"
     Author = "Zash"
-    Version = "1.2"
+    Version = "1.2.1"
 
     GameName = "Valheim"
     GameShortName = "valheim"
@@ -355,15 +355,19 @@ class ValheimGame(BasicGame):
                 "delete": [
                     "*.txt",
                     "*.md",
+                    "README",
                     "icon.png",
                     "license",
                     "manifest.json",
+                    "*.dll.mdb",
+                    "*.pdb",
                 ],
                 "move": {
                     "*_VML.dll": "InSlimVML/Mods/",
                     #
                     "plugins": "BepInEx/",
                     "*.dll": "BepInEx/plugins/",
+                    "*.xml": "BepInEx/plugins/",
                     "config": "BepInEx/",
                     "*.cfg": "BepInEx/config/",
                     #
