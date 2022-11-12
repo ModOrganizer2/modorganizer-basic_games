@@ -23,7 +23,7 @@ class TheSims4ModDataChecker(mobase.ModDataChecker):
             name = entry.name().casefold()
             if entry.isDir():
                 continue
-            if name.endswith((".ts4script", ".package")) and name.count("\\") == 1:
+            if name.endswith((".ts4script", ".package")) and name.count(r"/") == 1:
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.VALID
 
@@ -37,18 +37,18 @@ class TheSims4Game(BasicGame):
 
     Name = "The Sims 4 Support Plugin"
     Author = "Lhyris"
-    Version = "1.0.0"
+    Version = "0.1.1"
 
     GameName = "The Sims 4"
     GameShortName = "thesims4"
     GaneNexusHame = "thesims4"
     GameNexusId = 641
     GameSteamId = [1222670]
-    GameOriginManifestIds = ["OFB-EAST:109552299@steam", "SIMS4.OFF.SOLP.0x000000000001266C", "SIMS4.OFR.50.0000005"]
-    GameBinary = "Game/Bin/TS4_x64.exe"
-    GameDocumentsDirectory = "%DOCUMENTS%/Electronic Arts/The Sims 4"
-    GameDataPath = "%GAME_DOCUMENTS%/Mods"
-    GameSavesDirectory = "%GAME_DOCUMENTS%/saves"
+    GameOriginManifestIds = [r"OFB-EAST:109552299@steam", r"OFB-EAST%3A109552299%40steam", r"OFB-EAST109552299", r"OFB-EAST109552414", r"SIMS4.OFF.SOLP.0x000000000001266C", r"SIMS4.OFR.50.0000005"]
+    GameBinary = r"Game/Bin/TS4_x64.exe"
+    GameDocumentsDirectory = r"%DOCUMENTS%/Electronic Arts/The Sims 4"
+    GameDataPath = r"%GAME_DOCUMENTS%/Mods"
+    GameSavesDirectory = r"%GAME_DOCUMENTS%/saves"
     GameSaveExtension = "save"
 
     def init(self, organizer: mobase.IOrganizer):
