@@ -176,9 +176,11 @@ The meta-plugin provides some useful extra feature:
   `GameOriginManifestIds`, `GameEpicId` or `GameEaDesktopId`), the game will be listed
   in the list of available games when creating a new MO2 instance (if the game is
   installed via Steam, GOG, Origin, Epic Games / Legendary or EA Desktop).
-2. **Basic save game preview:** If you use the Python version, and if you can easily obtain a picture (file)
-  for any saves, you can provide basic save-game preview by using the `BasicGameSaveGameInfo`.
-  See [games/game_witcher3.py](games/game_witcher3.py) for  more details.
+2. **Basic save game preview / metadata** (Python): If you can easily obtain a picture
+  (file) and/or metadata (like from json) for any saves, you can provide basic save-game
+  preview by using the `BasicGameSaveGameInfo`. See
+  [games/game_witcher3.py](games/game_witcher3.py) and
+  [games/game_bladeandsorcery.py](games/game_bladeandsorcery.py) for more details.
 3. **Basic local save games** (Python): profile specific save games, as in [games/game_valheim.py](games/game_valheim.py).
 4. **Basic mod data checker** (Python):
   Check and fix different mod archive layouts for an automatic installation with the proper
