@@ -38,7 +38,6 @@ class DragonsDogmaDarkArisenModDataChecker(mobase.ModDataChecker):
             if (self.valid_arc_found == True):
                 return mobase.ModDataChecker.VALID
 
-        print("no checks passed", file=open("./output.txt", 'a'))
         return mobase.ModDataChecker.INVALID
 
 
