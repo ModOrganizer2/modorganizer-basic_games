@@ -63,4 +63,7 @@ class DragonsDogmaDarkArisen(BasicGame):
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
         "Game:-Dragon's-Dogma:-Dark-Arisen"
     )
-    
+    GameSavesDirectory = (
+        str(os.getenv('LOCALAPPDATA')) + "\\GOG.com\\Galaxy\\Applications\\49987265717041704\\Storage\\Shared\\Files"
+    )
+    GameSaveExtension = "sav"
