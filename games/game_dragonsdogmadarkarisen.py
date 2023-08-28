@@ -3,6 +3,7 @@
 import os
 import re
 import mobase
+from pathlib import Path
 from typing import List, Optional
 from ..basic_game import BasicGame
 
@@ -17,12 +18,12 @@ class DragonsDogmaDarkArisenModDataChecker(mobase.ModDataChecker):
         
     ValidFileStructure = False
     FixableFileStructure = False
-    re_bodycheck = re.compile('[fm]_[aw]_body')
+    re_bodycheck = re.compile('[fm]_[aiw]_\w+.arc')
         
     def checkEntry(self, path: str, entry: mobase.FileTreeEntry) -> mobase.IFileTree.WalkReturn:
         # we check to see if an .arc file is contained within a valid root folder
         VALID_FOLDERS = ["rom", ]
-        VALID_FILE_EXTENSIONS = [ ".arc", ".stm", ".tex", ".xml", ".dds", ".qct" ]
+        VALID_FILE_EXTENSIONS = [ ".arc", ".stm", ".tex", ".qct" ]
 
         pathRoot = path.split(os.sep)[0]
         entryExt = entry.suffix().lower()
@@ -42,7 +43,7 @@ class DragonsDogmaDarkArisenModDataChecker(mobase.ModDataChecker):
         self.ValidFileStructure = False
         self.FixableFileStructure = False
         
-        #start with checking root folder
+        #start with checking root folder for loose files
         for entry in tree:
             isBodyFile = self.re_bodycheck.match(entry.name())
             if isBodyFile:
@@ -60,16 +61,22 @@ class DragonsDogmaDarkArisenModDataChecker(mobase.ModDataChecker):
         
     def fix(self, tree: mobase.IFileTree) -> mobase.IFileTree:
         myBodies = []
+        noSub = ["a_acc", "i_body", "w_leg"]
         for entry in tree:
             if not entry.isDir():
                 isBodyFile = self.re_bodycheck.match(entry.name())
                 if isBodyFile:
                     myBodies.append(entry)
                     
-        for body in myBodies:
-            parentFolder = str(body.name())[0]
-            rfolder = tree.addDirectory("rom").addDirectory("eq").addDirectory(str(body.name())[2:8]).addDirectory(str(body.name())[0])
-            rfolder.insert(body, mobase.IFileTree.REPLACE)
+        if myBodies:
+            for body in myBodies:
+                parentFolder = str(body.name())[0]
+                grandParentFolder = re.split(r'_(?=._)|[0-9]',str(body.name()))[1]
+                if grandParentFolder in noSub:
+                    rfolder = tree.addDirectory("rom").addDirectory("eq").addDirectory(grandParentFolder)
+                else:
+                    rfolder = tree.addDirectory("rom").addDirectory("eq").addDirectory(grandParentFolder).addDirectory(parentFolder)
+                rfolder.insert(body, mobase.IFileTree.REPLACE)
 
         return tree
 
