@@ -22,14 +22,11 @@ class DragonsDogmaDarkArisenModDataChecker(mobase.ModDataChecker):
         
     def checkEntry(self, path: str, entry: mobase.FileTreeEntry) -> mobase.IFileTree.WalkReturn:
         # we check to see if an .arc file is contained within a valid root folder
-        VALID_FOLDERS = ["rom", ]
-        VALID_FILE_EXTENSIONS = [ ".arc", ".stm", ".tex", ".qct" ]
+        VALID_FOLDERS = ["rom", "movie"]
+        VALID_FILE_EXTENSIONS = [ ".arc", ".stm", ".tex", ".qct", ".qr", "wmv" ]
 
         pathRoot = path.split(os.sep)[0]
         entryExt = entry.suffix().lower()
-        re_check = re.compile('[0-9a-fA-F]{8}')
-        
-        echeck = re_check.match(entry.name())
 
         for extension in VALID_FILE_EXTENSIONS:
             if entry.name().lower().endswith(extension.lower()):
@@ -49,11 +46,14 @@ class DragonsDogmaDarkArisenModDataChecker(mobase.ModDataChecker):
             if isBodyFile:
                 return mobase.ModDataChecker.FIXABLE
         
-        #check subfolders if needed
+        #check subfolders next
         tree.walk(self.checkEntry, os.sep)
         
+        #fix if needed
         if (self.FixableFileStructure == True):
                 return mobase.ModDataChecker.FIXABLE
+                
+        #all good?
         if (self.ValidFileStructure == True):
                 return mobase.ModDataChecker.VALID
 
