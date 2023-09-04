@@ -613,6 +613,9 @@ class BasicGame(mobase.IPluginGame):
             self.gameDirectory().absoluteFilePath(self._mappings.dataDirectory.get())
         )
 
+    def secondaryDataDirectories(self) -> List[QDir]:
+        return []
+
     def setGamePath(self, path: Union[Path, str]):
         self._gamePath = str(path)
 
