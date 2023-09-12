@@ -26,7 +26,10 @@ def find_games() -> Dict[str, Path]:
     if not ea_desktop_settings_path.exists():
         return games
 
-    user_ini, *_ = list(ea_desktop_settings_path.glob("user_*.ini"))
+    try:
+        user_ini, *_ = list(ea_desktop_settings_path.glob("user_*.ini"))
+    except ValueError:
+        return games
 
     # The INI file in its current form has no section headers.
     # So we wrangle the input to add it all under a fake section.
