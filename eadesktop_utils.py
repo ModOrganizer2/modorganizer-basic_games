@@ -45,6 +45,9 @@ def find_games() -> Dict[str, Path]:
         install_path = Path(os.environ["ProgramW6432"]) / "EA Games"
         config.set("mod_organizer", "user.downloadinplacedir", install_path.__str__())
 
+    if not install_path.exists():
+        return games
+
     for game_dir in install_path.iterdir():
         try:
             installer_file = game_dir.joinpath("__Installer", "installerdata.xml")
