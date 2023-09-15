@@ -11,6 +11,9 @@ class BaSGame(BasicGame):
     GameShortName = "bladeandsorcery"
     GameBinary = "BladeAndSorcery.exe"
     GameDataPath = r"BladeAndSorcery_Data\StreamingAssets\Mods"
+    GameDocumentsDirectory = "%DOCUMENTS%/My Games/BladeAndSorcery"
+    GameSavesDirectory = "%GAME_DOCUMENTS%/Saves/Default"
+    GameSaveExtension = "chr"
     GameSteamId = 629730
     GameSupportURL = (
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
