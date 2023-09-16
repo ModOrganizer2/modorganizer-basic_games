@@ -1,13 +1,12 @@
 from __future__ import annotations
-from enum import Enum
 
 import os
 from collections.abc import Iterable
+from enum import Enum
 from pathlib import Path
 
-from PyQt6.QtCore import QDir, qWarning
-
 import mobase
+from PyQt6.QtCore import QDir, qWarning
 
 from ..basic_features import BasicModDataChecker
 from ..basic_features.basic_save_game_info import (
@@ -33,7 +32,6 @@ class SubnauticaModDataChecker(BasicModDataChecker):
 
 
 class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
-
     Name = "Subnautica Support Plugin"
     Author = "dekart811, Zash"
     Version = "2.1.1"

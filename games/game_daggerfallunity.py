@@ -25,9 +25,9 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
         ]
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        for entry in tree:
+        for entry in filetree:
             if not entry.isDir():
                 continue
             if entry.name().casefold() in self.validDirNames:

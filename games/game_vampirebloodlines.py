@@ -1,11 +1,8 @@
-# -*- encoding: utf-8 -*-
-import os
 from pathlib import Path
 from typing import List
 
-from PyQt6.QtCore import QDir
-
 import mobase
+from PyQt6.QtCore import QDir
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 
@@ -31,9 +28,9 @@ class VampireModDataChecker(mobase.ModDataChecker):
         ]
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        for entry in tree:
+        for entry in filetree:
             if not entry.isDir():
                 continue
             if entry.name().casefold() in self.validDirNames:
@@ -52,20 +49,20 @@ class VampireSaveGame(BasicGameSaveGame):
 
 
 class VampireLocalSavegames(mobase.LocalSavegames):
-    def __init__(self, myGameSaveDir):
+    def __init__(self, my_game_save_dir: QDir):
         super().__init__()
-        self._savesDir = myGameSaveDir.absolutePath()
+        self._saves_dir = my_game_save_dir.absolutePath()
 
-    def mappings(self, profile_save_dir):
+    def mappings(self, profile_save_dir: QDir):
         m = mobase.Mapping()
         m.createTarget = True
         m.isDirectory = True
         m.source = profile_save_dir.absolutePath()
-        m.destination = self._savesDir
+        m.destination = self._saves_dir
 
         return [m]
 
-    def prepareProfile(self, profile):
+    def prepareProfile(self, profile: mobase.IProfile):
         return profile.localSavesEnabled()
 
 
@@ -94,27 +91,24 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = VampireModDataChecker()
-        self._featureMap[mobase.SaveGameInfo] = VampireSaveGame(
-            Path(self.savesDirectory().absolutePath())
-        )
         self._featureMap[mobase.LocalSavegames] = VampireLocalSavegames(
             self.savesDirectory()
         )
         return True
 
-    def initializeProfile(self, path: QDir, settings: mobase.ProfileSetting):
+    def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         # Create .cfg files if they don't exist
         for iniFile in self.iniFiles():
-            iniPath = self.documentsDirectory().absoluteFilePath(iniFile)
-            if not os.path.exists(iniPath):
+            iniPath = Path(self.documentsDirectory().absoluteFilePath(iniFile))
+            if not iniPath.exists():
                 with open(iniPath, "w") as _:
                     pass
 
-        super().initializeProfile(path, settings)
+        super().initializeProfile(directory, settings)
 
     def version(self):
         # Don't forget to import mobase!
-        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.final)
+        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.FINAL)
 
     def iniFiles(self):
         return ["autoexec.cfg", "user.cfg"]

@@ -1,11 +1,8 @@
-# -*- encoding: utf-8 -*-
-
 from pathlib import Path
 from typing import List
 
-from PyQt6.QtCore import QDir
-
 import mobase
+from PyQt6.QtCore import QDir
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
@@ -14,11 +11,10 @@ from ..basic_game import BasicGame
 
 class Witcher3SaveGame(BasicGameSaveGame):
     def allFiles(self):
-        return [self._filename, self._filename.replace(".sav", ".png")]
+        return [self._filepath.name, self._filepath.name.replace(".sav", ".png")]
 
 
 class Witcher3Game(BasicGame):
-
     Name = "Witcher 3 Support Plugin"
     Author = "Holt59"
     Version = "1.0.0a"

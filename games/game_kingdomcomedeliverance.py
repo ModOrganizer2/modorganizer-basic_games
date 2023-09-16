@@ -1,10 +1,7 @@
-# -*- encoding: utf-8 -*-
-
 import os
 
-from PyQt6.QtCore import QDir
-
 import mobase
+from PyQt6.QtCore import QDir
 
 from ..basic_game import BasicGame
 
@@ -34,7 +31,7 @@ class KingdomComeDeliveranceGame(BasicGame):
     def iniFiles(self):
         return ["custom.cfg", "system.cfg", "user.cfg"]
 
-    def initializeProfile(self, path: QDir, settings: mobase.ProfileSetting):
+    def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         # Create .cfg files if they don't exist
         for iniFile in self.iniFiles():
             iniPath = self.documentsDirectory().absoluteFilePath(iniFile)
@@ -47,4 +44,4 @@ class KingdomComeDeliveranceGame(BasicGame):
         if not os.path.exists(modsPath):
             os.mkdir(modsPath)
 
-        super().initializeProfile(path, settings)
+        super().initializeProfile(directory, settings)

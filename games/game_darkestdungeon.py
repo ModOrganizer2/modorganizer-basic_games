@@ -1,11 +1,8 @@
-# -*- encoding: utf-8 -*-
 import json
 from pathlib import Path
-from typing import List
-
-from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 from ..steam_utils import find_steam_path
@@ -51,9 +48,9 @@ class DarkestDungeonModDataChecker(mobase.ModDataChecker):
         ]
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        for entry in tree:
+        for entry in filetree:
             if not entry.isDir():
                 continue
             if entry.name().casefold() in self.validDirNames:
@@ -62,7 +59,7 @@ class DarkestDungeonModDataChecker(mobase.ModDataChecker):
 
 
 class DarkestDungeonSaveGame(BasicGameSaveGame):
-    def __init__(self, filepath):
+    def __init__(self, filepath: Path):
         super().__init__(filepath)
         dataPath = filepath.joinpath("persist.game.json")
         self.name: str = ""
@@ -127,12 +124,12 @@ class DarkestDungeonSaveGame(BasicGameSaveGame):
                 raise ValueError(
                     "Meta2 has wrong number of bytes: " + str(meta2DataLength)
                 )
-            meta2List = list()
+            meta2List: list[tuple[int, int, int]] = []
             for x in range(numMeta2Entries):
                 entryHash = int.from_bytes(fp.read(4), "little")
                 offset = int.from_bytes(fp.read(4), "little")
                 fieldInfo = int.from_bytes(fp.read(4), "little")
-                meta2List.append([entryHash, offset, fieldInfo])
+                meta2List.append((entryHash, offset, fieldInfo))
 
             # read Data
             fp.seek(dataOffset, 0)
@@ -193,8 +190,11 @@ class DarkestDungeonGame(BasicGame):
         ]
 
     @staticmethod
-    def getCloudSaveDirectory():
-        steamPath = Path(find_steam_path())
+    def getCloudSaveDirectory() -> str | None:
+        steamPath = find_steam_path()
+        if steamPath is None:
+            return None
+
         userData = steamPath.joinpath("userdata")
         for child in userData.iterdir():
             name = child.name
@@ -224,8 +224,8 @@ class DarkestDungeonGame(BasicGame):
             return QDir(cloudSaves)
         return documentsSaves
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
-        profiles = list()
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
+        profiles: list[Path] = []
         for path in Path(folder.absolutePath()).glob("profile_*"):
             # profile_9 is only for the Multiplayer DLC "The Butcher's Circus"
             # and contains different files than other profiles

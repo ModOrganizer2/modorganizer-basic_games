@@ -1,17 +1,13 @@
-# -*- encoding: utf-8 -*-
-
 # Code adapted from EzioTheDeadPoet / erri120:
 #     https://github.com/ModOrganizer2/modorganizer-basic_games/pull/5
 
-import winreg  # type: ignore
+import winreg
 from pathlib import Path
-from typing import Dict
 
 
-def find_games() -> Dict[str, Path]:
-
+def find_games() -> dict[str, Path]:
     # List the game IDs from the registry:
-    game_ids = []
+    game_ids: list[str] = []
     try:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, r"Software\Wow6432Node\GOG.com\Games"
@@ -25,7 +21,7 @@ def find_games() -> Dict[str, Path]:
         return {}
 
     # For each game, query the path:
-    games: Dict[str, Path] = {}
+    games: dict[str, Path] = {}
     for game_id in game_ids:
         try:
             with winreg.OpenKey(

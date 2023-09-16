@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import mobase
 
+from ..basic_features.basic_mod_data_checker import GlobPatterns
 from . import game_subnautica  # namespace to not load SubnauticaGame here, too!
 
 
 class SubnauticaBelowZeroGame(game_subnautica.SubnauticaGame):
-
     Name = "Subnautica Below Zero Support Plugin"
     Author = "dekart811, Zash"
     Version = "2.1"
@@ -31,7 +31,9 @@ class SubnauticaBelowZeroGame(game_subnautica.SubnauticaGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        checker = game_subnautica.SubnauticaModDataChecker()
-        checker.update_patterns({"unfold": ["BepInExPack_BelowZero"]})
-        self._featureMap[mobase.ModDataChecker] = checker
+        self._featureMap[
+            mobase.ModDataChecker
+        ] = game_subnautica.SubnauticaModDataChecker(
+            GlobPatterns(unfold=["BepInExPack_BelowZero"])
+        )
         return True

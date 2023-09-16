@@ -2,13 +2,12 @@
 
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence
 
+import mobase
 from PyQt6.QtCore import QDateTime, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
-
-import mobase
 
 
 class BasicGameSaveGame(mobase.ISaveGame):
@@ -33,7 +32,13 @@ class BasicGameSaveGame(mobase.ISaveGame):
 
 
 class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
-    def __init__(self, parent: QWidget, get_preview: Callable[[Path], Path | None]):
+    def __init__(
+        self,
+        parent: QWidget | None,
+        get_preview: Callable[
+            [Path], QPixmap | QImage | Path | str | None
+        ] = lambda p: None,
+    ):
         super().__init__(parent)
 
         self._get_preview = get_preview
@@ -69,8 +74,6 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
             pixmap = QPixmap(str(value))
         elif isinstance(value, str):
             pixmap = QPixmap(value)
-        elif isinstance(value, QPixmap):
-            pixmap = value
         elif isinstance(value, QImage):
             pixmap = QPixmap.fromImage(value)
         else:
@@ -89,14 +92,20 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
 
 
 class BasicGameSaveGameInfo(mobase.SaveGameInfo):
-    def __init__(self, get_preview: Callable[[Path], Path | None] | None = None):
+    def __init__(
+        self,
+        get_preview: Callable[[Path], QPixmap | QImage | Path | str | None]
+        | None = None,
+    ):
         super().__init__()
         self._get_preview = get_preview
 
-    def getMissingAssets(self, save: mobase.ISaveGame):
+    def getMissingAssets(self, save: mobase.ISaveGame) -> dict[str, Sequence[str]]:
         return {}
 
-    def getSaveGameWidget(self, parent=None):
+    def getSaveGameWidget(
+        self, parent: QWidget | None = None
+    ) -> mobase.ISaveGameInfoWidget | None:
         if self._get_preview is not None:
             return BasicGameSaveGameInfoWidget(parent, self._get_preview)
         return None

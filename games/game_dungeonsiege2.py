@@ -1,10 +1,5 @@
-# -*- encoding: utf-8 -*-
-
-from typing import List, Tuple
-
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -15,10 +10,9 @@ class DungeonSiegeIIModDataChecker(mobase.ModDataChecker):
 
     def get_resources_and_maps(
         self, tree: mobase.IFileTree
-    ) -> Tuple[List[mobase.FileTreeEntry], List[mobase.FileTreeEntry]]:
-
-        ress: List[mobase.FileTreeEntry] = []
-        maps: List[mobase.FileTreeEntry] = []
+    ) -> tuple[list[mobase.FileTreeEntry], list[mobase.FileTreeEntry]]:
+        ress: list[mobase.FileTreeEntry] = []
+        maps: list[mobase.FileTreeEntry] = []
 
         for e in tree:
             if e.isFile():
@@ -30,31 +24,31 @@ class DungeonSiegeIIModDataChecker(mobase.ModDataChecker):
         return ress, maps
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
         # Check if we have a Resources / Maps folder or .ds2res/.ds2map
-        ress, maps = self.get_resources_and_maps(tree)
+        ress, maps = self.get_resources_and_maps(filetree)
 
         if not ress and not maps:
-            if tree.exists("Resources") or tree.exists("Maps"):
+            if filetree.exists("Resources") or filetree.exists("Maps"):
                 return mobase.ModDataChecker.VALID
             else:
                 return mobase.ModDataChecker.INVALID
 
         return mobase.ModDataChecker.FIXABLE
 
-    def fix(self, tree: mobase.IFileTree) -> mobase.IFileTree:
-        ress, maps = self.get_resources_and_maps(tree)
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+        ress, maps = self.get_resources_and_maps(filetree)
 
         if ress:
-            rfolder = tree.addDirectory("Resources")
+            rfolder = filetree.addDirectory("Resources")
             for r in ress:
                 rfolder.insert(r, mobase.IFileTree.REPLACE)
         if maps:
-            rfolder = tree.addDirectory("Maps")
+            rfolder = filetree.addDirectory("Maps")
             for r in maps:
                 rfolder.insert(r, mobase.IFileTree.REPLACE)
-        return tree
+        return filetree
 
 
 class DungeonSiegeIIGame(BasicGame):

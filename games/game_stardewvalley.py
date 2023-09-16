@@ -1,8 +1,5 @@
-# -*- encoding: utf-8 -*-
-
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -12,11 +9,10 @@ class StardewValleyModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-
-        for e in tree:
-            if e.isDir() and e.exists(  # type: ignore
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.exists(
                 "manifest.json", mobase.IFileTree.FILE
             ):
                 return mobase.ModDataChecker.VALID

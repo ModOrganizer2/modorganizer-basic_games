@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# pyright: reportUnboundVariable=false
 
 import glob
 import importlib
@@ -17,7 +17,6 @@ BasicGame.setup()
 
 
 def createPlugins():
-
     # List of game class from python:
     game_plugins: typing.List[BasicGame] = []
 

@@ -1,16 +1,12 @@
-# -*- encoding: utf-8 -*-
-
 from __future__ import annotations
 
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
 
 class ControlGame(BasicGame):
-
     Name = "Control Support Plugin"
     Author = "Zash"
     Version = "1.0.0"
