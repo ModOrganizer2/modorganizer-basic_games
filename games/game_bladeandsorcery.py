@@ -169,8 +169,8 @@ class BaSSaveGameInfo(BasicGameSaveGameInfo):
 
 class BaSGame(BasicGame):
     Name = "Blade & Sorcery Plugin"
-    Author = "R3z Shark"
-    Version = "0.1.0"
+    Author = "R3z Shark & Silarn"
+    Version = "0.5.0"
 
     GameName = "Blade & Sorcery"
     GameShortName = "bladeandsorcery"
