@@ -21,16 +21,16 @@ class BaSSaveGame(BasicGameSaveGame):
     def __init__(self, filepath):
         super().__init__(filepath)
         self._filepath = Path(filepath)
-        save = open(self._filepath, "rb")
-        save_data = json.load(save)
+        with open(self._filepath, "rb") as save:
+            save_data = json.load(save)
         self._gameMode: str = save_data["gameModeId"]
-        self._gender: str = "Male" if save_data["creatureId"] == "PlayerDefaultMale" else "Female"
+        self._gender = "Male" if save_data["creatureId"] == "PlayerDefaultMale" else "Female"
         self._ethnicity: str = save_data["ethnicGroupId"]
         h, m, s = save_data["playTime"].split(":")
-        self._elapsed: tuple[int, int, float] = (int(h), int(m), float(s))
-        self._created: float = os.path.getctime(filepath)
-        self._modified: float = os.path.getmtime(filepath)
-        save.close()
+        self._elapsed = (int(h), int(m), float(s))
+        f_stat = self._filepath.stat()
+        self._created = f_stat.st_ctime
+        self._modified = f_stat.st_mtime
 
     def getName(self) -> str:
         return f"{self.getPlayerSlug()} - {self._gameMode}"
