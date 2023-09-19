@@ -149,7 +149,8 @@ class BaSSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
             self.style().styleHint(QStyle.StyleHint.SH_ToolTipLabel_Opacity) / 255.0
         )
 
-    def setSave(self, save: BaSSaveGame):
+    def setSave(self, save: mobase.ISaveGame):
+        assert isinstance(save, BaSSaveGame)
         self._characterLabel.setText(save.getPlayerSlug())
         self._gameModeLabel.setText(save.getGameMode())
         t = save.getCreationTime().toLocalTime()
