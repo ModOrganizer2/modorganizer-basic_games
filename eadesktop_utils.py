@@ -26,7 +26,10 @@ def find_games() -> Dict[str, Path]:
     if not ea_desktop_settings_path.exists():
         return games
 
-    user_ini, *_ = list(ea_desktop_settings_path.glob("user_*.ini"))
+    try:
+        user_ini, *_ = list(ea_desktop_settings_path.glob("user_*.ini"))
+    except ValueError:
+        return games
 
     # The INI file in its current form has no section headers.
     # So we wrangle the input to add it all under a fake section.
@@ -41,6 +44,9 @@ def find_games() -> Dict[str, Path]:
     except NoOptionError:
         install_path = Path(os.environ["ProgramW6432"]) / "EA Games"
         config.set("mod_organizer", "user.downloadinplacedir", install_path.__str__())
+
+    if not install_path.exists():
+        return games
 
     for game_dir in install_path.iterdir():
         try:
