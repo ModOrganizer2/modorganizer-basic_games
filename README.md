@@ -25,7 +25,7 @@ Download the archive for your MO2 version and extract it directly into your MO2 
 **Important:** Extract the *folder* in your `plugins` folder, not the individual files. Your
 `plugins` folder should look like this:
 
-```
+```text
 dlls/
 plugins/
   data/
@@ -195,3 +195,23 @@ Game IDs can be found here:
 - For Legendary (alt. Epic launcher) via command `legendary list-games`
     or from: `%USERPROFILE%\.config\legendary\installed.json`
 - For EA Desktop from `<EA Games install location>\<game title>\__Installer\installerdata.xml`
+
+## Contribute
+
+We recommend using a dedicated Python environment to write a new basic game plugins.
+
+1. Install the required version of Python --- Currently Python 3.11 (MO2 2.5).
+2. Remove the repository at `${MO2_INSTALL}/plugins/basic_games`.
+3. Clone this repository at the location of the old plugin (
+  `${MO2_INSTALL}/plugins/basic_games`).
+4. Place yourself inside the cloned folder and:
+
+  ```bash
+  # create a virtual environment (recommended)
+  py -3.11 -m venv .\venv
+  .\venv\scripts\Activate.ps1
+
+  # "install" poetry and the development package
+  pip install poetry
+  poetry install
+  ```
