@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: "basic_games"
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -14,9 +16,11 @@ jobs:
       - uses: abatilo/actions-poetry@v2
       - name: Install
         run: |
+          cd basic_games
           poetry install
       - name: Lint
         run: |
+          cd basic_games
           poetry run black . --check --diff
           poetry run isort -c .
           poetry run mypy  .
