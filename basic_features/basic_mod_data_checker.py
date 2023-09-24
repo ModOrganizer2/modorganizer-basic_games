@@ -3,7 +3,7 @@ from __future__ import annotations
 import fnmatch
 import re
 from dataclasses import dataclass, field
-from typing import Iterable
+from typing import Iterable, Literal
 
 import mobase
 
@@ -60,6 +60,13 @@ class RegexPatterns:
         return None
 
 
+def _merge_list(l1: list[str] | None, l2: list[str] | None) -> list[str] | None:
+    if l1 is None and l2 is None:
+        return None
+
+    return (l1 or []) + (l2 or [])
+
+
 @dataclass(frozen=True, unsafe_hash=True)
 class GlobPatterns:
     """
@@ -70,6 +77,41 @@ class GlobPatterns:
     valid: list[str] | None = None
     delete: list[str] | None = None
     move: dict[str, str] = field(default_factory=dict)
+
+    def merge(
+        self, other: GlobPatterns, mode: Literal["merge", "replace"] = "replace"
+    ) -> GlobPatterns:
+        """
+        Construct a new GlobPatterns by merging the current one with the given one.
+
+        There are two different modes:
+          - 'merge': In this mode, unfold/valid/delete are concatenated and move
+            will contain the union of key from self and other, with values from other
+            overriding common keys.
+          - 'replace': The merged object will contains attributes from other, except
+            for None attributes taken from self.
+
+        Args:
+            other: Other patterns to "merge" with this one.
+            mode: Merge mode.
+
+        Returns:
+            A new glob pattern representing the merge of this one with other.
+        """
+        if mode == "merge":
+            return GlobPatterns(
+                unfold=_merge_list(self.unfold, other.unfold),
+                valid=_merge_list(self.valid, other.valid),
+                delete=_merge_list(self.delete, other.delete),
+                move=self.move | other.move,
+            )
+        else:
+            return GlobPatterns(
+                unfold=other.unfold or self.unfold,
+                valid=other.valid or self.valid,
+                delete=other.delete or self.delete,
+                move=other.move or self.move,
+            )
 
 
 class BasicModDataChecker(mobase.ModDataChecker):
