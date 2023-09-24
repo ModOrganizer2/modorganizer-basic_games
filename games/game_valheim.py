@@ -1,20 +1,17 @@
-# -*- encoding: utf-8 -*-
-
 from __future__ import annotations
 
 import itertools
 import re
 import shutil
-from collections.abc import Collection, Container, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, TextIO, Union
-
-from PyQt6.QtCore import QDir
+from typing import Any, Optional, TextIO
 
 import mobase
+from PyQt6.QtCore import QDir
 
-from ..basic_features import BasicModDataChecker
+from ..basic_features.basic_mod_data_checker import BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 
@@ -29,10 +26,10 @@ def move_file(source: Path, target: Path):
 
 @dataclass
 class PartialMatch:
-    partial_match_regex: re.Pattern = re.compile(r"[A-Z]?[a-z]+")
+    partial_match_regex: re.Pattern[str] = re.compile(r"[A-Z]?[a-z]+")
     """Matches words, for e.g. 'Camel' and 'Case' in 'CamelCase'."""
 
-    exclude: Container = field(default_factory=set)
+    exclude: set[str] = field(default_factory=set)
     min_length: int = 3
 
     def partial_match(self, str_with_parts: str, search_string: str) -> Collection[str]:
@@ -84,10 +81,10 @@ class DebugTable:
         """
         self.new_table(column_keys)
 
-    def __call__(self, **kwargs) -> None:
+    def __call__(self, **kwargs: Any) -> None:
         self.add(**kwargs)
 
-    def new_table(self, column_keys: Optional[Collection[str]] = None) -> None:
+    def new_table(self, column_keys: Collection[str] | None = None) -> None:
         if column_keys:
             self._column_keys = column_keys
         self._table: list[dict[str, str]] = [
@@ -97,7 +94,7 @@ class DebugTable:
 
     def add(
         self,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Add data to the table. Adds a new line if the last row has already data in
         for the column key.
@@ -128,9 +125,9 @@ class OverwriteSync:
     overwrite_file_pattern: Iterable[str] = ["BepInEx/config/*"]
     """File pattern (glob) in overwrite folder."""
     partial_match: PartialMatch = PartialMatch(exclude={"valheim", "mod"})
-    content_match: Optional[ContentMatch] = ContentMatch(
+    content_match: ContentMatch = ContentMatch(
         file_glob_patterns=["*.cfg"],
-        content_regex=re.compile(r"\A.*plugin (?P<mod>.+) v[\d\.]+?$", re.I | re.M),
+        content_regex=re.compile(r"\A.*plugin (?P<mod>.+) v[\d.]+?$", re.I | re.M),
         match_group="mod",
     )
 
@@ -160,8 +157,8 @@ class OverwriteSync:
                 self._debug.print()
 
     def _get_active_mods(
-        self, modlist: Optional[mobase.IModList] = None
-    ) -> Mapping[str, mobase.IModInterface]:
+        self, modlist: mobase.IModList | None = None
+    ) -> dict[str, mobase.IModInterface]:
         """Get all active mods.
 
         Args: modlist (optional): the `mobase.IModList`. Defaults to None (get it from
@@ -181,10 +178,10 @@ class OverwriteSync:
             and (modlist.state(name) & mobase.ModState.ACTIVE)
         }
 
-    def _get_mod_dll_map(self, mod_map):
+    def _get_mod_dll_map(self, mod_map: Mapping[str, str | mobase.IModInterface]):
         return {name: self._get_mod_dlls(mod) for name, mod in mod_map.items()}
 
-    def _get_mod_dlls(self, mod: Union[str, mobase.IModInterface]) -> Sequence[str]:
+    def _get_mod_dlls(self, mod: str | mobase.IModInterface) -> Sequence[str]:
         """Get all BepInEx/plugins/*.dll files of a mod."""
         if isinstance(mod, str):
             mod = self.organizer.modList().getMod(mod)
@@ -202,7 +199,7 @@ class OverwriteSync:
         """Find the mod (name) matching a file in Overwrite (using the mods dll name).
 
         Args:
-            file_name: The name of the file.
+            file_path: The name of the file.
             mod_dll_map: Mods names and their dll files `{mod_name: ["ModName.dll"]}`.
 
         Returns:
@@ -236,8 +233,8 @@ class OverwriteSync:
         """Find matching mods for the given `search_str`.
 
         Args:
-            search_name: A string to find a mod match for. mod_dll_map: Mods names and
-            their dll files `{mod_name: ["ModName.dll"]}`.
+            search_str: A string to find a mod match for.
+            mod_dll_map: Mods names and their dll files `{mod_name: ["ModName.dll"]}`.
 
         Returns:
             Mods with partial matches, sorted descending by their metric
@@ -290,26 +287,25 @@ class ValheimWorldSaveGame(ValheimSaveGame):
 
 
 class ValheimLocalSavegames(mobase.LocalSavegames):
-    def __init__(self, myGameSaveDir):
+    def __init__(self, my_game_save_dir: QDir):
         super().__init__()
-        self._savesDir = myGameSaveDir.absolutePath()
+        self._saves_dir = my_game_save_dir.absolutePath()
 
-    def mappings(self, profile_save_dir):
+    def mappings(self, profile_save_dir: QDir):
         return [
             mobase.Mapping(
                 source=profile_save_dir.absolutePath(),
-                destination=self._savesDir,
+                destination=self._saves_dir,
                 is_directory=True,
                 create_target=True,
             )
         ]
 
-    def prepareProfile(self, profile):
+    def prepareProfile(self, profile: mobase.IProfile):
         return profile.localSavesEnabled()
 
 
 class ValheimGame(BasicGame):
-
     Name = "Valheim Support Plugin"
     Author = "Zash"
     Version = "1.2.1"
@@ -330,11 +326,11 @@ class ValheimGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = BasicModDataChecker(
-            {
-                "unfold": [
+            GlobPatterns(
+                unfold=[
                     "BepInExPack_Valheim",
                 ],
-                "valid": [
+                valid=[
                     "meta.ini",  # Included in installed mod folder.
                     "BepInEx",
                     "doorstop_libs",
@@ -352,7 +348,7 @@ class ValheimGame(BasicGame):
                     #
                     "AdvancedBuilder",
                 ],
-                "delete": [
+                delete=[
                     "*.txt",
                     "*.md",
                     "README",
@@ -362,7 +358,7 @@ class ValheimGame(BasicGame):
                     "*.dll.mdb",
                     "*.pdb",
                 ],
-                "move": {
+                move={
                     "*_VML.dll": "InSlimVML/Mods/",
                     #
                     "plugins": "BepInEx/",
@@ -379,7 +375,7 @@ class ValheimGame(BasicGame):
                     #
                     "*.assets": "valheim_Data/",
                 },
-            }
+            )
         )
         self._featureMap[mobase.LocalSavegames] = ValheimLocalSavegames(
             self.savesDirectory()
@@ -421,7 +417,7 @@ class ValheimGame(BasicGame):
         self._organizer.onUserInterfaceInitialized(lambda win: self._sync_overwrite())
         self._organizer.onFinishedRun(self._game_finished_event_handler)
 
-    def _game_finished_event_handler(self, app_path: str, *args) -> None:
+    def _game_finished_event_handler(self, app_path: str, exit_code: int) -> None:
         """Sync overwrite folder with mods after game was closed."""
         if Path(app_path) == Path(
             self.gameDirectory().absolutePath(), self.binaryName()

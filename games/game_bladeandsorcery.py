@@ -1,30 +1,34 @@
-from pathlib import Path
 import json
-import os
-from typing import List
-
-from PyQt6.QtCore import QDateTime, QDir, QLocale, Qt
-from PyQt6.QtGui import QFont
+from pathlib import Path
 
 import mobase
-
-from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QFormLayout, QLabel, QStyle
-from ..basic_features.basic_save_game_info import (
-    BasicGameSaveGame,
-    BasicGameSaveGameInfo
+from PyQt6.QtCore import QDateTime, QDir, QLocale, Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QFormLayout,
+    QLabel,
+    QSizePolicy,
+    QStyle,
+    QVBoxLayout,
+    QWidget,
 )
 
+from ..basic_features.basic_save_game_info import (
+    BasicGameSaveGame,
+    BasicGameSaveGameInfo,
+)
 from ..basic_game import BasicGame
 
 
 class BaSSaveGame(BasicGameSaveGame):
-    def __init__(self, filepath):
+    def __init__(self, filepath: Path):
         super().__init__(filepath)
-        self._filepath = Path(filepath)
         with open(self._filepath, "rb") as save:
             save_data = json.load(save)
         self._gameMode: str = save_data["gameModeId"]
-        self._gender = "Male" if save_data["creatureId"] == "PlayerDefaultMale" else "Female"
+        self._gender = (
+            "Male" if save_data["creatureId"] == "PlayerDefaultMale" else "Female"
+        )
         self._ethnicity: str = save_data["ethnicGroupId"]
         h, m, s = save_data["playTime"].split(":")
         self._elapsed = (int(h), int(m), float(s))
@@ -45,17 +49,23 @@ class BaSSaveGame(BasicGameSaveGame):
         return f"{self._gender} {self._ethnicity}"
 
     def getElapsed(self) -> str:
-        return f"{self._elapsed[0]} hours, {self._elapsed[1]} minutes, {int(self._elapsed[2])} seconds"
+        return (
+            f"{self._elapsed[0]} hours, "
+            f"{self._elapsed[1]} minutes, "
+            f"{int(self._elapsed[2])} seconds"
+        )
 
     def getGameMode(self) -> str:
         return self._gameMode
 
 
 class BaSSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.resize(400, 125)
-        sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+        sizePolicy = QSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
@@ -64,7 +74,9 @@ class BaSSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self._verticalLayout.setObjectName("verticalLayout")
         self._formLayout = QFormLayout()
         self._formLayout.setObjectName("formLayout")
-        self._formLayout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        self._formLayout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
 
         self._label = QLabel()
         self._label.setObjectName("label")
@@ -111,14 +123,18 @@ class BaSSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self._characterLabel.setFont(font1)
         self._characterLabel.setText("")
 
-        self._formLayout.setWidget(0, QFormLayout.ItemRole.FieldRole, self._characterLabel)
+        self._formLayout.setWidget(
+            0, QFormLayout.ItemRole.FieldRole, self._characterLabel
+        )
 
         self._gameModeLabel = QLabel()
         self._gameModeLabel.setObjectName("gameModeLabel")
         self._gameModeLabel.setFont(font1)
         self._gameModeLabel.setText("")
 
-        self._formLayout.setWidget(1, QFormLayout.ItemRole.FieldRole, self._gameModeLabel)
+        self._formLayout.setWidget(
+            1, QFormLayout.ItemRole.FieldRole, self._gameModeLabel
+        )
 
         self._dateLabel = QLabel()
         self._dateLabel.setObjectName("dateLabel")
@@ -132,39 +148,53 @@ class BaSSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         self._sessionLabel.setFont(font1)
         self._sessionLabel.setText("")
 
-        self._formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self._sessionLabel)
+        self._formLayout.setWidget(
+            3, QFormLayout.ItemRole.FieldRole, self._sessionLabel
+        )
 
         self._elapsedTimeLabel = QLabel()
         self._elapsedTimeLabel.setObjectName("elapsedTimeLabel")
         self._elapsedTimeLabel.setFont(font1)
         self._elapsedTimeLabel.setText("")
 
-        self._formLayout.setWidget(4, QFormLayout.ItemRole.FieldRole, self._elapsedTimeLabel)
+        self._formLayout.setWidget(
+            4, QFormLayout.ItemRole.FieldRole, self._elapsedTimeLabel
+        )
 
         self._verticalLayout.addLayout(self._formLayout)
 
         self.setLayout(self._verticalLayout)
-        self.setWindowFlags(Qt.WindowType.ToolTip | Qt.WindowType.BypassGraphicsProxyWidget)
-        self.setWindowOpacity(
-            self.style().styleHint(QStyle.StyleHint.SH_ToolTipLabel_Opacity) / 255.0
+        self.setWindowFlags(
+            Qt.WindowType.ToolTip | Qt.WindowType.BypassGraphicsProxyWidget
         )
+        style = self.style()
+        if style is not None:
+            self.setWindowOpacity(
+                style.styleHint(QStyle.StyleHint.SH_ToolTipLabel_Opacity) / 255.0
+            )
 
     def setSave(self, save: mobase.ISaveGame):
         assert isinstance(save, BaSSaveGame)
         self._characterLabel.setText(save.getPlayerSlug())
         self._gameModeLabel.setText(save.getGameMode())
         t = save.getCreationTime().toLocalTime()
-        self._dateLabel.setText(QLocale.system().toString(t.date(), QLocale.FormatType.ShortFormat)
-                                + " " + QLocale.system().toString(t.time()))
+        self._dateLabel.setText(
+            QLocale.system().toString(t.date(), QLocale.FormatType.ShortFormat)
+            + " "
+            + QLocale.system().toString(t.time())
+        )
         s = save.getModifiedTime().toLocalTime()
-        self._sessionLabel.setText(QLocale.system().toString(s.date(), QLocale.FormatType.ShortFormat)
-                                + " " + QLocale.system().toString(s.time()))
+        self._sessionLabel.setText(
+            QLocale.system().toString(s.date(), QLocale.FormatType.ShortFormat)
+            + " "
+            + QLocale.system().toString(s.time())
+        )
         self._elapsedTimeLabel.setText(save.getElapsed())
         self.resize(0, 125)
 
 
 class BaSSaveGameInfo(BasicGameSaveGameInfo):
-    def getSaveGameWidget(self, parent=None):
+    def getSaveGameWidget(self, parent: QWidget | None = None):
         return BaSSaveGameInfoWidget(parent)
 
 
@@ -191,9 +221,8 @@ class BaSGame(BasicGame):
         self._featureMap[mobase.SaveGameInfo] = BaSSaveGameInfo()
         return True
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
         return [
-            BaSSaveGame(path)
-            for path in Path(folder.absolutePath()).glob(f"*.{ext}")
+            BaSSaveGame(path) for path in Path(folder.absolutePath()).glob(f"*.{ext}")
         ]

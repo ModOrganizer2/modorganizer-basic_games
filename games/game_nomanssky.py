@@ -1,14 +1,10 @@
-# -*- encoding: utf-8 -*-
-
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
 
 class NoMansSkyGame(BasicGame):
-
     Name = "No Man's Sky Support Plugin"
     Author = "Luca/EzioTheDeadPoet"
     Version = "1.0.0"

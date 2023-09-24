@@ -63,7 +63,7 @@ class XRAbstract:
         if self.flags.has(XRFlag.SPAWN_VERSION):
             self.version = reader.u16()
         if self.version == 0:
-            reader._pos -= 2
+            reader._pos -= 2  # pyright: ignore[reportPrivateUsage]
             return
         if self.version > 120:
             self.game_type.set(reader.u16())
@@ -76,7 +76,7 @@ class XRAbstract:
             else:
                 cl_size = reader.u8()
             if cl_size > 0:
-                for x in range(cl_size):
+                for _ in range(cl_size):
                     data = reader.u8()
                     self.client_data.append(data)
         if self.version > 79:
@@ -95,7 +95,7 @@ class XRVisual:
 
     def read_visual(self, reader: XRReader, version: int):
         self.visual_name = reader.str()
-        self.flags = reader.u8()
+        self.flags = IFlag(reader.u8())
 
 
 class XRBoneData:
@@ -104,7 +104,7 @@ class XRBoneData:
         self.root_bone = 0
         self.min = IVec3(0.0, 0.0, 0.0)
         self.max = IVec3(0.0, 0.0, 0.0)
-        self.bones = []
+        self.bones: list[XRNETState] = []
 
     def load(self, reader: XRReader):
         self.bones_mask = reader.u64()
@@ -112,7 +112,7 @@ class XRBoneData:
         self.min = reader.fvec3()
         self.max = reader.fvec3()
         bones_count = reader.u16()
-        for x in range(bones_count):
+        for _ in range(bones_count):
             bone = XRNETState()
             bone.read(reader, self.min, self.max)
             self.bones.append(bone)
@@ -187,8 +187,8 @@ class XRCreatureAbstract(XRDynamicObjectVisual):
         self.squad = 0
         self.group = 0
         self.health = 1.0
-        self.dynamic_out = []
-        self.dynamic_in = []
+        self.dynamic_out: list[int] = []
+        self.dynamic_in: list[int] = []
         self.killer_id = -1
         self.death_time = 0
 
@@ -199,11 +199,11 @@ class XRCreatureAbstract(XRDynamicObjectVisual):
         self.group = reader.u8()
         self.health = reader.float() * 100
 
-        for x in range(reader.u32()):
+        for _ in range(reader.u32()):
             _id = reader.u16()
             self.dynamic_out.append(_id)
 
-        for x in range(reader.u32()):
+        for _ in range(reader.u32()):
             _id = reader.u16()
             self.dynamic_in.append(_id)
 

@@ -1,16 +1,15 @@
-# -*- encoding: utf-8 -*-
 import datetime
 import os
 import struct
 import sys
 import time
 from pathlib import Path
-from typing import List
-
-from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
-from PyQt6.QtGui import QPainter, QPixmap
+from typing import BinaryIO
 
 import mobase
+from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
+from PyQt6.QtGui import QPainter, QPixmap
+from PyQt6.QtWidgets import QWidget
 
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
@@ -99,9 +98,9 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
     _mapFile = ["chl", "bmp", "bwe", "ter", "pat", "xml", "wal", "txt"]
     _fileIgnore = ["readme", "read me", "meta.ini", "thumbs.db", "backup", ".png"]
 
-    def fix(self, tree: mobase.IFileTree):
-        toMove = []
-        for entry in tree:
+    def fix(self, filetree: mobase.IFileTree):
+        toMove: list[tuple[mobase.FileTreeEntry, str]] = []
+        for entry in filetree:
             if any([sub in entry.name().casefold() for sub in self._fileIgnore]):
                 continue
             elif entry.suffix() == "chl":
@@ -113,25 +112,24 @@ class BlackAndWhite2ModDataChecker(mobase.ModDataChecker):
             else:
                 toMove.append((entry, "/Data/landscape/BW2/"))
 
-        for (entry, path) in toMove:
-            tree.move(entry, path, policy=mobase.IFileTree.MERGE)
+        for entry, path in toMove:
+            filetree.move(entry, path, policy=mobase.IFileTree.MERGE)
 
-        return tree
+        return filetree
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
         # qInfo("Data validation start")
-        root = tree
+        root = filetree
         unpackagedMap = False
 
-        for entry in tree:
+        for entry in filetree:
             entryName = entry.name().casefold()
             canIgnore = any([sub in entryName for sub in self._fileIgnore])
             if not canIgnore:
                 parent = entry.parent()
                 if parent is not None:
-
                     if parent != root:
                         parentName = parent.name().casefold()
                     else:
@@ -176,7 +174,7 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         "empty2": [0x00000108, 0x0000011C],
     }
 
-    def __init__(self, filepath):
+    def __init__(self, filepath: Path):
         super().__init__(filepath)
         self._filepath = Path(filepath)
         self.name: str = ""
@@ -200,11 +198,11 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
             ) - (time.localtime().tm_gmtoff * 1000)
             info.close()
 
-    def readInf(self, inf, key):
+    def readInf(self, inf: BinaryIO, key: str):
         inf.seek(self._saveInfLayout[key][0])
         return inf.read(self._saveInfLayout[key][1] - self._saveInfLayout[key][0])
 
-    def allFiles(self) -> List[str]:
+    def allFiles(self) -> list[str]:
         files = [str(file) for file in self._filepath.glob("./*")]
         files.append(str(self._filepath))
         return files
@@ -227,11 +225,11 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
 
 
 class BlackAndWhite2LocalSavegames(mobase.LocalSavegames):
-    def __init__(self, myGameSaveDir):
+    def __init__(self, my_game_save_dir: QDir):
         super().__init__()
-        self._savesDir = myGameSaveDir.absolutePath()
+        self._savesDir = my_game_save_dir.absolutePath()
 
-    def mappings(self, profile_save_dir):
+    def mappings(self, profile_save_dir: QDir) -> list[mobase.Mapping]:
         m = mobase.Mapping()
 
         m.createTarget = True
@@ -241,20 +239,28 @@ class BlackAndWhite2LocalSavegames(mobase.LocalSavegames):
 
         return [m]
 
-    def prepareProfile(self, profile):
+    def prepareProfile(self, profile: mobase.IProfile):
         return profile.localSavesEnabled()
 
 
-def getPreview(save):
-    save = BlackAndWhite2SaveGame(save)
+def _getPreview(savepath: Path):
+    save = BlackAndWhite2SaveGame(savepath)
     lines = [
         [
-            ("Name : " + save.getName(), Qt.AlignLeft),
-            ("| Profile : " + save.getSaveGroupIdentifier()[1:], Qt.AlignLeft),
+            ("Name : " + save.getName(), Qt.AlignmentFlag.AlignLeft),
+            (
+                "| Profile : " + save.getSaveGroupIdentifier()[1:],
+                Qt.AlignmentFlag.AlignLeft,
+            ),
         ],
-        [("Land number : " + save.getLand(), Qt.AlignLeft)],
-        [("Saved at : " + save.getCreationTime().toString(), Qt.AlignLeft)],
-        [("Elapsed time : " + save.getElapsed(), Qt.AlignLeft)],
+        [("Land number : " + save.getLand(), Qt.AlignmentFlag.AlignLeft)],
+        [
+            (
+                "Saved at : " + save.getCreationTime().toString(),
+                Qt.AlignmentFlag.AlignLeft,
+            )
+        ],
+        [("Elapsed time : " + save.getElapsed(), Qt.AlignmentFlag.AlignLeft)],
     ]
 
     pixmap = QPixmap(320, 320)
@@ -269,15 +275,14 @@ def getPreview(save):
     width = 0
     ln = 0
     for line in lines:
-
         cHeight = 0
         cWidth = 0
 
-        for (toPrint, align) in line:
+        for toPrint, align in line:
             bRect = fm.boundingRect(toPrint)
             cHeight = bRect.height() * (ln + 1)
             bRect.moveTop(cHeight - bRect.height())
-            if align != Qt.AlignLeft:
+            if align != Qt.AlignmentFlag.AlignLeft:
                 continue
             else:
                 bRect.moveLeft(cWidth + margin)
@@ -323,7 +328,7 @@ class BlackAndWhite2SaveGameInfoWidget(BasicGameSaveGameInfoWidget):
 
 
 class BlackAndWhite2SaveGameInfo(BasicGameSaveGameInfo):
-    def getSaveGameWidget(self, parent=None):
+    def getSaveGameWidget(self, parent: QWidget | None = None):
         if self._get_preview is not None:
             return BasicGameSaveGameInfoWidget(parent, self._get_preview)
         return None
@@ -335,7 +340,6 @@ PSTART_MENU = (
 
 
 class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
-
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
     Version = "1.0.1"
@@ -364,7 +368,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
         self._featureMap[mobase.LocalSavegames] = BlackAndWhite2LocalSavegames(
             self.savesDirectory()
         )
-        self._featureMap[mobase.SaveGameInfo] = BlackAndWhite2SaveGameInfo(getPreview)
+        self._featureMap[mobase.SaveGameInfo] = BlackAndWhite2SaveGameInfo(_getPreview)
         return True
 
     def detectGame(self):
@@ -378,7 +382,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
         return
 
-    def executables(self) -> List[mobase.ExecutableInfo]:
+    def executables(self) -> list[mobase.ExecutableInfo]:
         execs = super().executables()
 
         """
@@ -401,8 +405,8 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
         return execs
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
-        profiles = list()
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
+        profiles: list[Path] = []
         for path in Path(folder.absolutePath()).glob("*/Saved Games/*"):
             if (
                 path.name == "Autosave"
@@ -425,7 +429,6 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
 
 class BOTGGame(BlackAndWhite2Game):
-
     Name = "Black & White 2 Battle of the Gods Support Plugin"
 
     GameName = "Black & White 2 Battle of the Gods"

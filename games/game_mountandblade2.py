@@ -1,17 +1,11 @@
-# -*- encoding: utf-8 -*-
-
-from typing import List
-
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
 
 class MountAndBladeIIModDataChecker(mobase.ModDataChecker):
-
-    _valid_folders: List[str] = [
+    _valid_folders: list[str] = [
         "native",
         "sandbox",
         "sandboxcore",
@@ -23,10 +17,9 @@ class MountAndBladeIIModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-
-        for e in tree:
+        for e in filetree:
             if e.isDir():
                 if e.name().lower() in self._valid_folders:
                     return mobase.ModDataChecker.VALID

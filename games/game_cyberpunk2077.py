@@ -2,7 +2,6 @@ from ..basic_game import BasicGame
 
 
 class Cyberpunk2077Game(BasicGame):
-
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788"
     Version = "1.0.0"

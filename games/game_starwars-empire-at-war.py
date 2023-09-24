@@ -1,10 +1,5 @@
-# -*- encoding: utf-8 -*-
-
-from typing import List
-
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -28,7 +23,7 @@ class StarWarsEmpireAtWarGame(BasicGame):
         "Game:-Star-Wars:-Empire-At-War"
     )
 
-    def executables(self) -> List[mobase.ExecutableInfo]:
+    def executables(self) -> list[mobase.ExecutableInfo]:
         return [
             mobase.ExecutableInfo(
                 "STAR WARS Empire at War",

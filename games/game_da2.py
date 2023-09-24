@@ -5,7 +5,6 @@ from ..basic_game import BasicGame
 
 
 class DA2Game(BasicGame):
-
     Name = "Dragon Age 2 Support Plugin"
     Author = "Patchier"
 
@@ -26,7 +25,7 @@ class DA2Game(BasicGame):
 
     def version(self):
         # Don't forget to import mobase!
-        return mobase.VersionInfo(1, 0, 1, mobase.ReleaseType.final)
+        return mobase.VersionInfo(1, 0, 1, mobase.ReleaseType.FINAL)
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

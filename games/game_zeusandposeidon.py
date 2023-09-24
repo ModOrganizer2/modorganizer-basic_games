@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-
 from typing import List, Optional
 
 import mobase
@@ -12,13 +10,12 @@ class ZeusAndPoseidonModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-
         folders: List[mobase.IFileTree] = []
         files: List[mobase.FileTreeEntry] = []
 
-        for entry in tree:
+        for entry in filetree:
             if isinstance(entry, mobase.IFileTree):
                 folders.append(entry)
             else:
@@ -30,25 +27,25 @@ class ZeusAndPoseidonModDataChecker(mobase.ModDataChecker):
         folder = folders[0]
         pakfile = folder.name() + ".pak"
         if folder.exists(pakfile):
-            if tree.exists(pakfile):
+            if filetree.exists(pakfile):
                 return mobase.ModDataChecker.VALID
             else:
                 return mobase.ModDataChecker.FIXABLE
 
         return mobase.ModDataChecker.INVALID
 
-    def fix(self, tree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
-        if not isinstance(tree[0], mobase.IFileTree):
+    def fix(self, filetree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
+        first_entry = filetree[0]
+        if not isinstance(first_entry, mobase.IFileTree):
             return None
-        entry = tree[0].find(tree[0].name() + ".pak")
+        entry = first_entry.find(filetree[0].name() + ".pak")
         if entry is None:
             return None
-        tree.copy(entry, "", mobase.IFileTree.InsertPolicy.FAIL_IF_EXISTS)
-        return tree
+        filetree.copy(entry, "", mobase.IFileTree.InsertPolicy.FAIL_IF_EXISTS)
+        return filetree
 
 
 class ZeusAndPoseidonGame(BasicGame):
-
     Name = "Zeus and Poseidon Support Plugin"
     Author = "Holt59"
     Version = "1.0.0a"

@@ -2,7 +2,6 @@ from ..basic_game import BasicGame
 
 
 class MonsterHunterWorldGame(BasicGame):
-
     Name = "Monster Hunter: World Support Plugin"
     Author = "prz"
     Version = "1.0.0"

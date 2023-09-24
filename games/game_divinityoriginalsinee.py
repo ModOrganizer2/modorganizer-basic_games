@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import os
-from typing import List, Optional
+from pathlib import Path
 
 import mobase
 
@@ -14,13 +14,12 @@ class DivinityOriginalSinEnhancedEditionModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
+        folders: list[mobase.IFileTree] = []
+        files: list[mobase.FileTreeEntry] = []
 
-        folders: List[mobase.IFileTree] = []
-        files: List[mobase.FileTreeEntry] = []
-
-        for entry in tree:
+        for entry in filetree:
             if isinstance(entry, mobase.IFileTree):
                 folders.append(entry)
             else:
@@ -52,9 +51,6 @@ class DivinityOriginalSinEnhancedEditionModDataChecker(mobase.ModDataChecker):
                     return mobase.ModDataChecker.VALID
 
         return mobase.ModDataChecker.INVALID
-
-    def fix(self, tree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
-        return None
 
 
 class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper):
@@ -101,10 +97,9 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper
         ] = DivinityOriginalSinEnhancedEditionModDataChecker()
         return True
 
-    def mappings(self) -> List[mobase.Mapping]:
-        map = []
-        modDirs = [self.DOCS_MOD_SPECIAL_NAME]
-        self._listDirsRecursive(modDirs, prefix=self.DOCS_MOD_SPECIAL_NAME)
+    def mappings(self) -> list[mobase.Mapping]:
+        map: list[mobase.Mapping] = []
+        modDirs = self._listDirsRecursive(Path(self.DOCS_MOD_SPECIAL_NAME))
         for dir_ in modDirs:
             for file_ in self._organizer.findFiles(path=dir_, filter=lambda x: True):
                 m = mobase.Mapping()
@@ -121,9 +116,9 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper
     def primarySources(self):
         return self.GameValidShortNames
 
-    def _listDirsRecursive(self, dirs_list, prefix=""):
-        dirs = self._organizer.listDirectories(prefix)
+    def _listDirsRecursive(self, prefix: Path) -> list[str]:
+        res = [str(prefix)]
+        dirs = self._organizer.listDirectories(str(prefix))
         for dir_ in dirs:
-            dir_ = os.path.join(prefix, dir_)
-            dirs_list.append(dir_)
-            self._listDirsRecursive(dirs_list, dir_)
+            res.extend(self._listDirsRecursive(prefix.joinpath(dir_)))
+        return res

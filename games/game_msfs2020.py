@@ -7,7 +7,6 @@ from ..basic_game import BasicGame
 
 
 class MSFS2020Game(BasicGame):
-
     Name = "Microsoft Flight Simulator 2020 Support Plugin"
     Author = "Deorder"
     Version = "0.0.1"

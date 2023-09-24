@@ -1,10 +1,8 @@
-# -*- encoding: utf-8 -*-
-
 import struct
-
-from PyQt6.QtGui import QImage
+from pathlib import Path
 
 import mobase
+from PyQt6.QtGui import QImage
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_game import BasicGame
@@ -31,15 +29,17 @@ class DarkMessiahOfMightAndMagicGame(BasicGame):
     GameSavesDirectory = "%GAME_PATH%/mm/SAVE"
     GameSaveExtension = "sav"
 
-    def _read_save_tga(self, filename):
+    def _read_save_tga(self, filepath: Path) -> QImage | None:
         # Qt TGA reader does not work for TGA, I hope that all files
         # have the same format:
-        with open(filename.replace(".sav", ".tga"), "rb") as fp:
+        with open(
+            filepath.parent.joinpath(filepath.name.replace(".sav", ".tga")), "rb"
+        ) as fp:
             data = fp.read()
         _, _, w, h, bpp, _ = struct.unpack("<HHHHBB", data[8:18])
         if bpp != 24:
             return None
-        return QImage(data[18:], w, h, QImage.Format_RGB888)
+        return QImage(data[18:], w, h, QImage.Format.Format_RGB888)
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)

@@ -1,8 +1,5 @@
-# -*- encoding: utf-8 -*-
-
-
 class IVec3:
-    def __init__(self, x, y, z):
+    def __init__(self, x: float, y: float, z: float):
         self.x = x
         self.y = y
         self.z = z
@@ -10,23 +7,14 @@ class IVec3:
     def __str__(self) -> str:
         return f"{self.x}, {self.y}, {self.z}"
 
-    def set(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
 
 class IVec4(IVec3):
-    def __init__(self, x, y, z, w):
+    def __init__(self, x: float, y: float, z: float, w: float):
         super().__init__(x, y, z)
         self.w = w
 
     def __str__(self) -> str:
         return f"{self.x}, {self.y}, {self.z}, f{self.w}"
-
-    def set(self, x, y, z, w):
-        super().set(x, y, z)
-        self.w = w
 
 
 class IFlag:
@@ -36,14 +24,14 @@ class IFlag:
     def __str__(self) -> str:
         return str(self._flag)
 
-    def assign(self, mask):
+    def assign(self, mask: int):
         self._flag = mask
 
-    def has(self, mask) -> bool:
+    def has(self, mask: int) -> bool:
         return bool((self._flag & mask) == mask)
 
-    def set(self, mask):
+    def set(self, mask: int) -> None:
         self._flag |= mask
 
-    def remove(self, mask):
+    def remove(self, mask: int) -> None:
         self._flag &= ~mask

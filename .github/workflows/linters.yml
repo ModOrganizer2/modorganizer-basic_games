@@ -5,22 +5,24 @@ on: [push, pull_request]
 jobs:
   checks:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      matrix:
-        python-version: [3.8]
-
     steps:
-    - uses: actions/checkout@v1
-      with:
-        path: basic_games
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install tox
-    - name: Test with tox
-      run: tox -e py38-lint
+      - uses: actions/checkout@v4
+        with:
+          path: "basic_games"
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+      - uses: abatilo/actions-poetry@v2
+      - name: Install
+        run: |
+          cd basic_games
+          poetry install
+      - name: Lint
+        run: |
+          cd basic_games
+          poetry run black . --check --diff
+          poetry run isort -c .
+          poetry run mypy  .
+          poetry run ruff .
+          poetry run pyright .

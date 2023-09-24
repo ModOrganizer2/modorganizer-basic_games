@@ -1,17 +1,15 @@
-# -*- encoding: utf-8 -*-
-
 # Code greatly inspired by https://github.com/LostDragonist/steam-library-setup-tool
 
 import sys
-import winreg  # type: ignore
+import winreg
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import TypedDict, cast
 
-import vdf
+import vdf  # pyright: ignore[reportMissingTypeStubs]
 
 
 class SteamGame:
-    def __init__(self, appid, installdir):
+    def __init__(self, appid: str, installdir: str):
         self.appid = appid
         self.installdir = installdir
 
@@ -22,15 +20,36 @@ class SteamGame:
         return "{} ({})".format(self.appid, self.installdir)
 
 
+class _AppState(TypedDict):
+    appid: str
+    installdir: str
+
+
+class _AppManifest(TypedDict):
+    AppState: _AppState
+
+
+class _LibraryFolder(TypedDict):
+    path: str
+
+
+class _LibraryFolders(TypedDict, total=False):
+    libraryfolders: dict[str, _LibraryFolder]
+    LibraryFolders: dict[str, str]
+
+
 class LibraryFolder:
     def __init__(self, path: Path):
         self.path = path
 
-        self.games = []
+        self.games: list[SteamGame] = []
         for filepath in path.joinpath("steamapps").glob("appmanifest_*.acf"):
             try:
                 with open(filepath, "r", encoding="utf-8") as fp:
-                    info = vdf.load(fp)
+                    info = cast(
+                        _AppManifest,
+                        vdf.load(fp),  # pyright: ignore[reportUnknownMemberType]
+                    )
                     app_state = info["AppState"]
             except KeyError:
                 print(
@@ -61,7 +80,7 @@ class LibraryFolder:
         return "LibraryFolder at {}: {}".format(self.path, self.games)
 
 
-def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
+def parse_library_info(library_vdf_path: Path) -> list[LibraryFolder]:
     """
     Read library folders from the main library file.
 
@@ -74,26 +93,25 @@ def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
     """
 
     with open(library_vdf_path, "r", encoding="utf-8") as f:
-        info = vdf.load(f)
+        info = cast(
+            _LibraryFolders,
+            vdf.load(f),  # pyright: ignore[reportUnknownMemberType]
+        )
 
-    library_folders = []
+    info_folders: dict[str, str] | dict[str, _LibraryFolder]
 
     if "libraryfolders" in info:
         # new format
         info_folders = info["libraryfolders"]
 
-        def get_path(value):
-            return value["path"]
-
     elif "LibraryFolders" in info:
         # old format
         info_folders = info["LibraryFolders"]
 
-        def get_path(value):
-            return value
-
     else:
         raise ValueError(f'Unknown file format from "{library_vdf_path}"')
+
+    library_folders: list[LibraryFolder] = []
 
     for key, value in info_folders.items():
         # only keys that are integer values contains library folder
@@ -102,7 +120,11 @@ def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
         except ValueError:
             continue
 
-        path = get_path(value)
+        if isinstance(value, str):
+            path = value
+        else:
+            path = value["path"]
+
         try:
             library_folders.append(LibraryFolder(Path(path)))
         except Exception as e:
@@ -114,7 +136,7 @@ def parse_library_info(library_vdf_path: Path) -> List[LibraryFolder]:
     return library_folders
 
 
-def find_steam_path() -> Optional[Path]:
+def find_steam_path() -> Path | None:
     """
     Retrieve the Steam path, if available.
 
@@ -129,7 +151,7 @@ def find_steam_path() -> Optional[Path]:
         return None
 
 
-def find_games() -> Dict[str, Path]:
+def find_games() -> dict[str, Path]:
     """
     Find the list of Steam games installed.
 
@@ -149,7 +171,7 @@ def find_games() -> Dict[str, Path]:
     except FileNotFoundError:
         return {}
 
-    games: Dict[str, Path] = {}
+    games: dict[str, Path] = {}
     for library in library_folders:
         for game in library.games:
             games[game.appid] = Path(library.path).joinpath(

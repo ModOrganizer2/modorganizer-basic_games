@@ -1,13 +1,9 @@
-# -*- encoding: utf-8 -*-
-
 from enum import IntEnum
 from pathlib import Path
-from typing import List
-
-from PyQt6.QtCore import QDir, QFileInfo, Qt
-from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo, Qt
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
@@ -18,7 +14,7 @@ from .stalkeranomaly import XRSave
 
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
-    _valid_folders: List[str] = [
+    _valid_folders: list[str] = [
         "appdata",
         "bin",
         "db",
@@ -33,8 +29,8 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
 
         return False
 
-    def findLostData(self, tree: mobase.IFileTree) -> List[mobase.FileTreeEntry]:
-        lost_db: List[mobase.FileTreeEntry] = []
+    def findLostData(self, tree: mobase.IFileTree) -> list[mobase.FileTreeEntry]:
+        lost_db: list[mobase.FileTreeEntry] = []
 
         for e in tree:
             if e.isFile():
@@ -44,24 +40,24 @@ class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
         return lost_db
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        if self.hasValidFolders(tree):
+        if self.hasValidFolders(filetree):
             return mobase.ModDataChecker.VALID
 
-        if self.findLostData(tree):
+        if self.findLostData(filetree):
             return mobase.ModDataChecker.FIXABLE
 
         return mobase.ModDataChecker.INVALID
 
-    def fix(self, tree: mobase.IFileTree) -> mobase.IFileTree:
-        lost_db = self.findLostData(tree)
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+        lost_db = self.findLostData(filetree)
         if lost_db:
-            rfolder = tree.addDirectory("db").addDirectory("mods")
+            rfolder = filetree.addDirectory("db").addDirectory("mods")
             for r in lost_db:
                 rfolder.insert(r, mobase.IFileTree.REPLACE)
 
-        return tree
+        return filetree
 
 
 class Content(IntEnum):
@@ -75,9 +71,9 @@ class Content(IntEnum):
 
 
 class StalkerAnomalyModDataContent(mobase.ModDataContent):
-    content: List[int] = []
+    content: list[int] = []
 
-    def getAllContents(self) -> List[mobase.ModDataContent.Content]:
+    def getAllContents(self) -> list[mobase.ModDataContent.Content]:
         return [
             mobase.ModDataContent.Content(
                 Content.INTERFACE, "Interface", ":/MO/gui/content/interface"
@@ -125,9 +121,9 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
 
         return mobase.IFileTree.WalkReturn.CONTINUE
 
-    def getContentsFor(self, tree: mobase.IFileTree) -> List[int]:
+    def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
         self.content = []
-        tree.walk(self.walkContent, "/")
+        filetree.walk(self.walkContent, "/")
         return self.content
 
 
@@ -150,7 +146,7 @@ class StalkerAnomalySaveGame(BasicGameSaveGame):
             return f"{name}, {xr_save.save_fmt} [{time}]"
         return ""
 
-    def allFiles(self) -> List[str]:
+    def allFiles(self) -> list[str]:
         filepath = str(self._filepath)
         paths = [filepath]
         scoc = filepath.replace(".scop", ".scoc")
@@ -163,7 +159,7 @@ class StalkerAnomalySaveGame(BasicGameSaveGame):
 
 
 class StalkerAnomalySaveGameInfoWidget(mobase.ISaveGameInfoWidget):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget | None):
         super().__init__(parent)
         layout = QVBoxLayout()
         self._labelSave = self.newLabel(layout)
@@ -211,7 +207,7 @@ class StalkerAnomalySaveGameInfoWidget(mobase.ISaveGameInfoWidget):
 
 
 class StalkerAnomalySaveGameInfo(BasicGameSaveGameInfo):
-    def getSaveGameWidget(self, parent=None):
+    def getSaveGameWidget(self, parent: QWidget | None = None):
         return StalkerAnomalySaveGameInfoWidget(parent)
 
 
@@ -258,11 +254,11 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
             dbg_path = Path(self._gamePath, "gamedata/configs/cache_dbg.ltx")
             if not dbg_path.exists():
                 dbg_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(dbg_path, "w", encoding="utf-8") as file:  # noqa
+                with open(dbg_path, "w", encoding="utf-8"):
                     pass
         return True
 
-    def executables(self) -> List[mobase.ExecutableInfo]:
+    def executables(self) -> list[mobase.ExecutableInfo]:
         info = [
             ["Anomaly Launcher", "AnomalyLauncher.exe"],
             ["Anomaly (DX11-AVX)", "bin/AnomalyDX11AVX.exe"],
@@ -279,14 +275,14 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
             mobase.ExecutableInfo(inf[0], QFileInfo(gamedir, inf[1])) for inf in info
         ]
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
         return [
             StalkerAnomalySaveGame(path)
             for path in Path(folder.absolutePath()).glob(f"*.{ext}")
         ]
 
-    def mappings(self) -> List[mobase.Mapping]:
+    def mappings(self) -> list[mobase.Mapping]:
         appdata = self.gameDirectory().filePath("appdata")
         m = mobase.Mapping()
         m.createTarget = True

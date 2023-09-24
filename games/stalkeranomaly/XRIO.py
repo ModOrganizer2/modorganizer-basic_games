@@ -35,7 +35,7 @@ class XRReader:
             size = len(self._buffer)
         if len(self._buffer) <= self._pos:
             return b""
-        (buffer, pos) = self._read(size)
+        (buffer, _pos) = self._read(size)
         return buffer
 
     def seek(self, pos: int, whence: int = io.SEEK_SET) -> int:

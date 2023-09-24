@@ -1,10 +1,7 @@
-# -*- encoding: utf-8 -*-
 from pathlib import Path
-from typing import List
-
-from PyQt6.QtCore import QDir
 
 import mobase
+from PyQt6.QtCore import QDir
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 
@@ -25,7 +22,7 @@ class Starsector(BasicGame):
         "Game:-Starsector"
     )
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         return [
             BasicGameSaveGame(path)
             for path in Path(folder.absolutePath()).glob("save_*")

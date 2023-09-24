@@ -1,19 +1,18 @@
-# -*- encoding: utf-8 -*-
+from __future__ import annotations
 
 import shutil
 import sys
 from pathlib import Path
-from typing import Callable, Dict, Generic, List, Optional, TypeVar, Union
-
-from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
-from PyQt6.QtGui import QIcon
+from typing import Callable, Generic, TypeVar
 
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt6.QtGui import QIcon
 
 from .basic_features.basic_save_game_info import BasicGameSaveGame
 
 
-def replace_variables(value: str, game: "BasicGame") -> str:
+def replace_variables(value: str, game: BasicGame) -> str:
     """Replace special paths in the given value."""
 
     if value.find("%DOCUMENTS%") != -1:
@@ -40,11 +39,10 @@ def replace_variables(value: str, game: "BasicGame") -> str:
     return value
 
 
-T = TypeVar("T")
+_T = TypeVar("_T")
 
 
-class BasicGameMapping(Generic[T]):
-
+class BasicGameMapping(Generic[_T]):
     # The game:
     _game: "BasicGame"
 
@@ -58,20 +56,19 @@ class BasicGameMapping(Generic[T]):
     _required: bool
 
     # Callable returning a default value (if not required):
-    _default: Callable[["BasicGame"], T]
+    _default: Callable[["BasicGame"], _T]
 
     # Function to apply to the value:
-    _apply_fn: Optional[Callable[[Union[T, str]], T]]
+    _apply_fn: Callable[[_T | str], _T] | None
 
     def __init__(
         self,
-        game,
-        exposed_name,
-        internal_method,
-        default: Optional[Callable[["BasicGame"], T]] = None,
-        apply_fn: Optional[Callable[[Union[T, str]], T]] = None,
+        game: BasicGame,
+        exposed_name: str,
+        internal_method: str,
+        default: Callable[[BasicGame], _T] | None = None,
+        apply_fn: Callable[[_T | str], _T] | None = None,
     ):
-
         self._game = game
         self._exposed_name = exposed_name
         self._internal_method_name = internal_method
@@ -86,7 +83,8 @@ class BasicGameMapping(Generic[T]):
                 except:  # noqa
                     raise ValueError(
                         "Basic game plugin from {} has an invalid {} property.".format(
-                            game._fromName, self._exposed_name
+                            game._fromName,  # pyright: ignore[reportPrivateUsage]
+                            self._exposed_name,
                         )
                     )
             self._default = lambda game: value  # type: ignore
@@ -97,11 +95,12 @@ class BasicGameMapping(Generic[T]):
         ):
             raise ValueError(
                 "Basic game plugin from {} is missing {} property.".format(
-                    game._fromName, self._exposed_name
+                    game._fromName,  # pyright: ignore[reportPrivateUsage]
+                    self._exposed_name,
                 )
             )
 
-    def get(self) -> T:
+    def get(self) -> _T:
         """Return the value of this mapping."""
         value = self._default(self._game)  # type: ignore
 
@@ -117,7 +116,7 @@ class BasicGameMapping(Generic[T]):
         return value
 
 
-class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
+class BasicGameOptionsMapping(BasicGameMapping[list[_T]]):
 
     """
     Represents a game mappings for which multiple options are possible. The game
@@ -128,11 +127,11 @@ class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
 
     def __init__(
         self,
-        game,
-        exposed_name,
-        internal_method,
-        default: Optional[Callable[["BasicGame"], T]] = None,
-        apply_fn: Optional[Callable[[Union[List[T], str]], List[T]]] = None,
+        game: BasicGame,
+        exposed_name: str,
+        internal_method: str,
+        default: Callable[[BasicGame], _T] | None = None,
+        apply_fn: Callable[[list[_T] | str], list[_T]] | None = None,
     ):
         super().__init__(game, exposed_name, internal_method, lambda g: [], apply_fn)
         self._index = -1
@@ -147,7 +146,7 @@ class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
         """
         self._index = index
 
-    def set_value(self, value: T):
+    def set_value(self, value: _T):
         """
         Set the index corresponding of the given value. If the value is not present,
         the index is set to -1.
@@ -169,7 +168,7 @@ class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
         """
         return self._index != -1
 
-    def current(self) -> T:
+    def current(self) -> _T:
         values = self._default(self._game)  # type: ignore
 
         if not values:
@@ -189,7 +188,6 @@ class BasicGameOptionsMapping(BasicGameMapping[List[T]]):
 
 
 class BasicGameMappings:
-
     name: BasicGameMapping[str]
     author: BasicGameMapping[str]
     version: BasicGameMapping[mobase.VersionInfo]
@@ -197,7 +195,7 @@ class BasicGameMappings:
     gameName: BasicGameMapping[str]
     gameShortName: BasicGameMapping[str]
     gameNexusName: BasicGameMapping[str]
-    validShortNames: BasicGameMapping[List[str]]
+    validShortNames: BasicGameMapping[list[str]]
     nexusGameId: BasicGameMapping[int]
     binaryName: BasicGameMapping[str]
     launcherName: BasicGameMapping[str]
@@ -208,14 +206,13 @@ class BasicGameMappings:
     steamAPPId: BasicGameOptionsMapping[str]
     gogAPPId: BasicGameOptionsMapping[str]
     originManifestIds: BasicGameOptionsMapping[str]
-    originWatcherExecutables: BasicGameMapping[List[str]]
+    originWatcherExecutables: BasicGameMapping[list[str]]
     epicAPPId: BasicGameOptionsMapping[str]
     eaDesktopContentId: BasicGameOptionsMapping[str]
     supportURL: BasicGameMapping[str]
 
     @staticmethod
-    def _default_documents_directory(game):
-
+    def _default_documents_directory(game: mobase.IPluginGame):
         folders = [
             "{}/My Games/{}".format(
                 QStandardPaths.writableLocation(
@@ -238,7 +235,7 @@ class BasicGameMappings:
         return QDir()
 
     # Game mappings:
-    def __init__(self, game: "BasicGame"):
+    def __init__(self, game: BasicGame):
         self._game = game
 
         self.name = BasicGameMapping(game, "Name", "name")
@@ -302,9 +299,14 @@ class BasicGameMappings:
         )
 
         # Convert Union[int, str, List[Union[int, str]]] to List[str].
-        def ids_apply(v) -> List[str]:
+        def ids_apply(v: list[int] | list[str] | int | str) -> list[str]:
+            """
+            Convert various types to a list of string. If the given value is already a
+            list, returns a new list with all values converted to string, otherwise
+            returns a list with the value convert to a string as its only element.
+            """
             if isinstance(v, (int, str)):
-                v = [v]
+                v = [str(v)]
             return [str(x) for x in v]
 
         self.steamAPPId = BasicGameOptionsMapping(
@@ -342,6 +344,19 @@ class BasicGameMappings:
         )
 
 
+_GameFeature = (
+    mobase.BSAInvalidation
+    | mobase.DataArchives
+    | mobase.GamePlugins
+    | mobase.LocalSavegames
+    | mobase.ModDataChecker
+    | mobase.ModDataContent
+    | mobase.SaveGameInfo
+    | mobase.ScriptExtender
+    | mobase.UnmanagedMods
+)
+
+
 class BasicGame(mobase.IPluginGame):
 
     """This class implements some methods from mobase.IPluginGame
@@ -349,11 +364,11 @@ class BasicGame(mobase.IPluginGame):
     all the methods of mobase.IPluginGame."""
 
     # List of steam, GOG, origin and Epic games:
-    steam_games: Dict[str, Path]
-    gog_games: Dict[str, Path]
-    origin_games: Dict[str, Path]
-    epic_games: Dict[str, Path]
-    eadesktop_games: Dict[str, Path]
+    steam_games: dict[str, Path]
+    gog_games: dict[str, Path]
+    origin_games: dict[str, Path]
+    epic_games: dict[str, Path]
+    eadesktop_games: dict[str, Path]
 
     @staticmethod
     def setup():
@@ -379,7 +394,7 @@ class BasicGame(mobase.IPluginGame):
     _gamePath: str
 
     # The feature map:
-    _featureMap: Dict
+    _featureMap: dict[type[_GameFeature], _GameFeature]
 
     def __init__(self):
         super(BasicGame, self).__init__()
@@ -449,7 +464,7 @@ class BasicGame(mobase.IPluginGame):
         # Note: self is self._organizer.managedGame() does not work:
         return self.name() == self._organizer.managedGame().name()
 
-    def settings(self) -> List[mobase.PluginSetting]:
+    def settings(self) -> list[mobase.PluginSetting]:
         return []
 
     # IPluginGame interface:
@@ -491,7 +506,7 @@ class BasicGame(mobase.IPluginGame):
             self.gameDirectory().absoluteFilePath(self.binaryName())
         )
 
-    def validShortNames(self) -> List[str]:
+    def validShortNames(self) -> list[str]:
         return self._mappings.validShortNames.get()
 
     def gameNexusName(self) -> str:
@@ -524,8 +539,8 @@ class BasicGame(mobase.IPluginGame):
     def getSupportURL(self) -> str:
         return self._mappings.supportURL.get()
 
-    def executables(self) -> List[mobase.ExecutableInfo]:
-        execs = []
+    def executables(self) -> list[mobase.ExecutableInfo]:
+        execs: list[mobase.ExecutableInfo] = []
         if self.getLauncherName():
             execs.append(
                 mobase.ExecutableInfo(
@@ -543,37 +558,41 @@ class BasicGame(mobase.IPluginGame):
         )
         return execs
 
-    def executableForcedLoads(self) -> List[mobase.ExecutableForcedLoadSetting]:
+    def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
         return []
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
         return [
             BasicGameSaveGame(path)
             for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
         ]
 
-    def initializeProfile(self, path: QDir, settings: mobase.ProfileSetting):
+    def initializeProfile(
+        self, directory: QDir, settings: mobase.ProfileSetting
+    ) -> None:
         if settings & mobase.ProfileSetting.CONFIGURATION:
             for iniFile in self.iniFiles():
                 try:
                     shutil.copyfile(
                         self.documentsDirectory().absoluteFilePath(iniFile),
-                        path.absoluteFilePath(QFileInfo(iniFile).fileName()),
+                        directory.absoluteFilePath(QFileInfo(iniFile).fileName()),
                     )
                 except FileNotFoundError:
-                    Path(path.absoluteFilePath(QFileInfo(iniFile).fileName())).touch()
+                    Path(
+                        directory.absoluteFilePath(QFileInfo(iniFile).fileName())
+                    ).touch()
 
-    def primarySources(self):
+    def primarySources(self) -> list[str]:
         return []
 
-    def primaryPlugins(self):
+    def primaryPlugins(self) -> list[str]:
         return []
 
-    def gameVariants(self):
+    def gameVariants(self) -> list[str]:
         return []
 
-    def setGameVariant(self, variantStr):
+    def setGameVariant(self, variant: str) -> None:
         pass
 
     def gameVersion(self) -> str:
@@ -581,23 +600,23 @@ class BasicGame(mobase.IPluginGame):
             self.gameDirectory().absoluteFilePath(self.binaryName())
         )
 
-    def iniFiles(self):
+    def iniFiles(self) -> list[str]:
         return []
 
-    def DLCPlugins(self):
+    def DLCPlugins(self) -> list[str]:
         return []
 
-    def CCPlugins(self):
+    def CCPlugins(self) -> list[str]:
         return []
 
     def loadOrderMechanism(self):
-        return mobase.LoadOrderMechanism.PluginsTxt
+        return mobase.LoadOrderMechanism.PLUGINS_TXT
 
     def sortMechanism(self):
         return mobase.SortMechanism.NONE
 
-    def looksValid(self, aQDir: QDir):
-        return aQDir.exists(self.binaryName())
+    def looksValid(self, directory: QDir):
+        return directory.exists(self.binaryName())
 
     def isInstalled(self) -> bool:
         return bool(self._gamePath)
@@ -613,10 +632,10 @@ class BasicGame(mobase.IPluginGame):
             self.gameDirectory().absoluteFilePath(self._mappings.dataDirectory.get())
         )
 
-    def secondaryDataDirectories(self) -> Dict[str, QDir]:
+    def secondaryDataDirectories(self) -> dict[str, QDir]:
         return {}
 
-    def setGamePath(self, path: Union[Path, str]):
+    def setGamePath(self, path: Path | str) -> None:
         self._gamePath = str(path)
 
         path = Path(path)

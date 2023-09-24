@@ -1,17 +1,13 @@
-# -*- encoding: utf-8 -*-
-
-from os.path import exists, join
+from pathlib import Path
 from typing import List, Optional
 
-from PyQt6.QtCore import QDir, QFileInfo
-
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame
 
 
 class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
-
     Name = "Yu-Gi-Oh! Master Duel Support Plugin"
     Author = "The Conceptionist & uwx"
     Version = "1.0.2"
@@ -62,7 +58,7 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
         return self._userDataDirCached
 
     def mappings(self) -> List[mobase.Mapping]:
-        modsPath = self._organizer.modsPath()
+        modsPath = Path(self._organizer.modsPath())
         unityMods = self.getUnityDataMods()
 
         mappings: List[mobase.Mapping] = []
@@ -71,22 +67,22 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
             m = mobase.Mapping()
             m.createTarget = False
             m.isDirectory = True
-            m.source = join(modsPath, modName, "AssetBundle")
+            m.source = modsPath.joinpath(modName, "AssetBundle").as_posix()
             m.destination = self.gameDirectory().filePath(
-                join("masterduel_Data", "StreamingAssets", "AssetBundle")
+                Path("masterduel_Data", "StreamingAssets", "AssetBundle").as_posix()
             )
             mappings.append(m)
 
         return mappings
 
-    def getUnityDataMods(self):
-        modsPath = self._organizer.modsPath()
+    def getUnityDataMods(self) -> list[str]:
+        modsPath = Path(self._organizer.modsPath())
         allMods = self._organizer.modList().allModsByProfilePriority()
 
-        unityMods = []
+        unityMods: list[str] = []
         for modName in allMods:
             if self._organizer.modList().state(modName) & mobase.ModState.ACTIVE != 0:
-                if exists(join(modsPath, modName, "AssetBundle")):
+                if modsPath.joinpath(modName, "AssetBundle").exists():
                     unityMods.append(modName)
 
         return unityMods

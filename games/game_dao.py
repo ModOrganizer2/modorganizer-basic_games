@@ -5,7 +5,6 @@ from ..basic_game import BasicGame
 
 
 class DAOriginsGame(BasicGame):
-
     Name = "Dragon Age Origins Support Plugin"
     Author = "Patchier"
     Version = "1.1.1"

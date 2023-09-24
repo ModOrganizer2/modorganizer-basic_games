@@ -1,12 +1,10 @@
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
 
 class RailworksGame(BasicGame):
-
     Name = "Train Simulator 20xx Support Plugin"
     Author = "Ryan Young"
 
@@ -19,7 +17,7 @@ class RailworksGame(BasicGame):
 
     def version(self):
         # Don't forget to import mobase!
-        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.final)
+        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.FINAL)
 
     def executables(self):
         return [
