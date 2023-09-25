@@ -21,8 +21,4 @@ jobs:
       - name: Lint
         run: |
           cd basic_games
-          poetry run black . --check --diff
-          poetry run isort -c .
-          poetry run mypy  .
-          poetry run ruff .
-          poetry run pyright .
+          poetry run poe lint-all
