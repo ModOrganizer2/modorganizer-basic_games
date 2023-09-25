@@ -53,13 +53,10 @@ lint-all.ignore_fail = "return_non_zero"
 max-line-length = 88
 extend-ignore = ["E203"]
 
-[tool.black]
-exclude = "lib"
-
 [tool.isort]
 profile = "black"
 multi_line_output = 3
-skip = "lib"
+skip_gitignore = true
 
 [tool.mypy]
 warn_return_any = true
@@ -81,7 +78,7 @@ line-length = 88
 target-version = "py311"
 
 [tool.pyright]
-exclude = ["lib"]
+exclude = ["lib", "**/.*"]
 typeCheckingMode = "strict"
 pythonPlatform = "Windows"
 reportMissingModuleSource = false
