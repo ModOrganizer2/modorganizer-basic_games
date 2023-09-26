@@ -1,7 +1,6 @@
 import datetime
 import os
 import struct
-import sys
 import time
 from pathlib import Path
 from typing import BinaryIO
@@ -9,13 +8,11 @@ from typing import BinaryIO
 import mobase
 from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
 from PyQt6.QtGui import QPainter, QPixmap
-from PyQt6.QtWidgets import QWidget
 
 from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
     BasicGameSaveGameInfo,
-    BasicGameSaveGameInfoWidget,
 )
 from ..basic_game import BasicGame
 
@@ -281,41 +278,6 @@ def _getPreview(savepath: Path):
     return pixmap.copy(0, 0, width, height)
 
 
-class BlackAndWhite2SaveGameInfoWidget(BasicGameSaveGameInfoWidget):
-    def setSave(self, save: mobase.ISaveGame):
-        # Resize the label to (0, 0) to hide it:
-        self.resize(0, 0)
-
-        # Retrieve the pixmap:
-        value = self._get_preview(Path(save.getFilepath()))
-
-        if value is None:
-            return
-
-        elif isinstance(value, QPixmap):
-            pixmap = value
-        else:
-            print(
-                "Failed to retrieve the preview, bad return type: {}.".format(
-                    type(value)
-                ),
-                file=sys.stderr,
-            )
-            return
-
-        # Scale the pixmap and show it:
-        # pixmap = pixmap.scaledToWidth(pixmap.width())
-        self._label.setPixmap(pixmap)
-        self.resize(pixmap.width(), pixmap.height())
-
-
-class BlackAndWhite2SaveGameInfo(BasicGameSaveGameInfo):
-    def getSaveGameWidget(self, parent: QWidget | None = None):
-        if self._get_preview is not None:
-            return BasicGameSaveGameInfoWidget(parent, self._get_preview)
-        return None
-
-
 PSTART_MENU = (
     str(os.getenv("ProgramData")) + "\\Microsoft\\Windows\\Start Menu\\Programs"
 )
@@ -350,7 +312,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
         self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
             self.savesDirectory()
         )
-        self._featureMap[mobase.SaveGameInfo] = BlackAndWhite2SaveGameInfo(_getPreview)
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(_getPreview)
         return True
 
     def detectGame(self):
