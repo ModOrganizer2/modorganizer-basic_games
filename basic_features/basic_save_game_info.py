@@ -57,8 +57,6 @@ def get_filedate_metadata(p: Path, save: mobase.ISaveGame) -> Mapping[str, str]:
 class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
     """Save game info widget to display metadata and a preview."""
 
-    _max_width = 320
-
     def __init__(
         self,
         parent: QWidget | None,
@@ -66,6 +64,7 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         | None = lambda p: None,
         get_metadata: Callable[[Path, mobase.ISaveGame], Mapping[str, Any] | None]
         | None = get_filedate_metadata,
+        max_width: int = 320,
     ):
         """
         Args:
@@ -74,11 +73,14 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
                 saves preview image or the path to it.
             get_metadata (optional): `callback(savegame_path, ISaveGame)` returning
                 the saves metadata. By default the saves file date is shown.
+            max_width (optional): The maximum widget and (scaled) preview width.
+                Defaults to 320.
         """
         super().__init__(parent)
 
         self._get_preview = get_preview or (lambda p: None)
         self._get_metadata = get_metadata or get_filedate_metadata
+        self._max_width = max_width or 320
 
         layout = QVBoxLayout()
 
@@ -167,6 +169,10 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         qField.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         return qLabel, qField
 
+    def set_maximum_width(self, width: int):
+        self._max_width = width
+        self._metadata_widget.setMaximumWidth(width)
+
 
 class BasicGameSaveGameInfo(mobase.SaveGameInfo):
     _get_widget: Callable[[QWidget | None], mobase.ISaveGameInfoWidget | None] | None
@@ -177,11 +183,12 @@ class BasicGameSaveGameInfo(mobase.SaveGameInfo):
         | None = None,
         get_metadata: Callable[[Path, mobase.ISaveGame], Mapping[str, Any] | None]
         | None = None,
+        max_width: int = 0,
     ):
         """Args from: `BasicGameSaveGameInfoWidget`."""
         super().__init__()
         self._get_widget = lambda parent: BasicGameSaveGameInfoWidget(
-            parent, get_preview, get_metadata
+            parent, get_preview, get_metadata, max_width
         )
 
     @classmethod
