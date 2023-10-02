@@ -179,8 +179,9 @@ class BasicModDataChecker(mobase.ModDataChecker):
                 else:
                     status = mobase.ModDataChecker.INVALID
                     break
-            elif rp.valid.match(name) and status == mobase.ModDataChecker.INVALID:
-                status = mobase.ModDataChecker.VALID
+            elif rp.valid.match(name):
+                if status is mobase.ModDataChecker.INVALID:
+                    status = mobase.ModDataChecker.VALID
             elif rp.delete.match(name) or rp.move_match(name) is not None:
                 status = mobase.ModDataChecker.FIXABLE
             else:
