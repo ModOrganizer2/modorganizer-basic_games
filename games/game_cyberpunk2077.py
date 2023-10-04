@@ -3,6 +3,7 @@ from pathlib import Path
 import mobase
 from PyQt6.QtCore import QDir
 
+from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 
@@ -25,7 +26,7 @@ class CyberpunkSaveGame(BasicGameSaveGame):
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "1.2.0"
+    Version = "1.3.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -42,8 +43,12 @@ class Cyberpunk2077Game(BasicGame):
         "Game:-Cyberpunk-2077"
     )
 
-    def iniFiles(self):
-        return ["UserSettings.json"]
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
+            self.savesDirectory()
+        )
+        return True
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
@@ -51,3 +56,6 @@ class Cyberpunk2077Game(BasicGame):
             CyberpunkSaveGame(path.parent)
             for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
         ]
+
+    def iniFiles(self):
+        return ["UserSettings.json"]
