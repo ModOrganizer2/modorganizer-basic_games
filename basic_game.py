@@ -583,18 +583,6 @@ class BasicGame(mobase.IPluginGame):
                         directory.absoluteFilePath(QFileInfo(iniFile).fileName())
                     ).touch()
 
-    def primarySources(self) -> list[str]:
-        return []
-
-    def primaryPlugins(self) -> list[str]:
-        return []
-
-    def enabledPlugins(self) -> list[str]:
-        return []
-
-    def gameVariants(self) -> list[str]:
-        return []
-
     def setGameVariant(self, variant: str) -> None:
         pass
 
@@ -602,21 +590,6 @@ class BasicGame(mobase.IPluginGame):
         return mobase.getFileVersion(
             self.gameDirectory().absoluteFilePath(self.binaryName())
         )
-
-    def iniFiles(self) -> list[str]:
-        return []
-
-    def DLCPlugins(self) -> list[str]:
-        return []
-
-    def CCPlugins(self) -> list[str]:
-        return []
-
-    def loadOrderMechanism(self):
-        return mobase.LoadOrderMechanism.PLUGINS_TXT
-
-    def sortMechanism(self):
-        return mobase.SortMechanism.NONE
 
     def looksValid(self, directory: QDir):
         return directory.exists(self.binaryName())
@@ -634,9 +607,6 @@ class BasicGame(mobase.IPluginGame):
         return QDir(
             self.gameDirectory().absoluteFilePath(self._mappings.dataDirectory.get())
         )
-
-    def secondaryDataDirectories(self) -> dict[str, QDir]:
-        return {}
 
     def setGamePath(self, path: Path | str) -> None:
         self._gamePath = str(path)
