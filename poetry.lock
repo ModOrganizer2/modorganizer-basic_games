@@ -177,13 +177,13 @@ files = [
 
 [[package]]
 name = "mobase-stubs"
-version = "2.5.0.dev14"
+version = "2.5.0.dev15"
 description = "PEP561 stub files for the mobase Python API."
 optional = false
 python-versions = ">=3.11,<4.0"
 files = [
-    {file = "mobase_stubs-2.5.0.dev14-py3-none-any.whl", hash = "sha256:66475f3ac3c2c9c21385054492920acdea5a105560a5ab2eac8845d24d0a3dce"},
-    {file = "mobase_stubs-2.5.0.dev14.tar.gz", hash = "sha256:11bc174ae6fb3d444df7790b902645d9faad11b04410d62ea642c1e540729166"},
+    {file = "mobase_stubs-2.5.0.dev15-py3-none-any.whl", hash = "sha256:990b04541e5e8aa8161cc84d6d2740489d6b1aad79ee21be7b684ea7c19a7c9d"},
+    {file = "mobase_stubs-2.5.0.dev15.tar.gz", hash = "sha256:eb7af4f4bbcb7af79aa4f04c3a04abd8bef6252fcd3d751bb89713c2ef65886e"},
 ]
 
 [[package]]
@@ -258,13 +258,13 @@ setuptools = "*"
 
 [[package]]
 name = "packaging"
-version = "23.1"
+version = "23.2"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "packaging-23.1-py3-none-any.whl", hash = "sha256:994793af429502c4ea2ebf6bf664629d07c1a9fe974af92966e4b8d2df7edc61"},
-    {file = "packaging-23.1.tar.gz", hash = "sha256:a392980d2b6cffa644431898be54b0045151319d1e7ec34f0cfed48767dd334f"},
+    {file = "packaging-23.2-py3-none-any.whl", hash = "sha256:8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7"},
+    {file = "packaging-23.2.tar.gz", hash = "sha256:048fb0e9405036518eaaf48a55953c750c11e1a1b68e0dd1a9d62ed0c092cfc5"},
 ]
 
 [[package]]
@@ -291,13 +291,13 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "3.10.0"
+version = "3.11.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.10.0-py3-none-any.whl", hash = "sha256:d7c24979f292f916dc9cbf8648319032f551ea8c49a4c9bf2fb556a02070ec1d"},
-    {file = "platformdirs-3.10.0.tar.gz", hash = "sha256:b45696dab2d7cc691a3226759c0d3b00c47c8b6e293d96f6436f733303f77f6d"},
+    {file = "platformdirs-3.11.0-py3-none-any.whl", hash = "sha256:e9d171d00af68be50e9202731309c4e658fd8bc76f55c11c7dd760d023bda68e"},
+    {file = "platformdirs-3.11.0.tar.gz", hash = "sha256:cf8ee52a3afdb965072dcc652433e0c7e3e40cf5ea1477cd4b3b1d2eb75495b3"},
 ]
 
 [package.extras]
@@ -427,13 +427,13 @@ files = [
 
 [[package]]
 name = "pyright"
-version = "1.1.327"
+version = "1.1.329"
 description = "Command line wrapper for pyright"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyright-1.1.327-py3-none-any.whl", hash = "sha256:3462cda239e9140276238bbdbd0b59d77406f1c2e14d8cb8c20c8e25639c6b3c"},
-    {file = "pyright-1.1.327.tar.gz", hash = "sha256:ba74148ad64f22020dbbed6781c4bdb38ecb8a7ca90dc3c87a4f08d1c0e11592"},
+    {file = "pyright-1.1.329-py3-none-any.whl", hash = "sha256:c16f88a7ac14ddd0513e62fec56d69c37e3c6b412161ad16aa23a9c7e3dabaf4"},
+    {file = "pyright-1.1.329.tar.gz", hash = "sha256:5baf82ff5ecb8c8b3ac400e8536348efbde0b94a09d83d5b440c0d143fd151a8"},
 ]
 
 [package.dependencies]
@@ -532,4 +532,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "4f31be5d18b92133aec8af930ec8c38300b35276ce0a894b260e4c1c2500282f"
+content-hash = "8dca66d012064dd3da57c1e0e6c6c204d6d79399bf746296e52af9e810fed177"

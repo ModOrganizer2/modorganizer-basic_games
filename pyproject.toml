@@ -16,7 +16,7 @@ vdf = "3.4"
 lzokay = "1.1.5"
 
 [tool.poetry.group.dev.dependencies]
-mobase-stubs = { version = "^2.5.0.dev14", allow-prereleases = true }
+mobase-stubs = { version = "^2.5.0.dev15", allow-prereleases = true }
 pyqt6 = "^6.5.2"
 pyright = "^1.1.327"
 flake8 = "^6.1.0"
