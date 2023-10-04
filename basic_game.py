@@ -589,6 +589,9 @@ class BasicGame(mobase.IPluginGame):
     def primaryPlugins(self) -> list[str]:
         return []
 
+    def enabledPlugins(self) -> list[str]:
+        return []
+
     def gameVariants(self) -> list[str]:
         return []
 
