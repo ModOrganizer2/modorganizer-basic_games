@@ -237,6 +237,15 @@ class Cyberpunk2077Game(BasicGame):
     def iniFiles(self):
         return ["UserSettings.json"]
 
+    def executables(self) -> list[mobase.ExecutableInfo]:
+        return [
+            # Start without REDmod launcher
+            mobase.ExecutableInfo(
+                title=self.gameName(),
+                binary=self.gameDirectory().absoluteFilePath(self.binaryName()),
+            ).withArgument("--launcher-skip -skipStartScreen")
+        ]
+
     def _onAboutToRun(self, app_path: str, wd: QDir, args: str) -> bool:
         """
         Copy cache files (`final.redscript` etc.) to overwrite to catch
