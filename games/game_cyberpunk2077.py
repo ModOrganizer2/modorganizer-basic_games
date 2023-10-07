@@ -196,7 +196,7 @@ class CyberpunkSaveGame(BasicGameSaveGame):
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "1.4.0"
+    Version = "2.0.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
