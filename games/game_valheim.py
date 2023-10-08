@@ -11,7 +11,7 @@ from typing import Any, Optional, TextIO
 import mobase
 from PyQt6.QtCore import QDir
 
-from ..basic_features.basic_mod_data_checker import BasicModDataChecker, GlobPatterns
+from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 
@@ -286,25 +286,6 @@ class ValheimWorldSaveGame(ValheimSaveGame):
         return files
 
 
-class ValheimLocalSavegames(mobase.LocalSavegames):
-    def __init__(self, my_game_save_dir: QDir):
-        super().__init__()
-        self._saves_dir = my_game_save_dir.absolutePath()
-
-    def mappings(self, profile_save_dir: QDir):
-        return [
-            mobase.Mapping(
-                source=profile_save_dir.absolutePath(),
-                destination=self._saves_dir,
-                is_directory=True,
-                create_target=True,
-            )
-        ]
-
-    def prepareProfile(self, profile: mobase.IProfile):
-        return profile.localSavesEnabled()
-
-
 class ValheimGame(BasicGame):
     Name = "Valheim Support Plugin"
     Author = "Zash"
@@ -377,7 +358,7 @@ class ValheimGame(BasicGame):
                 },
             )
         )
-        self._featureMap[mobase.LocalSavegames] = ValheimLocalSavegames(
+        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
             self.savesDirectory()
         )
         self._overwrite_sync = OverwriteSync(organizer=self._organizer, game=self)

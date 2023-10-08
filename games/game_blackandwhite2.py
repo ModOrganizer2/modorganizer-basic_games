@@ -11,6 +11,7 @@ from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
 from PyQt6.QtGui import QPainter, QPixmap
 from PyQt6.QtWidgets import QWidget
 
+from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
     BasicGameSaveGameInfo,
@@ -224,25 +225,6 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         return self._filepath.parent.parent.name
 
 
-class BlackAndWhite2LocalSavegames(mobase.LocalSavegames):
-    def __init__(self, my_game_save_dir: QDir):
-        super().__init__()
-        self._savesDir = my_game_save_dir.absolutePath()
-
-    def mappings(self, profile_save_dir: QDir) -> list[mobase.Mapping]:
-        m = mobase.Mapping()
-
-        m.createTarget = True
-        m.isDirectory = True
-        m.source = profile_save_dir.absolutePath()
-        m.destination = self._savesDir
-
-        return [m]
-
-    def prepareProfile(self, profile: mobase.IProfile):
-        return profile.localSavesEnabled()
-
-
 def _getPreview(savepath: Path):
     save = BlackAndWhite2SaveGame(savepath)
     lines = [
@@ -365,7 +347,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
-        self._featureMap[mobase.LocalSavegames] = BlackAndWhite2LocalSavegames(
+        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
             self.savesDirectory()
         )
         self._featureMap[mobase.SaveGameInfo] = BlackAndWhite2SaveGameInfo(_getPreview)

@@ -4,6 +4,7 @@ from typing import List
 import mobase
 from PyQt6.QtCore import QDir
 
+from ..basic_features import BasicLocalSavegames
 from ..basic_game import BasicGame, BasicGameSaveGame
 
 
@@ -48,24 +49,6 @@ class VampireSaveGame(BasicGameSaveGame):
         self.elapsedTime = None
 
 
-class VampireLocalSavegames(mobase.LocalSavegames):
-    def __init__(self, my_game_save_dir: QDir):
-        super().__init__()
-        self._saves_dir = my_game_save_dir.absolutePath()
-
-    def mappings(self, profile_save_dir: QDir):
-        m = mobase.Mapping()
-        m.createTarget = True
-        m.isDirectory = True
-        m.source = profile_save_dir.absolutePath()
-        m.destination = self._saves_dir
-
-        return [m]
-
-    def prepareProfile(self, profile: mobase.IProfile):
-        return profile.localSavesEnabled()
-
-
 class VampireTheMasqueradeBloodlinesGame(BasicGame):
     Name = "Vampire - The Masquerade: Bloodlines Support Plugin"
     Author = "John"
@@ -91,7 +74,7 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.ModDataChecker] = VampireModDataChecker()
-        self._featureMap[mobase.LocalSavegames] = VampireLocalSavegames(
+        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
             self.savesDirectory()
         )
         return True
