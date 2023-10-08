@@ -9,7 +9,10 @@ import mobase
 from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 from PyQt6.QtGui import QIcon
 
-from .basic_features.basic_save_game_info import BasicGameSaveGame
+from .basic_features.basic_save_game_info import (
+    BasicGameSaveGame,
+    BasicGameSaveGameInfo,
+)
 
 
 def replace_variables(value: str, game: BasicGame) -> str:
@@ -427,6 +430,7 @@ class BasicGame(mobase.IPluginGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo()
         if self._mappings.originWatcherExecutables.get():
             from .origin_utils import OriginWatcher
 
