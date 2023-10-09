@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 import mobase
-from PyQt6.QtCore import QDir
+from PyQt6.QtCore import QDateTime, QDir, qInfo
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import (
@@ -191,6 +191,11 @@ class CyberpunkSaveGame(BasicGameSaveGame):
 
     def getName(self) -> str:
         return self._name or super().getName()
+
+    def getCreationTime(self) -> QDateTime:
+        return QDateTime.fromSecsSinceEpoch(
+            int((self._filepath / "sav.dat").stat().st_mtime)
+        )
 
 
 class Cyberpunk2077Game(BasicGame):
