@@ -1,8 +1,11 @@
 import json
 import re
 import shutil
+from collections import Counter
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal, TypeVar
 
 import mobase
 from PyQt6.QtCore import QDateTime, QDir, qInfo
@@ -199,6 +202,83 @@ class CyberpunkSaveGame(BasicGameSaveGame):
         )
 
 
+@dataclass
+class ModListFile:
+    list_path: Path
+    mod_search_pattern: str
+
+
+_MOD_TYPE = TypeVar("_MOD_TYPE")
+
+
+class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
+    """Manages modlist files for specific mod types."""
+
+    def __init__(self, organizer: mobase.IOrganizer, **kwargs: ModListFile) -> None:
+        self._organizer = organizer
+        super().__init__(**kwargs)
+
+    def update_modlist(
+        self, mod_type: _MOD_TYPE, mod_files: list[str] | None = None
+    ) -> tuple[Path, list[str], list[str]]:
+        """
+        Updates the mod list file for `mod_type` with the current load order.
+        Removes the file if it is not needed.
+
+        Args:
+            mod_type: Which modlist to update.
+            mod_files (optional): By default mod files in order of mod priority.
+
+        Returns:
+            `(modlist_path, new_mod_list, old_mod_list)`
+        """
+        if mod_files is None:
+            mod_files = list(self.modfile_names(mod_type))
+        modlist_path = self.absolute_modlist_path(mod_type)
+        old_modlist = (
+            modlist_path.read_text().splitlines() if modlist_path.exists() else []
+        )
+        if not mod_files or len(mod_files) == 1:
+            # No load order required
+            if old_modlist:
+                qInfo(f"Removing {mod_type} load order {modlist_path}")
+                modlist_path.unlink()
+            return modlist_path, [], old_modlist
+        else:
+            qInfo(f'Updating {mod_type} load order "{modlist_path}" with: {mod_files}')
+            modlist_path.parent.mkdir(parents=True, exist_ok=True)
+            modlist_path.write_text("\n".join(mod_files))
+            return modlist_path, mod_files, old_modlist
+
+    def absolute_modlist_path(self, mod_type: _MOD_TYPE) -> Path:
+        modlist_path = self[mod_type].list_path
+        if not modlist_path.is_absolute():
+            existing = self._organizer.findFiles(modlist_path.parent, modlist_path.name)
+            overwrite = self._organizer.overwritePath()
+            modlist_path = (
+                Path(existing[0]) if (existing) else Path(overwrite, modlist_path)
+            )
+        return modlist_path
+
+    def modfile_names(self, mod_type: _MOD_TYPE) -> Iterable[str]:
+        """Get all files from the `mod_type` in load order."""
+        yield from (file.name for file in self.modfiles(mod_type))
+
+    def modfiles(self, mod_type: _MOD_TYPE) -> Iterable[Path]:
+        """Get all files from the `mod_type` in load order."""
+        mod_search_pattern = self[mod_type].mod_search_pattern
+        for mod_path in self.active_mod_paths():
+            yield from mod_path.glob(mod_search_pattern)
+
+    def active_mod_paths(self) -> Iterable[Path]:
+        """Yield the path to active mods in load order."""
+        mods_path = Path(self._organizer.modsPath())
+        modlist = self._organizer.modList()
+        for mod in modlist.allModsByProfilePriority():
+            if modlist.state(mod) & mobase.ModState.ACTIVE:
+                yield mods_path / mod
+
+
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
@@ -219,13 +299,10 @@ class Cyberpunk2077Game(BasicGame):
         "Game:-Cyberpunk-2077"
     )
 
-    _archive_path = Path("archive/pc/mod")
-    _archive_modlist_file = _archive_path / "modlist.txt"
-    """archive mods load order."""
-
-    _redmod_path = Path("tools/redmod/")
-    _redmod_binary = _redmod_path / "bin/redMod.exe"
-    _redmod_log = _redmod_path / "bin/REDmodLog.txt"
+    _redmod_binary = Path("tools/redmod/bin/redMod.exe")
+    _redmod_deploy_path = Path("r6/cache/modded/")
+    _redmod_deploy_args = "deploy -reportProgress"
+    """Deploy arguments for `redmod.exe`, -modlist=... is added."""
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -237,6 +314,18 @@ class Cyberpunk2077Game(BasicGame):
             parse_cyberpunk_save_metadata,
         )
         self._featureMap[mobase.ModDataChecker] = CyberpunkModDataChecker()
+
+        self._modlist_files = ModListFileManager[Literal["archive", "redmod"]](
+            organizer,
+            archive=ModListFile(
+                Path("archive/pc/mod/modlist.txt"),
+                "archive/pc/mod/*",
+            ),
+            redmod=ModListFile(
+                Path(self._redmod_deploy_path, "MO_REDmod_load_order.txt"),
+                "mods/*/",
+            ),
+        )
 
         organizer.onAboutToRun(self._onAboutToRun)
         return True
@@ -254,29 +343,133 @@ class Cyberpunk2077Game(BasicGame):
     def settings(self) -> list[mobase.PluginSetting]:
         return [
             mobase.PluginSetting(
-                "enforce_archive_load_order",
-                f"Enforce the current load order via {self._archive_modlist_file}",
+                "skipStartScreen",
+                'Skips the "Breaching..." start screen on game launch',
                 True,
-            )
+            ),
+            mobase.PluginSetting(
+                "enforce_archive_load_order",
+                (
+                    "Enforce the current load order via"
+                    " <code>archive/pc/mod/modlist.txt</code>"
+                ),
+                True,
+            ),
+            mobase.PluginSetting(
+                "enforce_redmod_load_order",
+                "Enforce the current load order on redmod deployment",
+                True,
+            ),
+            mobase.PluginSetting(
+                "auto_deploy_redmod",
+                "Deploy redmod before game launch if necessary",
+                True,
+            ),
         ]
 
     def _get_setting(self, key: str) -> mobase.MoVariant:
         return self._organizer.pluginSetting(self.name(), key)
 
     def executables(self) -> list[mobase.ExecutableInfo]:
+        game_name = self.gameName()
+        game_dir = self.gameDirectory()
+        bin_path = game_dir.absoluteFilePath(self.binaryName())
+        skip_start_screen = (
+            " -skipStartScreen" if self._get_setting("skipStartScreen") else ""
+        )
         return [
-            # Start without REDmod launcher
+            # Start without REDmod or launcher
             mobase.ExecutableInfo(
-                title=self.gameName(),
-                binary=self.gameDirectory().absoluteFilePath(self.binaryName()),
-            ).withArgument("--launcher-skip -skipStartScreen")
+                f"{game_name}",
+                bin_path,
+            ).withArgument(f"--launcher-skip{skip_start_screen}"),
+            # Start with deployed redmods
+            mobase.ExecutableInfo(
+                f"{game_name} + REDmod",
+                bin_path,
+            ).withArgument(f"-modded{skip_start_screen}"),
+            # TODO: only use -modded executable?
+            # Deploy REDmods
+            mobase.ExecutableInfo(
+                "Manually deploy REDmod",
+                self._get_redmod_binary(),
+            ).withArgument("deploy -reportProgress -force"),
+            # TODO: Add load order to this, too?
+            # Launcher
+            mobase.ExecutableInfo(
+                "REDprelauncher",
+                game_dir.absoluteFilePath(self.getLauncherName()),
+            ).withArgument(f"{skip_start_screen}"),
         ]
 
-    def _onAboutToRun(self, app_path: str, wd: QDir, args: str) -> bool:
-        if self.isActive():
-            self._map_cache_files()
-            self._update_archive_modlist()
+    def _get_redmod_binary(self) -> Path:
+        """Absolute path to redmod binary"""
+        return Path(self.gameDirectory().absolutePath(), self._redmod_binary)
+
+    def _onAboutToRun(self, app_path_str: str, wd: QDir, args: str) -> bool:
+        if not self.isActive():
+            return True
+        app_path = Path(app_path_str)
+        if app_path == self._get_redmod_binary():
+            # No recursive call
+            return True
+        if (
+            self._get_setting("auto_deploy_redmod")
+            and app_path == Path(self.gameDirectory().absolutePath(), self.binaryName())
+            and "-modded" in args
+            and not self._deploy_redmod()
+        ):
+            return False
+        self._map_cache_files()
+        if self._get_setting("enforce_archive_load_order"):
+            self._modlist_files.update_modlist("archive")
         return True
+
+    def _deploy_redmod(self) -> bool:
+        """Deploys redmod. Clears deployed files if no redmods are active.
+        Recreates deployed files to force load order when necessary.
+
+        Returns:
+            False failed deployment, else True
+        """
+        # Add REDmod load order if none is specified
+        redmod_list = list(self._modlist_files.modfile_names("redmod"))
+        if not redmod_list:
+            qInfo("Cleaning up redmod deployed files")
+            self._clean_deployed_redmod()
+            return True
+        args = self._redmod_deploy_args
+        if self._get_setting("enforce_redmod_load_order"):
+            modlist_path, _, old_redmods = self._modlist_files.update_modlist(
+                "redmod", redmod_list
+            )
+            if (
+                Counter(redmod_list) == Counter(old_redmods)
+                and not redmod_list == old_redmods
+            ):
+                # Only load order changed: recreate redmod deploys
+                # Fix for redmod not detecting change of load order.
+                # Faster than -force https://github.com/E1337Kat/cyberpunk2077_ext_redux/issues/297  # noqa: E501
+                qInfo("Redmod order changed, recreate deployed files")
+                self._clean_deployed_redmod(modlist_path)
+            qInfo(f"Deploying redmod with modlist: {modlist_path}")
+            args += f' -modlist="{modlist_path}"'
+        else:
+            qInfo("Deploying redmod")
+        redmod_binary = self._get_redmod_binary()
+        return self._organizer.waitForApplication(
+            self._organizer.startApplication(
+                redmod_binary, [args], redmod_binary.parent
+            ),
+            False,
+        )[0]
+
+    def _clean_deployed_redmod(self, modlist_path: Path | None = None):
+        """Delete all files from `_redmod_deploy_path` except for `modlist_path`."""
+        for file in self._organizer.findFiles(self._redmod_deploy_path, "*"):
+            file_path = Path(file)
+            if modlist_path is None or file_path != modlist_path:
+                file_path.unlink()
 
     def _map_cache_files(self):
         """
@@ -298,40 +491,3 @@ class Cyberpunk2077Game(BasicGame):
             for file in self._organizer.findFiles("r6/cache", "*")
             if (path := Path(file).absolute()).is_relative_to(data_path)
         ]
-
-    def _update_archive_modlist(self):
-        """
-        Updates the archive `modlist.txt` file with the current load order for
-        `archive/pc/mod`. Removes the file if it is not needed.
-        """
-        if not self._get_setting("enforce_archive_load_order"):
-            return
-        archives = [archive.name for archive in self._archive_files_in_load_order()]
-        modlist_path = self._archive_modlist_path()
-        if not archives or len(archives) == 1:
-            if modlist_path.exists():
-                qInfo(f"Removing archive load order {modlist_path}")
-                modlist_path.unlink()
-        else:
-            qInfo(f"Updating archive load order {modlist_path}")
-            modlist_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(modlist_path, "w") as f:
-                f.writelines(f"{a}\n" for a in archives)
-
-    def _archive_modlist_path(self) -> Path:
-        return Path(self._organizer.overwritePath(), self._archive_modlist_file)
-
-    def _archive_files_in_load_order(self) -> Iterable[Path]:
-        """Get all files from `self._archive_path` in load order."""
-        for mod_path in self._active_mod_paths():
-            if (archive_path := mod_path / self._archive_path).exists():
-                for archive in archive_path.iterdir():
-                    if archive.is_file():
-                        yield archive
-
-    def _active_mod_paths(self) -> Iterable[Path]:
-        mods_path = Path(self._organizer.modsPath())
-        modlist = self._organizer.modList()
-        for mod in modlist.allModsByProfilePriority():
-            if modlist.state(mod) & mobase.ModState.ACTIVE:
-                yield mods_path / mod
