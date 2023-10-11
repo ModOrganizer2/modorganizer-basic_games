@@ -1,6 +1,7 @@
 import json
 import re
 import shutil
+from collections.abc import Iterable
 from pathlib import Path
 
 import mobase
@@ -218,6 +219,14 @@ class Cyberpunk2077Game(BasicGame):
         "Game:-Cyberpunk-2077"
     )
 
+    _archive_path = Path("archive/pc/mod")
+    _archive_modlist_file = _archive_path / "modlist.txt"
+    """archive mods load order."""
+
+    _redmod_path = Path("tools/redmod/")
+    _redmod_binary = _redmod_path / "bin/redMod.exe"
+    _redmod_log = _redmod_path / "bin/REDmodLog.txt"
+
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
@@ -232,6 +241,9 @@ class Cyberpunk2077Game(BasicGame):
         organizer.onAboutToRun(self._onAboutToRun)
         return True
 
+    def iniFiles(self):
+        return ["UserSettings.json"]
+
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
         return [
@@ -239,8 +251,17 @@ class Cyberpunk2077Game(BasicGame):
             for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
         ]
 
-    def iniFiles(self):
-        return ["UserSettings.json"]
+    def settings(self) -> list[mobase.PluginSetting]:
+        return [
+            mobase.PluginSetting(
+                "enforce_archive_load_order",
+                f"Enforce the current load order via {self._archive_modlist_file}",
+                True,
+            )
+        ]
+
+    def _get_setting(self, key: str) -> mobase.MoVariant:
+        return self._organizer.pluginSetting(self.name(), key)
 
     def executables(self) -> list[mobase.ExecutableInfo]:
         return [
@@ -252,12 +273,16 @@ class Cyberpunk2077Game(BasicGame):
         ]
 
     def _onAboutToRun(self, app_path: str, wd: QDir, args: str) -> bool:
+        if self.isActive():
+            self._map_cache_files()
+            self._update_archive_modlist()
+        return True
+
+    def _map_cache_files(self):
         """
         Copy cache files (`final.redscript` etc.) to overwrite to catch
         overwritten game files.
         """
-        if not self.isActive():
-            return True
         data_path = Path(self.dataDirectory().absolutePath())
         if unmapped_cache_files := self._unmapped_cache_files(data_path):
             qInfo('Copying "r6/cache/*" to overwrite (to catch file overwrites)')
@@ -266,7 +291,6 @@ class Cyberpunk2077Game(BasicGame):
                 dst = overwrite_path / file.relative_to(data_path)
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(file, dst)
-        return True
 
     def _unmapped_cache_files(self, data_path: Path) -> list[Path]:
         return [
@@ -274,3 +298,40 @@ class Cyberpunk2077Game(BasicGame):
             for file in self._organizer.findFiles("r6/cache", "*")
             if (path := Path(file).absolute()).is_relative_to(data_path)
         ]
+
+    def _update_archive_modlist(self):
+        """
+        Updates the archive `modlist.txt` file with the current load order for
+        `archive/pc/mod`. Removes the file if it is not needed.
+        """
+        if not self._get_setting("enforce_archive_load_order"):
+            return
+        archives = [archive.name for archive in self._archive_files_in_load_order()]
+        modlist_path = self._archive_modlist_path()
+        if not archives or len(archives) == 1:
+            if modlist_path.exists():
+                qInfo(f"Removing archive load order {modlist_path}")
+                modlist_path.unlink()
+        else:
+            qInfo(f"Updating archive load order {modlist_path}")
+            modlist_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(modlist_path, "w") as f:
+                f.writelines(f"{a}\n" for a in archives)
+
+    def _archive_modlist_path(self) -> Path:
+        return Path(self._organizer.overwritePath(), self._archive_modlist_file)
+
+    def _archive_files_in_load_order(self) -> Iterable[Path]:
+        """Get all files from `self._archive_path` in load order."""
+        for mod_path in self._active_mod_paths():
+            if (archive_path := mod_path / self._archive_path).exists():
+                for archive in archive_path.iterdir():
+                    if archive.is_file():
+                        yield archive
+
+    def _active_mod_paths(self) -> Iterable[Path]:
+        mods_path = Path(self._organizer.modsPath())
+        modlist = self._organizer.modList()
+        for mod in modlist.allModsByProfilePriority():
+            if modlist.state(mod) & mobase.ModState.ACTIVE:
+                yield mods_path / mod
