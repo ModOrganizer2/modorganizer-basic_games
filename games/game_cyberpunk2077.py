@@ -378,23 +378,15 @@ class Cyberpunk2077Game(BasicGame):
             " -skipStartScreen" if self._get_setting("skipStartScreen") else ""
         )
         return [
-            # Start without REDmod or launcher
             mobase.ExecutableInfo(
                 f"{game_name}",
                 bin_path,
-            ).withArgument(f"--launcher-skip{skip_start_screen}"),
-            # Start with deployed redmods
-            mobase.ExecutableInfo(
-                f"{game_name} + REDmod",
-                bin_path,
-            ).withArgument(f"-modded{skip_start_screen}"),
-            # TODO: only use -modded executable?
+            ).withArgument(f"--launcher-skip -modded{skip_start_screen}"),
             # Deploy REDmods
             mobase.ExecutableInfo(
                 "Manually deploy REDmod",
                 self._get_redmod_binary(),
-            ).withArgument("deploy -reportProgress -force"),
-            # TODO: Add load order to this, too?
+            ).withArgument("deploy -reportProgress -force %modlist%"),
             # Launcher
             mobase.ExecutableInfo(
                 "REDprelauncher",
@@ -411,8 +403,21 @@ class Cyberpunk2077Game(BasicGame):
             return True
         app_path = Path(app_path_str)
         if app_path == self._get_redmod_binary():
-            # No recursive call
-            return True
+            if m := re.search(r"%modlist%", args, re.I):
+                # Manual deployment: replace %modlist% variable
+                (
+                    modlist_path,
+                    modlist,
+                    _,
+                ) = self._modlist_files.update_modlist("redmod")
+                modlist_param = f'-modlist="{modlist_path}"' if modlist else ""
+                args = f"{args[:m.start()]}{modlist_param}{args[m.end():]}"
+                qInfo(f"Manual modlist deployment: replacing {m[0]}, new args = {args}")
+                self._organizer.waitForApplication(
+                    self._organizer.startApplication(app_path_str, [args], wd), False
+                )
+                return False
+            return True  # No recursive call
         if (
             self._get_setting("auto_deploy_redmod")
             and app_path == Path(self.gameDirectory().absolutePath(), self.binaryName())
