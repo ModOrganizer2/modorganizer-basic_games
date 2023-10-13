@@ -63,7 +63,11 @@ class CyberpunkModDataChecker(BasicModDataChecker):
         parent = filetree.parent()
         if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
             return self.FIXABLE
-        if (status := super().dataLooksValid(filetree)) is not self.INVALID:
+        if (status := super().dataLooksValid(filetree)) is self.INVALID:
+            # Archive with REDmod folders, not in mods/
+            if all(self._valid_redmod(e) for e in filetree):
+                return self.CheckReturn.FIXABLE
+        else:
             match self._check_bin_folder(filetree):
                 case self.INVALID:
                     return self.INVALID
@@ -75,6 +79,11 @@ class CyberpunkModDataChecker(BasicModDataChecker):
             if any(filetree.exists(p) for p in self._extra_files_to_move):
                 status = self.FIXABLE
         return status
+
+    def _valid_redmod(self, filetree: mobase.IFileTree | mobase.FileTreeEntry) -> bool:
+        return isinstance(filetree, mobase.IFileTree) and bool(
+            filetree and filetree.find("info.json")
+        )
 
     def _check_bin_folder(
         self, filetree: mobase.IFileTree
@@ -117,6 +126,12 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     filetree.move(file, target)
                     clear_empty_folder(parent)
             self._fix_cet_framework(filetree)
+            # REDmod
+            for entry in list(filetree):
+                if not self._regex_patterns.valid.match(
+                    entry.name().casefold()
+                ) and self._valid_redmod(entry):
+                    filetree.move(entry, "mods/")
         return filetree
 
     def _fix_cet_framework(self, filetree: mobase.IFileTree):
