@@ -282,7 +282,7 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.0.0"
+    Version = "2.1.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
