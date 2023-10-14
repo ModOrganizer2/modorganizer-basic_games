@@ -2,10 +2,10 @@ import json
 import re
 import shutil
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 import mobase
 from PyQt6.QtCore import QDateTime, QDir, qInfo
@@ -294,10 +294,27 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
                 yield mods_path / mod
 
 
+@dataclass
+class PluginDefaultSettings:
+    organizer: mobase.IOrganizer
+    plugin_name: str
+    settings: Mapping[str, mobase.MoVariant]
+
+    def is_plugin_enabled(self):
+        return self.organizer.isPluginEnabled(self.plugin_name)
+
+    def apply(self) -> bool:
+        if not self.is_plugin_enabled():
+            return False
+        for setting, value in self.settings.items():
+            self.organizer.setPluginSetting(self.plugin_name, setting, value)
+        return True
+
+
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.1.0"
+    Version = "2.2.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -341,7 +358,32 @@ class Cyberpunk2077Game(BasicGame):
                 "mods/*/",
             ),
         )
+        self._rootbuilder_settings = PluginDefaultSettings(
+            organizer,
+            "RootBuilder",
+            {
+                "usvfsmode": False,
+                "linkmode": False,
+                "linkonlymode": True,  # RootBuilder v4.5
+                "backup": True,
+                "cache": True,
+                "autobuild": True,
+                "redirect": False,
+                "installer": False,
+                "exclusions": "archive,setup_redlauncher.exe,tools",
+                "linkextensions": "dll,exe",
+            },
+        )
 
+        def apply_rootbuilder_settings_once(*args: Any):
+            if not self.isActive() or not self._get_setting("configure_RootBuilder"):
+                return
+            if self._rootbuilder_settings.apply():
+                qInfo(f"RootBuilder configured for {self.gameName()}")
+                self._set_setting("configure_RootBuilder", False)
+
+        organizer.onUserInterfaceInitialized(apply_rootbuilder_settings_once)
+        organizer.onPluginEnabled("RootBuilder", apply_rootbuilder_settings_once)
         organizer.onAboutToRun(self._onAboutToRun)
         return True
 
@@ -380,10 +422,18 @@ class Cyberpunk2077Game(BasicGame):
                 "Deploy redmod before game launch if necessary",
                 True,
             ),
+            mobase.PluginSetting(
+                "configure_RootBuilder",
+                "Configures RootBuilder for Cyberpunk if installed and enabled",
+                True,
+            ),
         ]
 
     def _get_setting(self, key: str) -> mobase.MoVariant:
         return self._organizer.pluginSetting(self.name(), key)
+
+    def _set_setting(self, key: str, value: mobase.MoVariant):
+        self._organizer.setPluginSetting(self.name(), key, value)
 
     def executables(self) -> list[mobase.ExecutableInfo]:
         game_name = self.gameName()
@@ -439,7 +489,7 @@ class Cyberpunk2077Game(BasicGame):
             and "-modded" in args
             and not self._deploy_redmod()
         ):
-            return False
+            return False  # Auto deploy failed
         self._map_cache_files()
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
