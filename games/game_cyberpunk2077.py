@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal, TypeVar
 
 import mobase
-from PyQt6.QtCore import QDateTime, QDir, qInfo
+from PyQt6.QtCore import QDateTime, QDir, qCritical, qInfo, qWarning
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import (
@@ -314,7 +314,7 @@ class PluginDefaultSettings:
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.2.0"
+    Version = "2.2.1"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -332,6 +332,7 @@ class Cyberpunk2077Game(BasicGame):
     )
 
     _redmod_binary = Path("tools/redmod/bin/redMod.exe")
+    _redmod_log = Path("tools/redmod/bin/REDmodLog.txt")
     _redmod_deploy_path = Path("r6/cache/modded/")
     _redmod_deploy_args = "deploy -reportProgress"
     """Deploy arguments for `redmod.exe`, -modlist=... is added."""
@@ -443,11 +444,17 @@ class Cyberpunk2077Game(BasicGame):
             " -skipStartScreen" if self._get_setting("skipStartScreen") else ""
         )
         return [
+            # Default, runs REDmod deploy if necessary
             mobase.ExecutableInfo(
                 f"{game_name}",
                 bin_path,
             ).withArgument(f"--launcher-skip -modded{skip_start_screen}"),
-            # Deploy REDmods
+            # Start game without REDmod
+            mobase.ExecutableInfo(
+                f"{game_name} - skip REDmod deploy",
+                bin_path,
+            ).withArgument(f"--launcher-skip {skip_start_screen}"),
+            # Deploy REDmods only
             mobase.ExecutableInfo(
                 "Manually deploy REDmod",
                 self._get_redmod_binary(),
@@ -478,36 +485,52 @@ class Cyberpunk2077Game(BasicGame):
                 modlist_param = f'-modlist="{modlist_path}"' if modlist else ""
                 args = f"{args[:m.start()]}{modlist_param}{args[m.end():]}"
                 qInfo(f"Manual modlist deployment: replacing {m[0]}, new args = {args}")
-                self._organizer.waitForApplication(
-                    self._organizer.startApplication(app_path_str, [args], wd), False
+                self._check_redmod_result(
+                    self._organizer.waitForApplication(
+                        self._organizer.startApplication(app_path_str, [args], wd),
+                        False,
+                    )
                 )
-                return False
-            return True  # No recursive call
+                return False  # redmod with new args started
+            return True  # No recursive redmod call
         if (
             self._get_setting("auto_deploy_redmod")
             and app_path == Path(self.gameDirectory().absolutePath(), self.binaryName())
             and "-modded" in args
-            and not self._deploy_redmod()
+            and not self._check_redmod_result(self._deploy_redmod())
         ):
+            qWarning("Aborting game launch.")
             return False  # Auto deploy failed
         self._map_cache_files()
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
         return True
 
-    def _deploy_redmod(self) -> bool:
+    def _check_redmod_result(self, result: tuple[bool, int]) -> bool:
+        if result == (True, 0):
+            return True
+        if result[1] < 0:
+            qWarning(f"REDmod deployment aborted (exit code {result[1]}).")
+        else:
+            qCritical(
+                f"REDmod deployment failed with exit code {result[1]} !"
+                f" Check {Path('GAME_FOLDER/', self._redmod_log)}"
+            )
+        return False
+
+    def _deploy_redmod(self) -> tuple[bool, int]:
         """Deploys redmod. Clears deployed files if no redmods are active.
         Recreates deployed files to force load order when necessary.
 
         Returns:
-            False failed deployment, else True
+            (success?, exit code)
         """
         # Add REDmod load order if none is specified
         redmod_list = list(self._modlist_files.modfile_names("redmod"))
         if not redmod_list:
             qInfo("Cleaning up redmod deployed files")
             self._clean_deployed_redmod()
-            return True
+            return True, 0
         args = self._redmod_deploy_args
         if self._get_setting("enforce_redmod_load_order"):
             modlist_path, _, old_redmods = self._modlist_files.update_modlist(
@@ -532,7 +555,7 @@ class Cyberpunk2077Game(BasicGame):
                 redmod_binary, [args], redmod_binary.parent
             ),
             False,
-        )[0]
+        )
 
     def _clean_deployed_redmod(self, modlist_path: Path | None = None):
         """Delete all files from `_redmod_deploy_path` except for `modlist_path`."""
