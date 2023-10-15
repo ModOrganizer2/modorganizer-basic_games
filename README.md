@@ -152,6 +152,7 @@ class Witcher3Game(BasicGame):
 | GameLauncher | Name of the game launcher, relative to the game path  (Optional) | `getLauncherName` | `str` |
 | GameDataPath | Name of the folder containing mods, relative to game folder| `dataDirectory` | |
 | GameDocumentsDirectory | Documents directory (Optional) | `documentsDirectory` | `str` or `QDir` |
+| GameIniFiles | Config files in documents, for profile specific config (Optional) | `iniFiles` | `str` or `List[str]` |
 | GameSavesDirectory | Directory containing saves (Optional, default to `GameDocumentsDirectory`) | `savesDirectory` | `str` or `QDir` |
 | GameSaveExtension | Save file extension (Optional) `savegameExtension` | `str` |
 | GameSteamId | Steam ID of the game (Optional) | `steamAPPId` | `List[str]` or `str` or `int` |

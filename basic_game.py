@@ -204,6 +204,7 @@ class BasicGameMappings:
     launcherName: BasicGameMapping[str]
     dataDirectory: BasicGameMapping[str]
     documentsDirectory: BasicGameMapping[QDir]
+    iniFiles: BasicGameMapping[list[str]]
     savesDirectory: BasicGameMapping[QDir]
     savegameExtension: BasicGameMapping[str]
     steamAPPId: BasicGameOptionsMapping[str]
@@ -289,6 +290,15 @@ class BasicGameMappings:
             "documentsDirectory",
             apply_fn=lambda s: QDir(s) if isinstance(s, str) else s,
             default=BasicGameMappings._default_documents_directory,
+        )
+        self.iniFiles = BasicGameMapping(
+            game,
+            "GameIniFiles",
+            "iniFiles",
+            lambda g: [],
+            apply_fn=lambda value: [c.strip() for c in value.split(",")]
+            if isinstance(value, str)
+            else value,
         )
         self.savesDirectory = BasicGameMapping(
             game,
@@ -542,6 +552,9 @@ class BasicGame(mobase.IPluginGame):
 
     def getSupportURL(self) -> str:
         return self._mappings.supportURL.get()
+
+    def iniFiles(self) -> list[str]:
+        return self._mappings.iniFiles.get()
 
     def executables(self) -> list[mobase.ExecutableInfo]:
         execs: list[mobase.ExecutableInfo] = []
