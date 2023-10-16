@@ -24,6 +24,11 @@ class CyberpunkModDataChecker(BasicModDataChecker):
     def __init__(self):
         super().__init__(
             GlobPatterns(
+                move={
+                    # archive and ArchiveXL
+                    "*.archive": "archive/pc/mod/",
+                    "*.xl": "archive/pc/mod/",
+                },
                 valid=[
                     "archive",
                     # redscript
@@ -34,11 +39,6 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     "bin",  # CET etc. gets handled below
                     "root",  # RootBuilder: hardlink / copy to game root
                 ],
-                move={
-                    # archive and ArchiveXL
-                    "*.archive": "archive/pc/mod/",
-                    "*.xl": "archive/pc/mod/",
-                },
             )
         )
 
@@ -51,9 +51,6 @@ class CyberpunkModDataChecker(BasicModDataChecker):
         "bin/x64/global.ini": "root/bin/x64/",
         "bin/x64/plugins/cyber_engine_tweaks.asi": "root/bin/x64/plugins/",
     }
-    """Some frameworks need to be copied or hard linked to root. Use / as sep!"""
-    _ignore_pattern = re.compile(r"licenses?$", re.I)
-
     _cet_path = "bin/x64/plugins/cyber_engine_tweaks/"
 
     def dataLooksValid(
@@ -63,21 +60,22 @@ class CyberpunkModDataChecker(BasicModDataChecker):
         parent = filetree.parent()
         if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
             return self.FIXABLE
-        if (status := super().dataLooksValid(filetree)) is self.INVALID:
-            # Archive with REDmod folders, not in mods/
-            if all(self._valid_redmod(e) for e in filetree):
-                return self.CheckReturn.FIXABLE
-        else:
-            match self._check_bin_folder(filetree):
-                case self.INVALID:
-                    return self.INVALID
-                case self.FIXABLE:
-                    status = self.FIXABLE
-                case _:
-                    pass  # valid = keep status
-            # Check extra fixes
-            if any(filetree.exists(p) for p in self._extra_files_to_move):
-                status = self.FIXABLE
+        status = mobase.ModDataChecker.INVALID
+        # Check extra fixes
+        if any(filetree.exists(p) for p in self._extra_files_to_move):
+            return mobase.ModDataChecker.FIXABLE
+        rp = self._regex_patterns
+        for entry in filetree:
+            name = entry.name().casefold()
+            if rp.move_match(name) is not None:
+                status = mobase.ModDataChecker.FIXABLE
+            elif rp.valid.match(name):
+                if status is mobase.ModDataChecker.INVALID:
+                    status = mobase.ModDataChecker.VALID
+            elif self._valid_redmod(entry):
+                # Archive with REDmod folders, not in mods/
+                status = mobase.ModDataChecker.FIXABLE
+            # Accept any other entry
         return status
 
     def _valid_redmod(self, filetree: mobase.IFileTree | mobase.FileTreeEntry) -> bool:
@@ -85,47 +83,14 @@ class CyberpunkModDataChecker(BasicModDataChecker):
             filetree and filetree.find("info.json")
         )
 
-    def _check_bin_folder(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
-        """Only Red4ext and CET are supported in bin folder."""
-        bin_folder = filetree.find("bin/x64")
-        if not bin_folder:
-            return self.VALID
-        elif not is_directory(bin_folder):
-            return self.INVALID
-        status = self.VALID
-        cet_path = self._cet_path.rstrip("/\\")
-        for entry in bin_folder:
-            entry_name = entry.name()
-            if self._ignore_pattern.match(entry_name):
-                continue
-            elif f"bin/x64/{entry_name}" in self._extra_files_to_move:
-                status = self.FIXABLE
-            elif entry_name == "plugins" and is_directory(entry):
-                for plugin in entry:
-                    plugin_path = f"bin/x64/plugins/{plugin.name()}"
-                    if plugin_path == cet_path:
-                        if not is_directory(plugin):
-                            return self.INVALID
-                        if not (len(plugin) == 1 and plugin.exists("mods")):
-                            status = self.FIXABLE  # CET framework: fix
-                    elif plugin_path in self._extra_files_to_move:
-                        status = self.FIXABLE
-                    else:
-                        return self.INVALID  # unknown plugin
-            else:
-                return self.INVALID  # unknown entry
-        return status
-
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+        for source, target in self._extra_files_to_move.items():
+            if file := filetree.find(source):
+                parent = file.parent()
+                filetree.move(file, target)
+                clear_empty_folder(parent)
         if filetree := super().fix(filetree):
-            for source, target in self._extra_files_to_move.items():
-                if file := filetree.find(source):
-                    parent = file.parent()
-                    filetree.move(file, target)
-                    clear_empty_folder(parent)
-            self._fix_cet_framework(filetree)
+            filetree = self._fix_cet_framework(filetree)
             # REDmod
             for entry in list(filetree):
                 if not self._regex_patterns.valid.match(
@@ -134,7 +99,7 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     filetree.move(entry, "mods/")
         return filetree
 
-    def _fix_cet_framework(self, filetree: mobase.IFileTree):
+    def _fix_cet_framework(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
         """Move CET framework to `root/`, except for `mods`.
         Only CET >= v1.27.0 (Patch 2.01) works with USVFS.
 
@@ -154,6 +119,7 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     if entry.name() != "mods":
                         filetree.move(entry, root_cet_path)
             clear_empty_folder(parent)
+        return filetree
 
 
 def clear_empty_folder(filetree: mobase.IFileTree | None):
@@ -314,7 +280,7 @@ class PluginDefaultSettings:
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.2.1"
+    Version = "2.2.2"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
