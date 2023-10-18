@@ -377,7 +377,7 @@ class Cyberpunk2077Game(BasicGame):
                     "Enforce the current load order via"
                     " <code>archive/pc/mod/modlist.txt</code>"
                 ),
-                True,
+                False,
             ),
             mobase.PluginSetting(
                 "enforce_redmod_load_order",
