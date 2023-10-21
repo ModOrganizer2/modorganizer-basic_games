@@ -48,3 +48,9 @@ class BasicIniGame(BasicGame):
                 )
             except KeyError:
                 pass
+
+            # SaveGamePreview = BasicGameSaveGameInfo
+            if preview := features.get("SaveGamePreview"):
+                self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
+                    get_preview=lambda p: p / preview
+                )
