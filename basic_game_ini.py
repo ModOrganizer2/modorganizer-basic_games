@@ -16,8 +16,11 @@ class BasicIniGame(BasicGame):
         config.optionxform = str  # type: ignore
         config.read(path)
 
-        # Just fill the class with values:
-        for k, v in config["DEFAULT"].items():
+        # Fill the class with values:
+        main_section = (
+            config["BasicGame"] if "BasicGame" in config else config["DEFAULT"]
+        )
+        for k, v in main_section.items():
             setattr(self, k, v)
 
         super().__init__()
