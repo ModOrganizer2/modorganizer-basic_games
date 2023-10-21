@@ -3,6 +3,10 @@
 import configparser
 import os
 
+import mobase
+from PyQt6.QtCore import QDir
+
+from .basic_features import BasicGameSaveGameInfo, BasicLocalSavegames
 from .basic_game import BasicGame
 
 
@@ -12,7 +16,9 @@ class BasicIniGame(BasicGame):
         self._fromName = os.path.basename(path)
 
         # Read the file:
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation()
+        )
         config.optionxform = str  # type: ignore
         config.read(path)
 
@@ -24,3 +30,21 @@ class BasicIniGame(BasicGame):
             setattr(self, k, v)
 
         super().__init__()
+
+        # Add features
+        if "Features" in config:
+            features = config["Features"]
+            # BasicLocalSavegames
+            try:
+                # LocalSavegames = True
+                if features.getboolean("LocalSavegames"):
+                    self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
+                        self.savesDirectory()
+                    )
+            except ValueError:
+                # LocalSavegames = path
+                self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
+                    QDir(features["LocalSavegames"])
+                )
+            except KeyError:
+                pass
