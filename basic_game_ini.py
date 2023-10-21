@@ -6,8 +6,22 @@ import os
 import mobase
 from PyQt6.QtCore import QDir
 
-from .basic_features import BasicGameSaveGameInfo, BasicLocalSavegames
+from .basic_features import (
+    BasicGameSaveGameInfo,
+    BasicLocalSavegames,
+    BasicModDataChecker,
+    GlobPatterns,
+)
 from .basic_game import BasicGame
+
+
+def get_section_as_dict(
+    config: configparser.ConfigParser, section: str
+) -> dict[str, str]:
+    try:
+        return dict(config[section])
+    except KeyError:
+        return {}
 
 
 class BasicIniGame(BasicGame):
@@ -54,3 +68,12 @@ class BasicIniGame(BasicGame):
                 self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
                     get_preview=lambda p: p / preview
                 )
+
+        # BasicModDataChecker
+        if patterns := get_section_as_dict(config, "BasicModDataChecker"):
+            self._featureMap[mobase.ModDataChecker] = BasicModDataChecker(
+                GlobPatterns(
+                    **{key: value.split(",") for key, value in patterns.items()},
+                    move=get_section_as_dict(config, "BasicModDataChecker.move"),
+                )
+            )
