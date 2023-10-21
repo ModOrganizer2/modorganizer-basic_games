@@ -416,7 +416,7 @@ class BasicGame(mobase.IPluginGame):
             self._fromName = self.__class__.__name__
 
         self._gamePath = ""
-        self._featureMap = {}
+        self._featureMap = {mobase.SaveGameInfo: BasicGameSaveGameInfo()}
 
         self._mappings: BasicGameMappings = BasicGameMappings(self)
 
@@ -440,7 +440,6 @@ class BasicGame(mobase.IPluginGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo()
         if self._mappings.originWatcherExecutables.get():
             from .origin_utils import OriginWatcher
 
