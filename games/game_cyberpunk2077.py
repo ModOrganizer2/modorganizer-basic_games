@@ -391,6 +391,14 @@ class Cyberpunk2077Game(BasicGame):
                 True,
             ),
             mobase.PluginSetting(
+                "clear_cache_after_game_update",
+                (
+                    'Clears "overwrite/r6/cache/*" if the original game files changed'
+                    " (after update)"
+                ),
+                True,
+            ),
+            mobase.PluginSetting(
                 "configure_RootBuilder",
                 "Configures RootBuilder for Cyberpunk if installed and enabled",
                 True,
@@ -539,7 +547,7 @@ class Cyberpunk2077Game(BasicGame):
         data_path = Path(self.dataDirectory().absolutePath())
         overwrite_path = Path(self._organizer.overwritePath())
         cache_files = list(data_path.glob("r6/cache/*"))
-        if any(
+        if self._get_setting("clear_cache_after_game_update") and any(
             self._is_cache_file_updated(file.relative_to(data_path), data_path)
             for file in cache_files
         ):
