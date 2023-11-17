@@ -1,3 +1,4 @@
+import filecmp
 import json
 import re
 import shutil
@@ -266,7 +267,7 @@ class PluginDefaultSettings:
     plugin_name: str
     settings: Mapping[str, mobase.MoVariant]
 
-    def is_plugin_enabled(self):
+    def is_plugin_enabled(self) -> bool:
         return self.organizer.isPluginEnabled(self.plugin_name)
 
     def apply(self) -> bool:
@@ -280,7 +281,7 @@ class PluginDefaultSettings:
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.2.2"
+    Version = "2.2.3"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -387,6 +388,14 @@ class Cyberpunk2077Game(BasicGame):
             mobase.PluginSetting(
                 "auto_deploy_redmod",
                 "Deploy redmod before game launch if necessary",
+                True,
+            ),
+            mobase.PluginSetting(
+                "clear_cache_after_game_update",
+                (
+                    'Clears "overwrite/r6/cache/*" if the original game files changed'
+                    " (after update)"
+                ),
                 True,
             ),
             mobase.PluginSetting(
@@ -536,17 +545,52 @@ class Cyberpunk2077Game(BasicGame):
         overwritten game files.
         """
         data_path = Path(self.dataDirectory().absolutePath())
-        if unmapped_cache_files := self._unmapped_cache_files(data_path):
-            qInfo('Copying "r6/cache/*" to overwrite (to catch file overwrites)')
-            overwrite_path = Path(self._organizer.overwritePath())
-            for file in unmapped_cache_files:
-                dst = overwrite_path / file.relative_to(data_path)
-                dst.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(file, dst)
+        overwrite_path = Path(self._organizer.overwritePath())
+        cache_files = list(data_path.glob("r6/cache/*"))
+        if self._get_setting("clear_cache_after_game_update") and any(
+            self._is_cache_file_updated(file.relative_to(data_path), data_path)
+            for file in cache_files
+        ):
+            qInfo('Updated game files detected, clearing "overwrite/r6/cache/*"')
+            shutil.rmtree(overwrite_path / "r6/cache")
+            new_cache_files = cache_files
+        else:
+            new_cache_files = list(self._unmapped_cache_files(data_path))
+        for file in new_cache_files:
+            qInfo(f'Copying "{file}" to overwrite (to catch file overwrites)')
+            dst = overwrite_path / file
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(data_path / file, dst)
 
-    def _unmapped_cache_files(self, data_path: Path) -> list[Path]:
-        return [
-            path
-            for file in self._organizer.findFiles("r6/cache", "*")
-            if (path := Path(file).absolute()).is_relative_to(data_path)
-        ]
+    def _is_cache_file_updated(self, file: Path, data_path: Path) -> bool:
+        """Checks if a cache file is updated (in game dir).
+
+        Args:
+            file: Relative to data dir.
+        """
+        game_file = data_path.absolute() / file
+        mapped_files = self._organizer.findFiles(file.parent, file.name)
+        return bool(
+            mapped_files
+            and (mapped_file := mapped_files[0])
+            and not (
+                game_file.samefile(mapped_file)
+                or filecmp.cmp(game_file, mapped_file)
+                or (  # different backup file
+                    (
+                        backup_files := self._organizer.findFiles(
+                            file.parent, f"{file.name}.bk"
+                        )
+                    )
+                    and filecmp.cmp(game_file, backup_files[0])
+                )
+            )
+        )
+
+    def _unmapped_cache_files(self, data_path: Path) -> Iterable[Path]:
+        """Yields unmapped cache files relative to `data_path`."""
+        for file in self._organizer.findFiles("r6/cache", "*"):
+            try:
+                yield Path(file).absolute().relative_to(data_path)
+            except ValueError:
+                continue
