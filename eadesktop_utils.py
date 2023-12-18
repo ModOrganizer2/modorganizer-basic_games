@@ -59,7 +59,7 @@ def find_games() -> Dict[str, Path]:
             # consider these.
             content_id = root.find(".//contentIDs/contentID[1]")
 
-            if content_id and content_id.text:
+            if content_id is not None and content_id.text:
                 game_id = content_id.text
                 games[game_id] = game_dir
         except FileNotFoundError:
