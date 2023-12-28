@@ -4,6 +4,7 @@ import struct
 import time
 from pathlib import Path
 from typing import BinaryIO
+from collections.abc import Mapping
 
 import mobase
 from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
@@ -188,12 +189,12 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
             self.elapsed = int.from_bytes(self.readInf(info, "elapsed"), "little")
             # Getting date in 100th of nanosecond need to convert NT time
             # to UNIX time and offset localtime
-            self.lastsave = (
+            self.lastsave = int((
                 (
                     struct.unpack("q", self.readInf(info, "date"))[0] / 10000
                     - 11644473600000
                 )
-            ) - (time.localtime().tm_gmtoff * 1000)
+            ) - (time.localtime().tm_gmtoff * 1000))
             info.close()
 
     def readInf(self, inf: BinaryIO, key: str):
@@ -206,8 +207,7 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         return files
 
     def getCreationTime(self) -> QDateTime:
-        time = QDateTime.fromMSecsSinceEpoch(self.lastsave)
-        return time
+        return QDateTime.fromMSecsSinceEpoch(self.lastsave)
 
     def getElapsed(self) -> str:
         return str(datetime.timedelta(seconds=self.elapsed))
@@ -222,60 +222,15 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
         return self._filepath.parent.parent.name
 
 
-def _getPreview(savepath: Path):
-    save = BlackAndWhite2SaveGame(savepath)
-    lines = [
-        [
-            ("Name : " + save.getName(), Qt.AlignmentFlag.AlignLeft),
-            (
-                "| Profile : " + save.getSaveGroupIdentifier()[1:],
-                Qt.AlignmentFlag.AlignLeft,
-            ),
-        ],
-        [("Land number : " + save.getLand(), Qt.AlignmentFlag.AlignLeft)],
-        [
-            (
-                "Saved at : " + save.getCreationTime().toString(),
-                Qt.AlignmentFlag.AlignLeft,
-            )
-        ],
-        [("Elapsed time : " + save.getElapsed(), Qt.AlignmentFlag.AlignLeft)],
-    ]
-
-    pixmap = QPixmap(320, 320)
-    pixmap.fill()
-    # rightBuffer = []
-
-    painter = QPainter()
-    painter.begin(pixmap)
-    fm = painter.fontMetrics()
-    margin = 5
-    height = 0
-    width = 0
-    ln = 0
-    for line in lines:
-        cHeight = 0
-        cWidth = 0
-
-        for toPrint, align in line:
-            bRect = fm.boundingRect(toPrint)
-            cHeight = bRect.height() * (ln + 1)
-            bRect.moveTop(cHeight - bRect.height())
-            if align != Qt.AlignmentFlag.AlignLeft:
-                continue
-            else:
-                bRect.moveLeft(cWidth + margin)
-            cWidth = cWidth + bRect.width()
-            painter.drawText(bRect, align, toPrint)
-
-        height = max(height, cHeight)
-        width = max(width, cWidth + (2 * margin))
-        ln = ln + 1
-    # height = height + lh
-
-    painter.end()
-
-    return pixmap.copy(0, 0, width, height)
+def getMetadata(savepath: Path, save: mobase.ISaveGame) -> Mapping[str, str]:
+    assert isinstance(save, BlackAndWhite2SaveGame)
+    return {
+        "Name" : save.getName(),
+        "Profile" : save.getSaveGroupIdentifier(),
+        "Land" : save.getLand(),
+        "Saved at" : save.getCreationTime(),
+        "Elapsed time" : save.getElapsed()
+    }
 
 
 PSTART_MENU = (
@@ -312,7 +267,7 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
         self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
             self.savesDirectory()
         )
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(_getPreview)
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(get_metadata=getMetadata, max_width=400)
         return True
 
     def detectGame(self):
