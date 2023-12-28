@@ -2,18 +2,18 @@ import datetime
 import os
 import struct
 import time
+from collections.abc import Mapping
 from pathlib import Path
 from typing import BinaryIO
-from collections.abc import Mapping
 
 import mobase
-from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo, Qt
-from PyQt6.QtGui import QPainter, QPixmap
+from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo
 
 from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
     BasicGameSaveGameInfo,
+    format_date,
 )
 from ..basic_game import BasicGame
 
@@ -189,12 +189,15 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
             self.elapsed = int.from_bytes(self.readInf(info, "elapsed"), "little")
             # Getting date in 100th of nanosecond need to convert NT time
             # to UNIX time and offset localtime
-            self.lastsave = int((
+            self.lastsave = int(
                 (
-                    struct.unpack("q", self.readInf(info, "date"))[0] / 10000
-                    - 11644473600000
+                    (
+                        struct.unpack("q", self.readInf(info, "date"))[0] / 10000
+                        - 11644473600000
+                    )
                 )
-            ) - (time.localtime().tm_gmtoff * 1000))
+                - (time.localtime().tm_gmtoff * 1000)
+            )
             info.close()
 
     def readInf(self, inf: BinaryIO, key: str):
@@ -225,11 +228,11 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
 def getMetadata(savepath: Path, save: mobase.ISaveGame) -> Mapping[str, str]:
     assert isinstance(save, BlackAndWhite2SaveGame)
     return {
-        "Name" : save.getName(),
-        "Profile" : save.getSaveGroupIdentifier(),
-        "Land" : save.getLand(),
-        "Saved at" : save.getCreationTime(),
-        "Elapsed time" : save.getElapsed()
+        "Name": save.getName(),
+        "Profile": save.getSaveGroupIdentifier(),
+        "Land": save.getLand(),
+        "Saved at": format_date(save.getCreationTime()),
+        "Elapsed time": save.getElapsed(),
     }
 
 
@@ -238,7 +241,7 @@ PSTART_MENU = (
 )
 
 
-class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
+class BlackAndWhite2Game(BasicGame):
     Name = "Black & White 2 Support Plugin"
     Author = "Ilyu"
     Version = "1.0.1"
@@ -257,17 +260,15 @@ class BlackAndWhite2Game(BasicGame, mobase.IPluginFileMapper):
 
     _program_link = PSTART_MENU + "\\Black & White 2\\Black & White® 2.lnk"
 
-    def __init__(self):
-        BasicGame.__init__(self)
-        mobase.IPluginFileMapper.__init__(self)
-
     def init(self, organizer: mobase.IOrganizer) -> bool:
         BasicGame.init(self, organizer)
         self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
         self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
             self.savesDirectory()
         )
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(get_metadata=getMetadata, max_width=400)
+        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
+            get_metadata=getMetadata, max_width=400
+        )
         return True
 
     def detectGame(self):
