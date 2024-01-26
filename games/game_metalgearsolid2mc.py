@@ -2,7 +2,9 @@ from ..basic_game import BasicGame
 
 
 class MetalGearSolid2MCGame(BasicGame):
-    Name = "METAL GEAR SOLID 2: Sons of Liberty - Master Collection Version Support Plugin"
+    Name = (
+        "METAL GEAR SOLID 2: Sons of Liberty - Master Collection Version Support Plugin"
+    )
     Author = "AkiraJkr"
     Version = "1.0.0"
 
