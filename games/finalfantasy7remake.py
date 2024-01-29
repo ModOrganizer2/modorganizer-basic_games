@@ -34,9 +34,8 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
         pak_priority_digits = math.floor(math.log10(len(mods))) + 1
 
         def create_mod_mappings(mod: mobase.IModInterface, priority: int) -> List[mobase.Mapping]:
-            # Prefix with z to come after core pak files, then use the priority to differentiate
-            # If a mod has multiple pak files they will still be loaded alphabetically as expected
-            pak_prefix = 'z' + str(priority).zfill(pak_priority_digits) + '_'
+            # UE4 loads paks in alphabetical order, so we prefix the paks with their priority
+            pak_prefix = str(priority).zfill(pak_priority_digits) + '_'
 
             custom_mappings: List[mobase.Mapping] = []
 
