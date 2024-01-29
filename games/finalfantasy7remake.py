@@ -6,7 +6,7 @@ from ..basic_game import BasicGame
 
 class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
     Name = "Final Fantasy VII Remake Support Plugin"
-    Author = "Unlocked"
+    Author = "TheUnlocked"
     Version = "1.0.0"
 
     GameName = "Final Fantasy VII Remake"
