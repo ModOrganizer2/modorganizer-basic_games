@@ -12,7 +12,7 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
 
     GameName = "Final Fantasy VII Remake"
     GameShortName = "finalfantasy7remake"
-    GaneNexusHame = "finalfantasy7remake"
+    GameNexusName = "finalfantasy7remake"
     GameSteamId = 1462040
     GameBinary = "ff7remake.exe"
     GameSaveExtension = "sav"
