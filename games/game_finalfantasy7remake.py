@@ -1,6 +1,7 @@
 import math
+from pathlib import Path
 import mobase
-from typing import List
+from typing import Iterable, List
 
 from ..basic_game import BasicGame
 
@@ -26,58 +27,48 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer):
         return BasicGame.init(self, organizer)
 
-    def _modsPath(self):
+    def _get_mods_path(self):
         """The directory path of where .pak files from mods should go"""
-        return self.gameDirectory().absolutePath() + "/End/Content/Paks/~mods"
+        return (
+            Path(self.gameDirectory().absolutePath())
+            / "End"
+            / "Content"
+            / "Paks"
+            / "~mods"
+        )
+
+    def _active_mod_paths(self) -> Iterable[Path]:
+        mods_parent_path = Path(self._organizer.modsPath())
+        modlist = self._organizer.modList().allModsByProfilePriority()
+        for mod in modlist:
+            if self._organizer.modList().state(mod) & mobase.ModState.ACTIVE:
+                yield mods_parent_path / mod
+
+    def _active_mod_mappings(self, mod_paths: List[Path]) -> Iterable[mobase.Mapping]:
+        pak_priority_digits = math.floor(math.log10(len(mod_paths))) + 1
+
+        for priority, mod_path in enumerate(mod_paths):
+            pak_prefix = str(priority).zfill(pak_priority_digits) + "_"
+            for child in mod_path.iterdir():
+                dest_path = (
+                    self._get_mods_path()
+                    / child.with_stem(pak_prefix + child.stem).name
+                )
+                if child.is_dir() or child.suffix.lower() == ".pak":
+                    yield mobase.Mapping(
+                        str(child),
+                        str(dest_path),
+                        child.is_dir(),
+                    )
 
     def mappings(self) -> List[mobase.Mapping]:
-        mods = self._organizer.modList().allModsByProfilePriority()
-        pak_priority_digits = math.floor(math.log10(len(mods))) + 1
-
-        def create_mod_mappings(
-            mod: mobase.IModInterface, priority: int
-        ) -> List[mobase.Mapping]:
-            # UE4 loads paks in alphabetical order, so we prefix the paks with their priority
-            pak_prefix = str(priority).zfill(pak_priority_digits) + "_"
-
-            custom_mappings: List[mobase.Mapping] = []
-
-            def file_visitor(
-                file_name: str, entry: mobase.FileTreeEntry
-            ) -> mobase.IFileTree.WalkReturn:
-                src_path = mod.absolutePath() + "/" + entry.path()
-
-                if entry.hasSuffix("pak"):
-                    dest_path = self._modsPath() + "/" + pak_prefix + entry.path()
-                else:
-                    dest_path = self._modsPath() + "/" + entry.path()
-
-                custom_mappings.append(
-                    mobase.Mapping(
-                        src_path,
-                        dest_path,
-                        False,
-                    )
-                )
-
-                return mobase.IFileTree.WalkReturn.CONTINUE
-
-            mod.fileTree().walk(file_visitor)
-            return custom_mappings
-
         return [
             # Not applying load order modifications to overwrites is OK
             # since the UX is better this way and it will generally work out anyways
             mobase.Mapping(
                 self._organizer.overwritePath(),
-                self._modsPath(),
+                str(self._get_mods_path()),
                 True,
                 True,
             )
-        ] + [
-            mapping
-            for i, mod_name in enumerate(mods)
-            for mapping in create_mod_mappings(
-                self._organizer.modList().getMod(mod_name), i
-            )
-        ]
+        ] + list(self._active_mod_mappings(list(self._active_mod_paths())))
