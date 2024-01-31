@@ -18,7 +18,7 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
     GameSteamId = 1462040
     GameBinary = "ff7remake.exe"
     GameSaveExtension = "sav"
-    # GameDataPath is a placeholder.
+    # _ROOT is a placeholder value.
     # In order to properly apply load order to mods, custom mapping is used below.
     GameDataPath = "_ROOT"
 
