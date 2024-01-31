@@ -1,7 +1,8 @@
 import math
 from pathlib import Path
-import mobase
 from typing import Iterable, List
+
+import mobase
 
 from ..basic_game import BasicGame
 
@@ -17,7 +18,8 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
     GameSteamId = 1462040
     GameBinary = "ff7remake.exe"
     GameSaveExtension = "sav"
-    # This is a placeholder. In order to properly apply load order to mods, custom mapping is used below.
+    # GameDataPath is a placeholder.
+    # In order to properly apply load order to mods, custom mapping is used below.
     GameDataPath = "_ROOT"
 
     def __init__(self):
