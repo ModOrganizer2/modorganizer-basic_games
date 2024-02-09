@@ -477,6 +477,7 @@ class Cyberpunk2077Game(BasicGame):
             qWarning("Aborting game launch.")
             return False  # Auto deploy failed
         self._map_cache_files()
+        return False
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
         return True
@@ -546,10 +547,11 @@ class Cyberpunk2077Game(BasicGame):
         """
         data_path = Path(self.dataDirectory().absolutePath())
         overwrite_path = Path(self._organizer.overwritePath())
-        cache_files = list(data_path.glob("r6/cache/*"))
+        cache_files = [
+            file.relative_to(data_path) for file in data_path.glob("r6/cache/*")
+        ]
         if self._get_setting("clear_cache_after_game_update") and any(
-            self._is_cache_file_updated(file.relative_to(data_path), data_path)
-            for file in cache_files
+            self._is_cache_file_updated(file, data_path) for file in cache_files
         ):
             qInfo('Updated game files detected, clearing "overwrite/r6/cache/*"')
             shutil.rmtree(overwrite_path / "r6/cache")
