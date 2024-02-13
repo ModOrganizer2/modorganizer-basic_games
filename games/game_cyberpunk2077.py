@@ -188,6 +188,8 @@ class CyberpunkSaveGame(BasicGameSaveGame):
 class ModListFile:
     list_path: Path
     mod_search_pattern: str
+    reversed_priority: bool = False
+    """True: load order priority is reversed compared to MO (first mod has priority)."""
 
 
 _MOD_TYPE = TypeVar("_MOD_TYPE")
@@ -209,7 +211,8 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
 
         Args:
             mod_type: Which modlist to update.
-            mod_files (optional): By default mod files in order of mod priority.
+            mod_files (optional): By default mod files in order of `mod_type` priority
+                (respecting `self[mod_type].reversed_priority`).
 
         Returns:
             `(modlist_path, new_mod_list, old_mod_list)`
@@ -243,20 +246,25 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
         return modlist_path
 
     def modfile_names(self, mod_type: _MOD_TYPE) -> Iterable[str]:
-        """Get all files from the `mod_type` in load order."""
+        """Get all file names from the `mod_type` in MOs load order
+        (reversed with `self[mod_type].reversed_priority = True`).
+        """
         yield from (file.name for file in self.modfiles(mod_type))
 
     def modfiles(self, mod_type: _MOD_TYPE) -> Iterable[Path]:
-        """Get all files from the `mod_type` in load order."""
+        """Get all files from the `mod_type` in MOs load order
+        (reversed with `self[mod_type].reversed_priority = True`).
+        """
         mod_search_pattern = self[mod_type].mod_search_pattern
-        for mod_path in self.active_mod_paths():
+        for mod_path in self.active_mod_paths(self[mod_type].reversed_priority):
             yield from mod_path.glob(mod_search_pattern)
 
-    def active_mod_paths(self) -> Iterable[Path]:
-        """Yield the path to active mods in load order."""
+    def active_mod_paths(self, reverse: bool = False) -> Iterable[Path]:
+        """Yield the path to active mods in MOs load order."""
         mods_path = Path(self._organizer.modsPath())
         modlist = self._organizer.modList()
-        for mod in modlist.allModsByProfilePriority():
+        mods_load_order = modlist.allModsByProfilePriority()
+        for mod in reversed(mods_load_order) if reverse else mods_load_order:
             if modlist.state(mod) & mobase.ModState.ACTIVE:
                 yield mods_path / mod
 
@@ -320,10 +328,12 @@ class Cyberpunk2077Game(BasicGame):
             archive=ModListFile(
                 Path("archive/pc/mod/modlist.txt"),
                 "archive/pc/mod/*",
+                reversed_priority=True,
             ),
             redmod=ModListFile(
                 Path(self._redmod_deploy_path, "MO_REDmod_load_order.txt"),
                 "mods/*/",
+                reversed_priority=True,
             ),
         )
         self._rootbuilder_settings = PluginDefaultSettings(
