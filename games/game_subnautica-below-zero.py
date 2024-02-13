@@ -31,9 +31,9 @@ class SubnauticaBelowZeroGame(game_subnautica.SubnauticaGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[
-            mobase.ModDataChecker
-        ] = game_subnautica.SubnauticaModDataChecker(
-            GlobPatterns(unfold=["BepInExPack_BelowZero"])
+        self._featureMap[mobase.ModDataChecker] = (
+            game_subnautica.SubnauticaModDataChecker(
+                GlobPatterns(unfold=["BepInExPack_BelowZero"])
+            )
         )
         return True

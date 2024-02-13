@@ -92,9 +92,9 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
             lambda s: s.with_suffix(".png")
         )
-        self._featureMap[
-            mobase.ModDataChecker
-        ] = DivinityOriginalSinEnhancedEditionModDataChecker()
+        self._featureMap[mobase.ModDataChecker] = (
+            DivinityOriginalSinEnhancedEditionModDataChecker()
+        )
         return True
 
     def mappings(self) -> list[mobase.Mapping]:
