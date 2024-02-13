@@ -120,7 +120,6 @@ class BasicGameMapping(Generic[_T]):
 
 
 class BasicGameOptionsMapping(BasicGameMapping[list[_T]]):
-
     """
     Represents a game mappings for which multiple options are possible. The game
     plugin is responsible to choose the right option depending on the context.
@@ -269,9 +268,11 @@ class BasicGameMappings:
             "GameValidShortNames",
             "validShortNames",
             default=lambda g: [],
-            apply_fn=lambda value: [c.strip() for c in value.split(",")]  # type: ignore
-            if isinstance(value, str)
-            else value,
+            apply_fn=lambda value: (
+                [c.strip() for c in value.split(",")]  # type: ignore
+                if isinstance(value, str)
+                else value
+            ),
         )
         self.nexusGameId = BasicGameMapping(
             game, "GameNexusId", "nexusGameID", default=lambda g: 0, apply_fn=int
@@ -296,9 +297,11 @@ class BasicGameMappings:
             "GameIniFiles",
             "iniFiles",
             lambda g: [],
-            apply_fn=lambda value: [c.strip() for c in value.split(",")]
-            if isinstance(value, str)
-            else value,
+            apply_fn=lambda value: (
+                [c.strip() for c in value.split(",")]
+                if isinstance(value, str)
+                else value
+            ),
         )
         self.savesDirectory = BasicGameMapping(
             game,
@@ -371,7 +374,6 @@ _GameFeature = (
 
 
 class BasicGame(mobase.IPluginGame):
-
     """This class implements some methods from mobase.IPluginGame
     to make it easier to create game plugins without having to implement
     all the methods of mobase.IPluginGame."""

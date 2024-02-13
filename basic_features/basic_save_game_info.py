@@ -60,10 +60,12 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
     def __init__(
         self,
         parent: QWidget | None,
-        get_preview: Callable[[Path], QPixmap | QImage | Path | str | None]
-        | None = lambda p: None,
-        get_metadata: Callable[[Path, mobase.ISaveGame], Mapping[str, Any] | None]
-        | None = get_filedate_metadata,
+        get_preview: (
+            Callable[[Path], QPixmap | QImage | Path | str | None] | None
+        ) = lambda p: None,
+        get_metadata: (
+            Callable[[Path, mobase.ISaveGame], Mapping[str, Any] | None] | None
+        ) = get_filedate_metadata,
         max_width: int = 320,
     ):
         """
@@ -179,10 +181,12 @@ class BasicGameSaveGameInfo(mobase.SaveGameInfo):
 
     def __init__(
         self,
-        get_preview: Callable[[Path], QPixmap | QImage | Path | str | None]
-        | None = None,
-        get_metadata: Callable[[Path, mobase.ISaveGame], Mapping[str, Any] | None]
-        | None = None,
+        get_preview: (
+            Callable[[Path], QPixmap | QImage | Path | str | None] | None
+        ) = None,
+        get_metadata: (
+            Callable[[Path, mobase.ISaveGame], Mapping[str, Any] | None] | None
+        ) = None,
         max_width: int = 0,
     ):
         """Args from: `BasicGameSaveGameInfoWidget`."""
