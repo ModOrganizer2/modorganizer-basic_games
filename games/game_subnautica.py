@@ -97,6 +97,19 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
             for folder in Path(save_path).glob("slot*")
         ]
 
+    def executables(self) -> list[mobase.ExecutableInfo]:
+        binary = self.gameDirectory().absoluteFilePath(self.binaryName())
+        return [
+            mobase.ExecutableInfo(
+                self.gameName(),
+                binary,
+            ).withArgument("-vrmode none"),
+            mobase.ExecutableInfo(
+                f"{self.gameName()} VR",
+                self.gameDirectory().absoluteFilePath(self.binaryName()),
+            ),
+        ]
+
     def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
         return [
             mobase.ExecutableForcedLoadSetting(self.binaryName(), lib).withEnabled(True)
