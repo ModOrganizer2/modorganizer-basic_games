@@ -19,7 +19,11 @@ from ..basic_game import BasicGame
 
 
 class SubnauticaModDataChecker(BasicModDataChecker):
-    def __init__(self, patterns: GlobPatterns = GlobPatterns()):
+    use_qmods: bool = False
+
+    def __init__(
+        self, patterns: GlobPatterns = GlobPatterns(), use_qmods: bool = False
+    ):
         super().__init__(
             GlobPatterns(
                 unfold=["BepInExPack_Subnautica"],
@@ -41,11 +45,12 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                 move={
                     "plugins": "BepInEx/",
                     "patchers": "BepInEx/",
-                    "CustomCraft2SML": "BepInEx/plugins/",
-                    "CustomCraft3": "BepInEx/plugins/",
+                    "CustomCraft2SML": "QMods/" if use_qmods else "BepInEx/plugins/",
+                    "CustomCraft3": "QMods/" if use_qmods else "BepInEx/plugins/",
                 },
             ).merge(patterns),
         )
+        self.use_qmods = use_qmods
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
@@ -69,7 +74,7 @@ class SubnauticaModDataChecker(BasicModDataChecker):
             and is_directory(folder := filetree[0])
             and any(fnmatch.fnmatch(entry.name(), "*.dll") for entry in folder)
         ):
-            filetree.move(filetree[0], "BepInEx/plugins/")
+            filetree.move(folder, "QMods/" if self.use_qmods else "BepInEx/plugins/")
         return filetree
 
 
@@ -120,11 +125,47 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = SubnauticaModDataChecker()
+        self._set_mod_data_checker()
         self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
             lambda s: Path(s or "", "screenshot.jpg")
         )
+
+        organizer.onPluginSettingChanged(self._settings_change_callback)
         return True
+
+    def _set_mod_data_checker(
+        self, extra_patterns: GlobPatterns | None = None, use_qmod: bool | None = None
+    ):
+        self._featureMap[mobase.ModDataChecker] = SubnauticaModDataChecker(
+            patterns=(GlobPatterns() if extra_patterns is None else extra_patterns),
+            use_qmods=(
+                bool(self._organizer.pluginSetting(self.name(), "use_qmods"))
+                if use_qmod is None
+                else use_qmod
+            ),
+        )
+
+    def _settings_change_callback(
+        self,
+        plugin_name: str,
+        setting: str,
+        old: mobase.MoVariant,
+        new: mobase.MoVariant,
+    ):
+        if plugin_name == self.name() and setting == "use_qmods":
+            self._set_mod_data_checker(use_qmod=bool(new))
+
+    def settings(self) -> list[mobase.PluginSetting]:
+        return [
+            mobase.PluginSetting(
+                "use_qmods",
+                (
+                    "Install */.dll mods in legacy QMods folder,"
+                    " instead of BepInEx/plugins (default)."
+                ),
+                default_value=False,
+            )
+        ]
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         return [
