@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fnmatch
 import os
 from collections.abc import Iterable
 from enum import Enum
@@ -13,6 +14,7 @@ from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
     BasicGameSaveGameInfo,
 )
+from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
 
 
@@ -21,7 +23,14 @@ class SubnauticaModDataChecker(BasicModDataChecker):
         super().__init__(
             GlobPatterns(
                 unfold=["BepInExPack_Subnautica"],
-                valid=["winhttp.dll", "doorstop_config.ini", "BepInEx", "QMods"],
+                valid=[
+                    "BepInEx",
+                    "doorstop_libs",
+                    "doorstop_config.ini",
+                    "run_bepinex.sh",
+                    "winhttp.dll",
+                    "QMods",
+                ],
                 delete=[
                     "*.txt",
                     "*.md",
@@ -29,9 +38,39 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                     "license",
                     "manifest.json",
                 ],
-                move={"plugins": "BepInEx/", "patchers": "BepInEx/", "*": "QMods/"},
+                move={
+                    "plugins": "BepInEx/",
+                    "patchers": "BepInEx/",
+                    "CustomCraft2SML": "BepInEx/plugins/",
+                    "CustomCraft3": "BepInEx/plugins/",
+                },
             ).merge(patterns),
         )
+
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        check_return = super().dataLooksValid(filetree)
+        # A single unknown folder with a dll file in is to be moved to BepInEx/plugins/
+        if (
+            check_return is self.INVALID
+            and len(filetree) == 1
+            and is_directory(folder := filetree[0])
+            and any(fnmatch.fnmatch(entry.name(), "*.dll") for entry in folder)
+        ):
+            return self.FIXABLE
+        return check_return
+
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+        filetree = super().fix(filetree)
+        if (
+            self.dataLooksValid(filetree) is self.FIXABLE
+            and len(filetree) == 1
+            and is_directory(folder := filetree[0])
+            and any(fnmatch.fnmatch(entry.name(), "*.dll") for entry in folder)
+        ):
+            filetree.move(filetree[0], "BepInEx/plugins/")
+        return filetree
 
 
 class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
