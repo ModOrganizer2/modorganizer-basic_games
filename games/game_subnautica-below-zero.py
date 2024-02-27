@@ -7,7 +7,7 @@ from . import game_subnautica  # namespace to not load SubnauticaGame here, too!
 class SubnauticaBelowZeroGame(game_subnautica.SubnauticaGame):
     Name = "Subnautica Below Zero Support Plugin"
     Author = "dekart811, Zash"
-    Version = "2.1"
+    Version = "2.2"
 
     GameName = "Subnautica: Below Zero"
     GameShortName = "subnauticabelowzero"
