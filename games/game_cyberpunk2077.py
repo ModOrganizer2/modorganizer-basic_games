@@ -487,7 +487,6 @@ class Cyberpunk2077Game(BasicGame):
             qWarning("Aborting game launch.")
             return False  # Auto deploy failed
         self._map_cache_files()
-        return False
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
         return True
