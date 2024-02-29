@@ -47,7 +47,9 @@ class RegexPatterns:
         self.delete = OptionalRegexPattern(globs.delete)
         self.valid = OptionalRegexPattern(globs.valid)
 
-        self.move = {key: re.compile(fnmatch.translate(key)) for key in globs.move}
+        self.move = {
+            key: re.compile(fnmatch.translate(key), re.I) for key in globs.move
+        }
 
     def move_match(self, value: str) -> str | None:
         """
