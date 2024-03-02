@@ -379,8 +379,11 @@ class Cyberpunk2077Game(BasicGame):
         return [
             mobase.PluginSetting(
                 "skipStartScreen",
-                'Skips the "Breaching..." start screen on game launch',
-                True,
+                (
+                    'Skips the "Breaching..." start screen on game launch'
+                    " (can also skip loading of GOG rewards)"
+                ),
+                False,
             ),
             mobase.PluginSetting(
                 "enforce_archive_load_order",
