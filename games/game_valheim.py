@@ -320,6 +320,7 @@ class ValheimGame(BasicGame):
                     "start_game_bepinex.sh",
                     "start_server_bepinex.sh",
                     "winhttp.dll",
+                    "changelog.txt",
                     #
                     "InSlimVML",
                     "valheim_Data",
