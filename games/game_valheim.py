@@ -343,6 +343,7 @@ class ValheimGame(BasicGame):
                     "*_VML.dll": "InSlimVML/Mods/",
                     #
                     "plugins": "BepInEx/",
+                    "Jotunn": "BepInEx/plugins/",
                     "*.dll": "BepInEx/plugins/",
                     "*.xml": "BepInEx/plugins/",
                     "config": "BepInEx/",
