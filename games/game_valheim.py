@@ -320,6 +320,7 @@ class ValheimGame(BasicGame):
                     "start_game_bepinex.sh",
                     "start_server_bepinex.sh",
                     "winhttp.dll",
+                    "changelog.txt",
                     #
                     "InSlimVML",
                     "valheim_Data",
@@ -343,6 +344,7 @@ class ValheimGame(BasicGame):
                     "*_VML.dll": "InSlimVML/Mods/",
                     #
                     "plugins": "BepInEx/",
+                    "Jotunn": "BepInEx/plugins/",
                     "*.dll": "BepInEx/plugins/",
                     "*.xml": "BepInEx/plugins/",
                     "config": "BepInEx/",
