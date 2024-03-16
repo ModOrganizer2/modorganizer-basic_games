@@ -328,12 +328,12 @@ class Cyberpunk2077Game(BasicGame):
             archive=ModListFile(
                 Path("archive/pc/mod/modlist.txt"),
                 "archive/pc/mod/*",
-                reversed_priority=True,
+                reversed_priority=bool(self._get_setting("reverse_archive_load_order")),
             ),
             redmod=ModListFile(
                 Path(self._redmod_deploy_path, "MO_REDmod_load_order.txt"),
                 "mods/*/",
-                reversed_priority=True,
+                reversed_priority=bool(self._get_setting("reverse_redmod_load_order")),
             ),
         )
         self._rootbuilder_settings = PluginDefaultSettings(
@@ -363,7 +363,22 @@ class Cyberpunk2077Game(BasicGame):
         organizer.onUserInterfaceInitialized(apply_rootbuilder_settings_once)
         organizer.onPluginEnabled("RootBuilder", apply_rootbuilder_settings_once)
         organizer.onAboutToRun(self._onAboutToRun)
+
+        organizer.onPluginSettingChanged(self._on_settings_changed)
         return True
+
+    def _on_settings_changed(
+        self,
+        plugin_name: str,
+        setting: str,
+        old: mobase.MoVariant,
+        new: mobase.MoVariant,
+    ):
+        if self.name() == plugin_name:
+            if setting == "reverse_archive_load_order":
+                self._modlist_files["archive"].reversed_priority = bool(new)
+            elif setting == "reverse_remod_load_order":
+                self._modlist_files["redmod"].reversed_priority = bool(new)
 
     def iniFiles(self):
         return ["UserSettings.json"]
@@ -379,8 +394,11 @@ class Cyberpunk2077Game(BasicGame):
         return [
             mobase.PluginSetting(
                 "skipStartScreen",
-                'Skips the "Breaching..." start screen on game launch',
-                True,
+                (
+                    'Skips the "Breaching..." start screen on game launch'
+                    " (can also skip loading of GOG rewards)"
+                ),
+                False,
             ),
             mobase.PluginSetting(
                 "enforce_archive_load_order",
@@ -391,9 +409,26 @@ class Cyberpunk2077Game(BasicGame):
                 False,
             ),
             mobase.PluginSetting(
+                "reverse_archive_load_order",
+                (
+                    "Reverse MOs load order in"
+                    " <code>archive/pc/mod/modlist.txt</code>"
+                    " (first loaded mod wins = last one / highest prio in MO)"
+                ),
+                False,
+            ),
+            mobase.PluginSetting(
                 "enforce_redmod_load_order",
                 "Enforce the current load order on redmod deployment",
                 True,
+            ),
+            mobase.PluginSetting(
+                "reverse_redmod_load_order",
+                (
+                    "Reverse MOs load order on redmod deployment"
+                    " (first loaded mod wins = last one / highest prio in MO)"
+                ),
+                False,
             ),
             mobase.PluginSetting(
                 "auto_deploy_redmod",
@@ -487,7 +522,6 @@ class Cyberpunk2077Game(BasicGame):
             qWarning("Aborting game launch.")
             return False  # Auto deploy failed
         self._map_cache_files()
-        return False
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
         return True
