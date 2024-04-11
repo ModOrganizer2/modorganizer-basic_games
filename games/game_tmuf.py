@@ -22,7 +22,7 @@ class TmufGame(BasicGame):
     GameNexusId = 1500
     GameSteamId = 7200
     GameBinary = "TmForeverLauncher.exe"
-    GameDataPath = ""
+    GameDataPath = "GameData"
 
     def executables(self):
         return [
