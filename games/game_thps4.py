@@ -1,8 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-from PyQt6.QtCore import QFileInfo, QDir
-
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -26,8 +25,10 @@ class THPS4Game(BasicGame):
             ),
             mobase.ExecutableInfo(
                 "Tony Hawk's Pro Skater 4 Setup",
-                QFileInfo(self.gameDirectory().absoluteFilePath("../Start.exe"))
-            ).withWorkingDirectory(QDir(QDir.cleanPath(self.gameDirectory().absoluteFilePath("..")))),
+                QFileInfo(self.gameDirectory().absoluteFilePath("../Start.exe")),
+            ).withWorkingDirectory(
+                QDir(QDir.cleanPath(self.gameDirectory().absoluteFilePath("..")))
+            ),
             mobase.ExecutableInfo(
                 "Tony Hawk's Pro Skater 4 (PARTYMOD)",
                 QFileInfo(self.gameDirectory().absoluteFilePath("THPS4.exe")),
@@ -35,5 +36,5 @@ class THPS4Game(BasicGame):
             mobase.ExecutableInfo(
                 "PARTYMOD Configurator",
                 QFileInfo(self.gameDirectory().absoluteFilePath("partyconfig.exe")),
-            )
+            ),
         ]

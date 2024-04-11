@@ -1,9 +1,9 @@
 # -*- encoding: utf-8 -*-
 
-from PyQt6.QtCore import QFileInfo, QDir
+import os
 
 import mobase
-import os
+from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -27,18 +27,28 @@ class THPS4Game(BasicGame):
             ),
             mobase.ExecutableInfo(
                 "Tony Hawk's Underground 2 Launcher",
-                QFileInfo(self.gameDirectory().absoluteFilePath("../Launcher.exe"))
-            ).withWorkingDirectory(QDir(QDir.cleanPath(self.gameDirectory().absoluteFilePath("..")))),
+                QFileInfo(self.gameDirectory().absoluteFilePath("../Launcher.exe")),
+            ).withWorkingDirectory(
+                QDir(QDir.cleanPath(self.gameDirectory().absoluteFilePath("..")))
+            ),
             mobase.ExecutableInfo(
                 "Tony Hawk's Underground 2 (ClownJob'd)",
                 QFileInfo(self.gameDirectory().absoluteFilePath("THUGTWO.exe")),
             ),
             mobase.ExecutableInfo(
                 "THUG Pro Launcher",
-                QFileInfo(QDir(os.getenv('LOCALAPPDATA')).absoluteFilePath("THUG Pro/THUGProLauncher.exe")),
+                QFileInfo(
+                    QDir(os.getenv("LOCALAPPDATA")).absoluteFilePath(
+                        "THUG Pro/THUGProLauncher.exe"
+                    )
+                ),
             ),
             mobase.ExecutableInfo(
                 "THUG Pro",
-                QFileInfo(QDir(os.getenv('LOCALAPPDATA')).absoluteFilePath("THUG Pro/THUGPro.exe")),
+                QFileInfo(
+                    QDir(os.getenv("LOCALAPPDATA")).absoluteFilePath(
+                        "THUG Pro/THUGPro.exe"
+                    )
+                ),
             ),
         ]

@@ -1,8 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-from PyQt6.QtCore import QFileInfo, QDir
-
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -26,10 +25,12 @@ class THPS4Game(BasicGame):
             ),
             mobase.ExecutableInfo(
                 "Tony Hawk's Underground Launcher",
-                QFileInfo(self.gameDirectory().absoluteFilePath("../Launcher.exe"))
-            ).withWorkingDirectory(QDir(QDir.cleanPath(self.gameDirectory().absoluteFilePath("..")))),
+                QFileInfo(self.gameDirectory().absoluteFilePath("../Launcher.exe")),
+            ).withWorkingDirectory(
+                QDir(QDir.cleanPath(self.gameDirectory().absoluteFilePath("..")))
+            ),
             mobase.ExecutableInfo(
                 "Tony Hawk's Underground (ClownJob'd)",
                 QFileInfo(self.gameDirectory().absoluteFilePath("THUGONE.exe")),
-            )
+            ),
         ]

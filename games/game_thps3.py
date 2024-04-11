@@ -1,8 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -35,5 +34,5 @@ class THPS3Game(BasicGame):
             mobase.ExecutableInfo(
                 "PARTYMOD Configurator",
                 QFileInfo(self.gameDirectory().absoluteFilePath("partyconfig.exe")),
-            )
+            ),
         ]
