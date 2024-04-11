@@ -27,6 +27,10 @@ class TDUGame(BasicGame):
             ).withArgument("-w -wx -vsync -bigbnks -offline"),
             mobase.ExecutableInfo(
                 "Project Paradise Launcher",
-                QFileInfo(self.gameDirectory().absoluteFilePath("TDU - Project Paradise Launcher.exe")),
+                QFileInfo(
+                    self.gameDirectory().absoluteFilePath(
+                        "TDU - Project Paradise Launcher.exe"
+                    )
+                ),
             ),
         ]
