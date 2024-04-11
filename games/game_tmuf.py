@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
