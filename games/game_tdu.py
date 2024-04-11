@@ -9,7 +9,7 @@ from ..basic_game import BasicGame
 class TDUGame(BasicGame):
 
     Name = "Test Drive Unlimited Support Plugin"
-    Author = "Maxine"
+    Author = "uwx"
     Version = "1.0.0"
 
     GameName = "Test Drive Unlimited"
