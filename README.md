@@ -73,6 +73,10 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | Test Drive Unlimited | [uwx](https://github.com/uwx) | [game_tdu.py](games/game_tdu.py) | |
 | The Witcher: Enhanced Edition - [GOG](https://www.gog.com/game/the_witcher) / [STEAM](https://store.steampowered.com/app/20900/The_Witcher_Enhanced_Edition_Directors_Cut/) | [erri120](https://github.com/erri120) | [game_witcher1.py](games/game_witcher1.py) | <ul><li>save game parsing (no preview)</li></ul> |
 | The Witcher 3: Wild Hunt — [GOG](https://www.gog.com/game/the_witcher_3_wild_hunt) / [STEAM](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | [Holt59](https://github.com/holt59/) | [game_witcher3.py](games/game_witcher3.py) | <ul><li>save game preview</li></ul> |
+| Tony Hawk's Pro Skater 3 | [uwx](https://github.com/uwx) | [game_thps3.py](games/game_thps3.py) | |
+| Tony Hawk's Pro Skater 4 | [uwx](https://github.com/uwx) | [game_thps4.py](games/game_thps4.py) | |
+| Tony Hawk's Underground | [uwx](https://github.com/uwx) | [game_thug.py](games/game_thug.py) | |
+| Tony Hawk's Underground 2 | [uwx](https://github.com/uwx) | [game_thug2.py](games/game_thug2.py) | |
 | Trackmania United Forever — [STEAM](https://store.steampowered.com/app/7200/Trackmania_United_Forever/) | [uwx](https://github.com/uwx) | [game_tmuf.py](games/game_tmuf.py) | |
 | Yu-Gi-Oh! Master Duel — [STEAM](https://store.steampowered.com/app/1449850/) | [The Conceptionist](https://github.com/the-conceptionist) & [uwx](https://github.com/uwx) | [game_masterduel.py](games/game_masterduel.py) | |
 | Zeus and Poseidon — [GOG](https://www.gog.com/game/zeus_poseidon) / [STEAM](https://store.steampowered.com/app/566050/Zeus__Poseidon/) | [Holt59](https://github.com/holt59/) | [game_zeusandpoiseidon.py](games/game_zeusandpoiseidon.py) | <ul><li>mod data checker</li></ul> |
