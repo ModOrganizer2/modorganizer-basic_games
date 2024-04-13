@@ -71,6 +71,7 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | Train Simulator Classic — [STEAM](https://store.steampowered.com/app/24010/) | [Ryan Young](https://github.com/YoRyan) | [game_trainsimulator.py](games/game_trainsimulator.py) | |
 | Valheim — [STEAM](https://store.steampowered.com/app/892970/Valheim/) | [Zash](https://github.com/ZashIn) | [game_valheim.py](games/game_valheim.py) | <ul><li>mod data checker</li><li>overwrite config sync</li><li>save game support (no preview)</li></ul> |
 | Test Drive Unlimited | [uwx](https://github.com/uwx) | [game_tdu.py](games/game_tdu.py) | |
+| Test Drive Unlimited 2 — [STEAM](https://steamcommunity.com/app/9930/) | [uwx](https://github.com/uwx) | [game_tdu2.py](games/game_tdu2.py) | |
 | The Witcher: Enhanced Edition - [GOG](https://www.gog.com/game/the_witcher) / [STEAM](https://store.steampowered.com/app/20900/The_Witcher_Enhanced_Edition_Directors_Cut/) | [erri120](https://github.com/erri120) | [game_witcher1.py](games/game_witcher1.py) | <ul><li>save game parsing (no preview)</li></ul> |
 | The Witcher 3: Wild Hunt — [GOG](https://www.gog.com/game/the_witcher_3_wild_hunt) / [STEAM](https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/) | [Holt59](https://github.com/holt59/) | [game_witcher3.py](games/game_witcher3.py) | <ul><li>save game preview</li></ul> |
 | Tony Hawk's Pro Skater 3 | [uwx](https://github.com/uwx) | [game_thps3.py](games/game_thps3.py) | |
