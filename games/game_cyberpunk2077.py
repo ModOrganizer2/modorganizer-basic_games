@@ -314,14 +314,14 @@ class Cyberpunk2077Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
-            self.savesDirectory()
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(
+            BasicGameSaveGameInfo(
+                lambda p: Path(p or "", "screenshot.png"),
+                parse_cyberpunk_save_metadata,
+            )
         )
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda p: Path(p or "", "screenshot.png"),
-            parse_cyberpunk_save_metadata,
-        )
-        self._featureMap[mobase.ModDataChecker] = CyberpunkModDataChecker()
+        self._register_feature(CyberpunkModDataChecker())
 
         self._modlist_files = ModListFileManager[Literal["archive", "redmod"]](
             organizer,

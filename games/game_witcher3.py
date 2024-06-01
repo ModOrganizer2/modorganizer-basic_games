@@ -37,9 +37,7 @@ class Witcher3Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.with_suffix(".png")
-        )
+        self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".png")))
         return True
 
     def iniFiles(self):

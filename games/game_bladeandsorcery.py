@@ -26,7 +26,7 @@ class BaSSaveGame(BasicGameSaveGame):
         h, m, s = save_data["playTime"].split(":")
         self._elapsed = (int(h), int(m), float(s))
         f_stat = self._filepath.stat()
-        self._created = f_stat.st_ctime
+        self._created = f_stat.st_birthtime
         self._modified = f_stat.st_mtime
 
     def getName(self) -> str:
@@ -83,8 +83,8 @@ class BaSGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         BasicGame.init(self, organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            get_metadata=bas_parse_metadata, max_width=400
+        self._register_feature(
+            BasicGameSaveGameInfo(get_metadata=bas_parse_metadata, max_width=400)
         )
         return True
 

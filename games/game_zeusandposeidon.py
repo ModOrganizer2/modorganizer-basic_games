@@ -66,5 +66,5 @@ class ZeusAndPoseidonGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = ZeusAndPoseidonModDataChecker()
+        self._register_feature(ZeusAndPoseidonModDataChecker())
         return True

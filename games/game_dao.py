@@ -25,7 +25,7 @@ class DAOriginsGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.parent.joinpath("screen.dds")
+        self._register_feature(
+            BasicGameSaveGameInfo(lambda s: s.parent.joinpath("screen.dds"))
         )
         return True

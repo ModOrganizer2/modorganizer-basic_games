@@ -238,9 +238,9 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
 
     def init(self, organizer: mobase.IOrganizer):
         BasicGame.init(self, organizer)
-        self._featureMap[mobase.ModDataChecker] = StalkerAnomalyModDataChecker()
-        self._featureMap[mobase.ModDataContent] = StalkerAnomalyModDataContent()
-        self._featureMap[mobase.SaveGameInfo] = StalkerAnomalySaveGameInfo()
+        self._register_feature(StalkerAnomalyModDataChecker())
+        self._register_feature(StalkerAnomalyModDataContent())
+        self._register_feature(StalkerAnomalySaveGameInfo())
         organizer.onAboutToRun(lambda _str: self.aboutToRun(_str))
         return True
 

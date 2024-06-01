@@ -45,10 +45,8 @@ extend-select = ["B", "Q", "I"]
 [tool.ruff.lint.isort]
 known-first-party = ['tas']
 
-[tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["astropy.units.Quantity"]
-
 [tool.pyright]
+exclude = ["lib", "**/.*", "venv"]
 typeCheckingMode = "strict"
 reportMissingTypeStubs = true
 reportMissingModuleSource = false

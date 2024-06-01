@@ -5,8 +5,8 @@
 import os
 import threading
 import time
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List
 from urllib import parse
 
 import psutil
@@ -20,7 +20,7 @@ class OriginWatcher:
     DRM to launch Origin as needed.
     """
 
-    def __init__(self, executables: List[str] = []):
+    def __init__(self, executables: Sequence[str] = []):
         self.executables = list(map(lambda s: s.lower(), executables))
 
     def spawn_origin_watcher(self) -> bool:
@@ -62,7 +62,7 @@ class OriginWatcher:
             time.sleep(1)
 
 
-def find_games() -> Dict[str, Path]:
+def find_games() -> dict[str, Path]:
     """
     Find the list of Origin games installed.
 
@@ -70,7 +70,7 @@ def find_games() -> Dict[str, Path]:
         A mapping from Origin manifest IDs to install locations for available
         Origin games.
     """
-    games: Dict[str, Path] = {}
+    games: dict[str, Path] = {}
 
     program_data_path = os.path.expandvars("%PROGRAMDATA%")
     local_content_path = Path(program_data_path).joinpath("Origin", "LocalContent")

@@ -54,7 +54,7 @@ class MountAndBladeIIGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = MountAndBladeIIModDataChecker()
+        self._register_feature(MountAndBladeIIModDataChecker())
         return True
 
     def executables(self):

@@ -125,7 +125,7 @@ class DarkestDungeonSaveGame(BasicGameSaveGame):
                     "Meta2 has wrong number of bytes: " + str(meta2DataLength)
                 )
             meta2List: list[tuple[int, int, int]] = []
-            for x in range(numMeta2Entries):
+            for _ in range(numMeta2Entries):
                 entryHash = int.from_bytes(fp.read(4), "little")
                 offset = int.from_bytes(fp.read(4), "little")
                 fieldInfo = int.from_bytes(fp.read(4), "little")
@@ -175,7 +175,7 @@ class DarkestDungeonGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = DarkestDungeonModDataChecker()
+        self._register_feature(DarkestDungeonModDataChecker())
         return True
 
     def executables(self):

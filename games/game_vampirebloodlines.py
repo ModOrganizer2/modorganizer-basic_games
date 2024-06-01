@@ -73,10 +73,8 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = VampireModDataChecker()
-        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
-            self.savesDirectory()
-        )
+        self._register_feature(VampireModDataChecker())
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         return True
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
