@@ -21,4 +21,4 @@ jobs:
       - name: Lint
         run: |
           cd basic_games
-          poetry run poe lint-all
+          poetry run poe lint
