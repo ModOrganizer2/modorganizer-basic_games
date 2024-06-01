@@ -18,7 +18,6 @@ class Witcher2SaveGame(BasicGameSaveGame):
 
 
 class Witcher2Game(BasicGame):
-
     Name = "Witcher 2 Support Plugin"
     Author = "DefinitelyNotSade"
     Version = "1.0.0"

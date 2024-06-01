@@ -191,10 +191,8 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
             # to UNIX time and offset localtime
             self.lastsave = int(
                 (
-                    (
-                        struct.unpack("q", self.readInf(info, "date"))[0] / 10000
-                        - 11644473600000
-                    )
+                    struct.unpack("q", self.readInf(info, "date"))[0] / 10000
+                    - 11644473600000
                 )
                 - (time.localtime().tm_gmtoff * 1000)
             )

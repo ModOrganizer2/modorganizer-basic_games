@@ -7,7 +7,6 @@ from ..basic_game import BasicGame
 
 
 class THPS3Game(BasicGame):
-
     Name = "Tony Hawk's Pro Skater 3 Support Plugin"
     Author = "uwx"
     Version = "1.0.0"

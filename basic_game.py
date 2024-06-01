@@ -83,13 +83,13 @@ class BasicGameMapping(Generic[_T]):
             if self._apply_fn is not None:
                 try:
                     value = self._apply_fn(value)
-                except:  # noqa
+                except Exception as err:
                     raise ValueError(
                         "Basic game plugin from {} has an invalid {} property.".format(
                             game._fromName,  # pyright: ignore[reportPrivateUsage]
                             self._exposed_name,
                         )
-                    )
+                    ) from err
             self._default = lambda game: value  # type: ignore
         elif default is not None:
             self._default = default  # type: ignore
