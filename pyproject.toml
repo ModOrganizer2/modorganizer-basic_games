@@ -13,9 +13,10 @@ python = "^3.12"
 psutil = "^5.8.0"
 vdf = "3.4"
 lzokay = "1.1.5"
+pyqt6 = "6.7.0"
 
 [tool.poetry.group.dev.dependencies]
-mobase-stubs = {version = "2.5.1a0", allow-prereleases = true}
+mobase-stubs = { version = "^2.5.1a0", allow-prereleases = true }
 pyqt6 = "^6.7.0"
 pyright = "^1.1.365"
 ruff = "^0.2.1"
@@ -50,3 +51,4 @@ exclude = ["lib", "**/.*", "venv"]
 typeCheckingMode = "strict"
 reportMissingTypeStubs = true
 reportMissingModuleSource = false
+pythonPlatform = "Windows"
