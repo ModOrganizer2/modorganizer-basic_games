@@ -30,13 +30,13 @@ test = ["pytest"]
 
 [[package]]
 name = "mobase-stubs"
-version = "2.5.0.dev15"
+version = "2.5.1a0"
 description = "PEP561 stub files for the mobase Python API."
 optional = false
-python-versions = ">=3.11,<4.0"
+python-versions = "<4.0,>=3.12"
 files = [
-    {file = "mobase_stubs-2.5.0.dev15-py3-none-any.whl", hash = "sha256:990b04541e5e8aa8161cc84d6d2740489d6b1aad79ee21be7b684ea7c19a7c9d"},
-    {file = "mobase_stubs-2.5.0.dev15.tar.gz", hash = "sha256:eb7af4f4bbcb7af79aa4f04c3a04abd8bef6252fcd3d751bb89713c2ef65886e"},
+    {file = "mobase_stubs-2.5.1a0-py3-none-any.whl", hash = "sha256:bcaecfae038b890d82280fc518f7e44f38d22d35801a8ba7ffa480f7756d6823"},
+    {file = "mobase_stubs-2.5.1a0.tar.gz", hash = "sha256:a8dc5574336ed3b1f673288447781f705a078472cf8808e05a36f129c81c8e20"},
 ]
 
 [[package]]
@@ -247,4 +247,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "693b12334422889c985acb9087efe1aad4f6b9fcf494c134b54ed2a5ffc50ae2"
+content-hash = "6f22f6dd1030e4dad3a7aa5ebc26649d22708f34bf391a0470dcaf348ff30a6d"
