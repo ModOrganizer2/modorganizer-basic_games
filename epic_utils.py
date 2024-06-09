@@ -26,8 +26,9 @@ def find_epic_games() -> Iterable[tuple[str, Path]]:
             try:
                 with open(manifest_file_path, encoding="utf-8") as manifest_file:
                     manifest_file_data = json.load(manifest_file)
-                yield manifest_file_data["AppName"], Path(
-                    manifest_file_data["InstallLocation"]
+                yield (
+                    manifest_file_data["AppName"],
+                    Path(manifest_file_data["InstallLocation"]),
                 )
             except (json.JSONDecodeError, KeyError):
                 print(

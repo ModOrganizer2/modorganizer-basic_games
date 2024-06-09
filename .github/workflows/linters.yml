@@ -12,13 +12,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.11
+          python-version: 3.12
       - uses: abatilo/actions-poetry@v2
       - name: Install
         run: |
           cd basic_games
-          poetry install
+          poetry --no-root install
       - name: Lint
         run: |
           cd basic_games
-          poetry run poe lint-all
+          poetry run poe lint

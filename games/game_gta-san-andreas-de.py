@@ -44,9 +44,7 @@ class GTASanAndreasDefinitiveEditionGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = (
-            GTASanAndreasDefinitiveEditionModDataChecker()
-        )
+        self._register_feature(GTASanAndreasDefinitiveEditionModDataChecker())
         return True
 
     def executables(self):

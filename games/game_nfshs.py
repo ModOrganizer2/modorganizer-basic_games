@@ -7,7 +7,6 @@ from ..basic_game import BasicGame
 
 
 class NFSHSGame(BasicGame):
-
     Name = "Need for Speed: High Stakes Support Plugin"
     Author = "uwx"
     Version = "1.0.0"

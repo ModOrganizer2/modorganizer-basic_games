@@ -21,9 +21,7 @@ from ..basic_game import BasicGame
 class SubnauticaModDataChecker(BasicModDataChecker):
     use_qmods: bool = False
 
-    def __init__(
-        self, patterns: GlobPatterns = GlobPatterns(), use_qmods: bool = False
-    ):
+    def __init__(self, patterns: GlobPatterns | None = None, use_qmods: bool = False):
         super().__init__(
             GlobPatterns(
                 unfold=["BepInExPack_Subnautica"],
@@ -48,7 +46,7 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                     "CustomCraft2SML": "QMods/" if use_qmods else "BepInEx/plugins/",
                     "CustomCraft3": "QMods/" if use_qmods else "BepInEx/plugins/",
                 },
-            ).merge(patterns),
+            ).merge(patterns or GlobPatterns()),
         )
         self.use_qmods = use_qmods
 
@@ -126,8 +124,8 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._set_mod_data_checker()
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: Path(s or "", "screenshot.jpg")
+        self._register_feature(
+            BasicGameSaveGameInfo(lambda s: Path(s or "", "screenshot.jpg"))
         )
 
         organizer.onPluginSettingChanged(self._settings_change_callback)
@@ -136,13 +134,15 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
     def _set_mod_data_checker(
         self, extra_patterns: GlobPatterns | None = None, use_qmod: bool | None = None
     ):
-        self._featureMap[mobase.ModDataChecker] = SubnauticaModDataChecker(
-            patterns=(GlobPatterns() if extra_patterns is None else extra_patterns),
-            use_qmods=(
-                bool(self._organizer.pluginSetting(self.name(), "use_qmods"))
-                if use_qmod is None
-                else use_qmod
-            ),
+        self._register_feature(
+            SubnauticaModDataChecker(
+                patterns=(GlobPatterns() if extra_patterns is None else extra_patterns),
+                use_qmods=(
+                    bool(self._organizer.pluginSetting(self.name(), "use_qmods"))
+                    if use_qmod is None
+                    else use_qmod
+                ),
+            )
         )
 
     def _settings_change_callback(

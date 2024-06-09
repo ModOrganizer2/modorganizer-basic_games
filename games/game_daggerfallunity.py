@@ -38,7 +38,7 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
 class DaggerfallUnityGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = DaggerfallUnityModDataChecker()
+        self._register_feature(DaggerfallUnityModDataChecker())
         return True
 
     Name = "Daggerfall Unity Support Plugin"

@@ -191,10 +191,8 @@ class BlackAndWhite2SaveGame(BasicGameSaveGame):
             # to UNIX time and offset localtime
             self.lastsave = int(
                 (
-                    (
-                        struct.unpack("q", self.readInf(info, "date"))[0] / 10000
-                        - 11644473600000
-                    )
+                    struct.unpack("q", self.readInf(info, "date"))[0] / 10000
+                    - 11644473600000
                 )
                 - (time.localtime().tm_gmtoff * 1000)
             )
@@ -262,12 +260,11 @@ class BlackAndWhite2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         BasicGame.init(self, organizer)
-        self._featureMap[mobase.ModDataChecker] = BlackAndWhite2ModDataChecker()
-        self._featureMap[mobase.LocalSavegames] = BasicLocalSavegames(
-            self.savesDirectory()
-        )
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            get_metadata=getMetadata, max_width=400
+
+        self._register_feature(BlackAndWhite2ModDataChecker())
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(
+            BasicGameSaveGameInfo(get_metadata=getMetadata, max_width=400)
         )
         return True
 

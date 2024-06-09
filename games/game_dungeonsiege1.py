@@ -74,7 +74,7 @@ class DungeonSiegeIGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = DungeonSiegeIModDataChecker()
+        self._register_feature(DungeonSiegeIModDataChecker())
         return True
 
     def executables(self):

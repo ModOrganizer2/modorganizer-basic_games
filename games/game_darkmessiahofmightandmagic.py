@@ -43,7 +43,5 @@ class DarkMessiahOfMightAndMagicGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            self._read_save_tga
-        )
+        self._register_feature(BasicGameSaveGameInfo(self._read_save_tga))
         return True

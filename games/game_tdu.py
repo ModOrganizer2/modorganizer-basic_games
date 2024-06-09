@@ -7,7 +7,6 @@ from ..basic_game import BasicGame
 
 
 class TDUGame(BasicGame):
-
     Name = "Test Drive Unlimited Support Plugin"
     Author = "uwx"
     Version = "1.0.0"

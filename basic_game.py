@@ -83,13 +83,13 @@ class BasicGameMapping(Generic[_T]):
             if self._apply_fn is not None:
                 try:
                     value = self._apply_fn(value)
-                except:  # noqa
+                except Exception as err:
                     raise ValueError(
                         "Basic game plugin from {} has an invalid {} property.".format(
                             game._fromName,  # pyright: ignore[reportPrivateUsage]
                             self._exposed_name,
                         )
-                    )
+                    ) from err
             self._default = lambda game: value  # type: ignore
         elif default is not None:
             self._default = default  # type: ignore
@@ -360,19 +360,6 @@ class BasicGameMappings:
         )
 
 
-_GameFeature = (
-    mobase.BSAInvalidation
-    | mobase.DataArchives
-    | mobase.GamePlugins
-    | mobase.LocalSavegames
-    | mobase.ModDataChecker
-    | mobase.ModDataContent
-    | mobase.SaveGameInfo
-    | mobase.ScriptExtender
-    | mobase.UnmanagedMods
-)
-
-
 class BasicGame(mobase.IPluginGame):
     """This class implements some methods from mobase.IPluginGame
     to make it easier to create game plugins without having to implement
@@ -408,9 +395,6 @@ class BasicGame(mobase.IPluginGame):
     # Path to the game, as set by MO2:
     _gamePath: str
 
-    # The feature map:
-    _featureMap: dict[type[_GameFeature], _GameFeature]
-
     def __init__(self):
         super(BasicGame, self).__init__()
 
@@ -418,9 +402,11 @@ class BasicGame(mobase.IPluginGame):
             self._fromName = self.__class__.__name__
 
         self._gamePath = ""
-        self._featureMap = {}
 
         self._mappings: BasicGameMappings = BasicGameMappings(self)
+
+    def _register_feature(self, feature: mobase.GameFeature) -> bool:
+        return self._organizer.gameFeatures().registerFeature(self, feature, 0, True)
 
     # Specific to BasicGame:
     def is_steam(self) -> bool:
@@ -442,7 +428,9 @@ class BasicGame(mobase.IPluginGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         self._organizer = organizer
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo()
+
+        self._register_feature(BasicGameSaveGameInfo())
+
         if self._mappings.originWatcherExecutables.get():
             from .origin_utils import OriginWatcher
 
@@ -655,6 +643,3 @@ class BasicGame(mobase.IPluginGame):
 
     def savesDirectory(self) -> QDir:
         return self._mappings.savesDirectory.get()
-
-    def _featureList(self):
-        return self._featureMap

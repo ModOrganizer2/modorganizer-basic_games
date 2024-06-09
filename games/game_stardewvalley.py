@@ -42,7 +42,7 @@ class StardewValleyGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = StardewValleyModDataChecker()
+        self._register_feature(StardewValleyModDataChecker())
         return True
 
     def executables(self):

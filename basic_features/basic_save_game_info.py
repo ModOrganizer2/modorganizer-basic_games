@@ -80,7 +80,10 @@ class BasicGameSaveGameInfoWidget(mobase.ISaveGameInfoWidget):
         """
         super().__init__(parent)
 
-        self._get_preview = get_preview or (lambda p: None)
+        def _no_preview(p: Path) -> None:
+            return None
+
+        self._get_preview = get_preview or _no_preview
         self._get_metadata = get_metadata or get_filedate_metadata
         self._max_width = max_width or 320
 

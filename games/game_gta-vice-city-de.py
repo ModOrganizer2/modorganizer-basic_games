@@ -44,9 +44,7 @@ class GTAViceCityDefinitiveEditionGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = (
-            GTAViceCitysDefinitiveEditionModDataChecker()
-        )
+        self._register_feature(GTAViceCitysDefinitiveEditionModDataChecker())
         return True
 
     def executables(self):

@@ -160,11 +160,11 @@ class BasicModDataChecker(mobase.ModDataChecker):
     _regex_patterns: RegexPatterns
     """The regex patterns derived from the file (glob) patterns."""
 
-    def __init__(self, file_patterns: GlobPatterns = GlobPatterns()):
+    def __init__(self, file_patterns: GlobPatterns | None = None):
         super().__init__()
 
-        self._file_patterns = file_patterns
-        self._regex_patterns = RegexPatterns(file_patterns)
+        self._file_patterns = file_patterns or GlobPatterns()
+        self._regex_patterns = RegexPatterns(self._file_patterns)
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree

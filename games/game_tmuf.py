@@ -9,7 +9,6 @@ from ..basic_game import BasicGame
 
 
 class TmufGame(BasicGame):
-
     Name = "Trackmania United Forever Support Plugin"
     Author = "uwx"
     Version = "1.0.0"

@@ -43,9 +43,11 @@ class KerbalSpaceProgramGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: str(
-                Path(s).parent.joinpath("banners").joinpath(f"{Path(s).stem}.png")
+        self._register_feature(
+            BasicGameSaveGameInfo(
+                lambda s: str(
+                    Path(s).parent.joinpath("banners").joinpath(f"{Path(s).stem}.png")
+                )
             )
         )
         return True

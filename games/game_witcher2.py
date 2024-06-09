@@ -18,7 +18,6 @@ class Witcher2SaveGame(BasicGameSaveGame):
 
 
 class Witcher2Game(BasicGame):
-
     Name = "Witcher 2 Support Plugin"
     Author = "DefinitelyNotSade"
     Version = "1.0.0"
@@ -38,9 +37,11 @@ class Witcher2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: Path(str(s.parent) + "\\" + s.stem + "_640x360").with_suffix(
-                ".bmp"
+        self._register_feature(
+            BasicGameSaveGameInfo(
+                lambda s: Path(str(s.parent) + "\\" + s.stem + "_640x360").with_suffix(
+                    ".bmp"
+                )
             )
         )
         return True
