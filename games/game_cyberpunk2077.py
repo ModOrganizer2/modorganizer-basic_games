@@ -289,7 +289,7 @@ class PluginDefaultSettings:
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.2.3"
+    Version = "2.3"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
