@@ -289,7 +289,7 @@ class PluginDefaultSettings:
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.2.3"
+    Version = "2.3.1"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -342,7 +342,10 @@ class Cyberpunk2077Game(BasicGame):
             {
                 "usvfsmode": False,
                 "linkmode": False,
-                "linkonlymode": True,  # RootBuilder v4.5
+                # Available with RootBuilder v4.5+
+                # Currently bugged / incompatible with MO 2.5.2 (Python 3.12)
+                # https://github.com/Kezyma/ModOrganizer-Plugins/issues/36
+                "linkonlymode": False,
                 "backup": True,
                 "cache": True,
                 "autobuild": True,
