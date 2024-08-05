@@ -20,7 +20,7 @@ def find_games() -> Dict[str, Path]:
 
     local_app_data_path = os.path.expandvars("%LocalAppData%")
     ea_desktop_settings_path = Path(local_app_data_path).joinpath(
-        "Electronic Arts", "EA Desktop"
+        "Electronic Arts", "EA Desktop", "EA"
     )
 
     if not ea_desktop_settings_path.exists():
