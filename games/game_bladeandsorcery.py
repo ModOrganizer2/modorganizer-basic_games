@@ -18,13 +18,15 @@ class BaSSaveGame(BasicGameSaveGame):
         super().__init__(filepath)
         with open(self._filepath, "rb") as save:
             save_data = json.load(save)
-        self._gameMode: str = save_data["gameModeId"]
+        self._gameMode = save_data["mode"]["saveData"]["gameModeId"]
         self._gender = (
-            "Male" if save_data["creatureId"] == "PlayerDefaultMale" else "Female"
+            "Male"
+            if save_data["customization"]["creatureId"] == "PlayerDefaultMale"
+            else "Female"
         )
-        self._ethnicity: str = save_data["ethnicGroupId"]
+        self._ethnicity = save_data["customization"]["ethnicGroupId"]
         h, m, s = save_data["playTime"].split(":")
-        self._elapsed = (int(h), int(m), float(s))
+        self._elapsed = (float(h), int(m), float(s))
         f_stat = self._filepath.stat()
         self._created = f_stat.st_birthtime
         self._modified = f_stat.st_mtime
@@ -65,8 +67,8 @@ def bas_parse_metadata(p: Path, save: mobase.ISaveGame) -> Mapping[str, str]:
 
 class BaSGame(BasicGame):
     Name = "Blade & Sorcery Plugin"
-    Author = "R3z Shark & Silarn"
-    Version = "0.5.0"
+    Author = "R3z Shark & Silarn & Jonny_Bro"
+    Version = "0.5.1"
 
     GameName = "Blade & Sorcery"
     GameShortName = "bladeandsorcery"
