@@ -32,6 +32,13 @@ def replace_variables(value: str, game: BasicGame) -> str:
                 QStandardPaths.StandardLocation.HomeLocation
             ),
         )
+    if value.find("%LOCALAPPDATA%") != -1:
+        value = value.replace(
+            "%LOCALAPPDATA%",
+            QStandardPaths.writableLocation(
+                QStandardPaths.StandardLocation.GenericConfigLocation
+            )
+        )
     if value.find("%GAME_DOCUMENTS%") != -1:
         value = value.replace(
             "%GAME_DOCUMENTS%", game.documentsDirectory().absolutePath()
