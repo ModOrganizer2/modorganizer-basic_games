@@ -77,7 +77,7 @@ class BG3Game(BasicGame):
         ext = self._mappings.savegameExtension.get()
         it = QDirIterator(folder.absolutePath(), QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot,
                           QDirIterator.IteratorFlag.Subdirectories)
-        saves: list[BG3SaveGame] = []
+        saves: list[mobase.ISaveGame] = []
         while it.hasNext():
             save_directory = QDir(it.next())
             save_directory.setNameFilters([f"*.{ext}"])
