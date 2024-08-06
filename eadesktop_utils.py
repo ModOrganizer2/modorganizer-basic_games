@@ -37,7 +37,10 @@ def find_games() -> Dict[str, Path]:
         ini_content = "[mod_organizer]\n" + f.read()
 
     config = configparser.ConfigParser()
-    config.read_string(ini_content)
+    try:
+        config.read_string(ini_content)
+    except ValueError:
+        return
 
     try:
         install_path = Path(config.get("mod_organizer", "user.downloadinplacedir"))
