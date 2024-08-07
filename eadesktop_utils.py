@@ -2,6 +2,7 @@
 
 import configparser
 import os
+import sys
 import xml.etree.ElementTree as et
 from configparser import NoOptionError
 from pathlib import Path
@@ -39,8 +40,12 @@ def find_games() -> Dict[str, Path]:
     config = configparser.ConfigParser()
     try:
         config.read_string(ini_content)
-    except ValueError:
-        return
+    except configparser.ParsingError:
+        print(
+            "Unable to parse EA user file",
+            ea_desktop_settings_path,
+            file=sys.stderr,
+        )
 
     try:
         install_path = Path(config.get("mod_organizer", "user.downloadinplacedir"))
