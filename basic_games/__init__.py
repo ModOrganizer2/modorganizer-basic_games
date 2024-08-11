@@ -6,11 +6,12 @@ import os
 import site
 import sys
 import typing
+from pathlib import Path
 
 from .basic_game import BasicGame
 from .basic_game_ini import BasicIniGame
 
-site.addsitedir(os.path.join(os.path.dirname(__file__), "lib"))
+site.addsitedir(Path(__file__).parent.parent.joinpath("lib").as_posix())
 
 
 BasicGame.setup()

@@ -1,5 +1,10 @@
 {
-  "dependencies": ["mo2-cmake"],
+  "features": {
+    "standalone": {
+      "description": "Build Standalone.",
+      "dependencies": ["mo2-cmake"]
+    }
+  },
   "vcpkg-configuration": {
     "default-registry": {
       "kind": "git",

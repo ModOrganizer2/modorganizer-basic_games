@@ -1,0 +1,56 @@
+{
+  "id": "mo2-basic-games",
+  "name": "Basic Games Support",
+  "version": "1.0.0",
+  "description": "Basic ModOrganizer2 support for many games.",
+  "icon": "icon.jpg",
+  "author": {
+    "name": "Mod Organizer 2",
+    "homepage": "https://www.modorganizer.org/"
+  },
+  "contributors": [
+    "AkiraJkr",
+    "Al",
+    "AnyOldName3",
+    "bingmapsts",
+    "ddbb07",
+    "dekart811",
+    "Deorder",
+    "erri120",
+    "EzioTheDeadPoet",
+    "FalseIlyu",
+    "Holt59",
+    "Homer Simpleton",
+    "isanae",
+    "Jeremy Rimpo",
+    "Jeroen Ruigrok van der Werven",
+    "John L C",
+    "kane",
+    "LaughingHyena279",
+    "LostDragonist",
+    "Martin Rudat",
+    "ModZero",
+    "Nigel McKernan",
+    "Patchier",
+    "Qudix",
+    "Rodolfo Figueroa Soriano",
+    "Ryan Young",
+    "Silencer711",
+    "stpauljim",
+    "The Conceptionist",
+    "Thomas Winwood",
+    "tottoko99",
+    "Trevor Paley",
+    "uwx",
+    "Zash"
+  ],
+  "type": "game",
+  "content": {
+    "plugins": {
+      "basic_games": "basic_games/__init__.py"
+    },
+    "translations": {
+      "autodetect": "translations"
+    }
+  }
+}

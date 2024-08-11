@@ -4,5 +4,7 @@ project(basic_games LANGUAGES NONE)
 
 find_package(mo2-cmake CONFIG REQUIRED)
 
+mo2_configure_extension()
+
 add_custom_target(basic_games ALL)
 mo2_configure_python(basic_games MODULE TRANSLATIONS OFF)

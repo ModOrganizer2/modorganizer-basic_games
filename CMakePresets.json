@@ -5,12 +5,16 @@
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "generator": "Visual Studio 17 2022",
       "name": "vs2022-windows"
-    }
-  ],
-  "buildPresets": [
+    },
     {
-      "name": "vs2022-windows",
-      "configurePreset": "vs2022-windows"
+      "cacheVariables": {
+        "VCPKG_MANIFEST_FEATURES": {
+          "type": "STRING",
+          "value": "standalone"
+        }
+      },
+      "inherits": "vs2022-windows",
+      "name": "vs2022-windows-standalone"
     }
   ],
   "version": 4
