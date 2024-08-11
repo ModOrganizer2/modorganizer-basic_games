@@ -7,18 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: "basic_games"
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.12
       - uses: abatilo/actions-poetry@v2
       - name: Install
-        run: |
-          cd basic_games
-          poetry --no-root install
+        run: poetry --no-root install
       - name: Lint
-        run: |
-          cd basic_games
-          poetry run poe lint
+        run: poetry run poe lint
