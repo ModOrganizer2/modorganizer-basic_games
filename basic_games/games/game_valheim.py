@@ -385,11 +385,15 @@ class ValheimGame(BasicGame):
         settings.extend(
             [
                 mobase.PluginSetting(
-                    "sync_overwrite", "Sync overwrite with mods", True
+                    "sync_overwrite",
+                    self.tr("Synchronize overwrite"),
+                    self.tr("Synchronize overwrite with mods"),
+                    True,
                 ),
                 mobase.PluginSetting(
                     "search_overwrite_file_content",
-                    "Search content of files in overwrite for matching mod",
+                    self.tr("Search overwrite file content"),
+                    self.tr("Search content of files in overwrite for matching mod"),
                     True,
                 ),
             ]

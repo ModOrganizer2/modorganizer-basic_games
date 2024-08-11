@@ -159,7 +159,8 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
         return [
             mobase.PluginSetting(
                 "use_qmods",
-                (
+                self.tr("Use QMods"),
+                self.tr(
                     "Install */.dll mods in legacy QMods folder,"
                     " instead of BepInEx/plugins (default)."
                 ),

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Callable, Generic, TypeVar
 
 import mobase
-from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt6.QtCore import QCoreApplication, QDir, QFileInfo, QStandardPaths
 from PyQt6.QtGui import QIcon
 
 from .basic_features.basic_save_game_info import (
@@ -253,7 +253,7 @@ class BasicGameMappings:
             game,
             "Description",
             "description",
-            lambda g: "Adds basic support for game {}.".format(g.gameName()),
+            lambda g: game.tr("Adds basic support for game {}.").format(g.gameName()),
         )
         self.gameName = BasicGameMapping(game, "GameName", "gameName")
         self.gameShortName = BasicGameMapping(game, "GameShortName", "gameShortName")
@@ -423,6 +423,10 @@ class BasicGame(mobase.IPluginGame):
 
     def is_eadesktop(self) -> bool:
         return self._mappings.eaDesktopContentId.has_value()
+
+    # Qt translation
+    def tr(self, value: str) -> str:
+        return QCoreApplication.translate("BasicGame", value)
 
     # IPlugin interface:
 
