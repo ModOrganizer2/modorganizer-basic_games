@@ -72,7 +72,7 @@ class ArkhamCityGame(BasicGame):
     
     def executables(self):
         return [
-			mobase.ExecutableInfo(
+            mobase.ExecutableInfo(
                 "Batman: Arkham City", QFileInfo(self.gameDirectory(), "Binaries/Win32/BatmanAC.exe")
             ),
             mobase.ExecutableInfo(
