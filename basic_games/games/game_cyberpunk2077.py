@@ -393,9 +393,9 @@ class Cyberpunk2077Game(BasicGame):
             for path in Path(folder.absolutePath()).glob(f"**/*.{ext}")
         ]
 
-    def settings(self) -> list[mobase.PluginSetting]:
+    def settings(self) -> list[mobase.Setting]:
         return [
-            mobase.PluginSetting(
+            mobase.Setting(
                 "skipStartScreen",
                 self.tr("Skip start screen"),
                 self.tr(
@@ -404,7 +404,7 @@ class Cyberpunk2077Game(BasicGame):
                 ),
                 False,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "enforce_archive_load_order",
                 self.tr("Enforce archive load order"),
                 self.tr(
@@ -413,7 +413,7 @@ class Cyberpunk2077Game(BasicGame):
                 ),
                 False,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "reverse_archive_load_order",
                 self.tr("Reverse archive load order"),
                 self.tr(
@@ -423,13 +423,13 @@ class Cyberpunk2077Game(BasicGame):
                 ),
                 False,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "enforce_redmod_load_order",
                 self.tr("Enforce RedMod load order"),
                 self.tr("Enforce the current load order on redmod deployment"),
                 True,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "reverse_redmod_load_order",
                 self.tr("Reverse RedMod load order"),
                 self.tr(
@@ -438,13 +438,13 @@ class Cyberpunk2077Game(BasicGame):
                 ),
                 False,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "auto_deploy_redmod",
                 self.tr("Auto deploy RedMod"),
                 self.tr("Deploy redmod before game launch if necessary"),
                 True,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "clear_cache_after_game_update",
                 self.tr("Clear cache after game update"),
                 self.tr(
@@ -453,7 +453,7 @@ class Cyberpunk2077Game(BasicGame):
                 ),
                 True,
             ),
-            mobase.PluginSetting(
+            mobase.Setting(
                 "configure_RootBuilder",
                 self.tr("Configure RootBuilder"),
                 self.tr(

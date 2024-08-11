@@ -380,17 +380,17 @@ class ValheimGame(BasicGame):
         save_games.extend(ValheimWorldSaveGame(f) for f in path.glob("worlds/*.fwl"))
         return save_games
 
-    def settings(self) -> list[mobase.PluginSetting]:
+    def settings(self) -> list[mobase.Setting]:
         settings = super().settings()
         settings.extend(
             [
-                mobase.PluginSetting(
+                mobase.Setting(
                     "sync_overwrite",
                     self.tr("Synchronize overwrite"),
                     self.tr("Synchronize overwrite with mods"),
                     True,
                 ),
-                mobase.PluginSetting(
+                mobase.Setting(
                     "search_overwrite_file_content",
                     self.tr("Search overwrite file content"),
                     self.tr("Search content of files in overwrite for matching mod"),

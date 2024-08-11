@@ -472,7 +472,7 @@ class BasicGame(mobase.IPluginGame):
         # Note: self is self._organizer.managedGame() does not work:
         return self.name() == self._organizer.managedGame().name()
 
-    def settings(self) -> list[mobase.PluginSetting]:
+    def settings(self) -> list[mobase.Setting]:
         return []
 
     # IPluginGame interface:

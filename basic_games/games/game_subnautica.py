@@ -155,9 +155,9 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
         if plugin_name == self.name() and setting == "use_qmods":
             self._set_mod_data_checker(use_qmod=bool(new))
 
-    def settings(self) -> list[mobase.PluginSetting]:
+    def settings(self) -> list[mobase.Setting]:
         return [
-            mobase.PluginSetting(
+            mobase.Setting(
                 "use_qmods",
                 self.tr("Use QMods"),
                 self.tr(
