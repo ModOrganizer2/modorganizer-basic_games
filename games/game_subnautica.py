@@ -53,6 +53,10 @@ class SubnauticaModDataChecker(BasicModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
+        # fix: single root folders get traversed by Simple Installer
+        parent = filetree.parent()
+        if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
+            return self.FIXABLE
         check_return = super().dataLooksValid(filetree)
         # A single unknown folder with a dll file in is to be moved to BepInEx/plugins/
         if (
