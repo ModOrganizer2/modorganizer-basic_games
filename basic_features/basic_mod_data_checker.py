@@ -171,6 +171,11 @@ class BasicModDataChecker(mobase.ModDataChecker):
     ) -> mobase.ModDataChecker.CheckReturn:
         status = mobase.ModDataChecker.INVALID
 
+        # fix: single root folders get traversed by Simple Installer
+        parent = filetree.parent()
+        if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
+            return self.FIXABLE
+
         rp = self._regex_patterns
         for entry in filetree:
             name = entry.name().casefold()
