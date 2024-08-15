@@ -1,7 +1,8 @@
 import mobase
 from PyQt6.QtCore import QDir, QFileInfo
-from ..basic_game import BasicGame
+
 from ..basic_features import BasicLocalSavegames
+from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
 
 
@@ -49,7 +50,7 @@ class ArkhamCityGame(BasicGame):
 
     # This will only detect saves from the earliest-created Steam profile on the user's PC.
     def savesDirectory(self) -> QDir:
-        docSaves =  QDir(self.documentsDirectory().cleanPath("../../SaveData")).absolutePath()
+        docSaves =  QDir(self.documentsDirectory().cleanPath("../../SaveData"))
         if self.is_steam():
             if (steamDir := find_steam_path()) is None:
                 return docSaves
