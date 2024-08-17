@@ -29,8 +29,8 @@ class ArkhamCityModDataChecker(mobase.ModDataChecker):
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.INVALID
 
-class ArkhamCityGame(BasicGame):
 
+class ArkhamCityGame(BasicGame):
     Name = "Batman: Arkham City Plugin"
     Author = "Paynamia"
     Version = "0.5.3"
@@ -44,13 +44,15 @@ class ArkhamCityGame(BasicGame):
     GameBinary = "Binaries/Win32/BatmanAC.exe"
     GameLauncher = "Binaries/Win32/BmLauncher.exe"
     GameDataPath = "BmGame"
-    GameDocumentsDirectory = "%DOCUMENTS%/WB Games/Batman Arkham City GOTY/BmGame/Config"
+    GameDocumentsDirectory = (
+        "%DOCUMENTS%/WB Games/Batman Arkham City GOTY/BmGame/Config"
+    )
     GameIniFiles = ["UserEngine.ini", "UserGame.ini", "UserInput.ini"]
     GameSaveExtension = "sgd"
 
     # This will only detect saves from the earliest-created Steam profile on the user's PC.
     def savesDirectory(self) -> QDir:
-        docSaves =  QDir(self.documentsDirectory().cleanPath("../../SaveData"))
+        docSaves = QDir(self.documentsDirectory().cleanPath("../../SaveData"))
         if self.is_steam():
             if (steamDir := find_steam_path()) is None:
                 return docSaves
@@ -70,13 +72,15 @@ class ArkhamCityGame(BasicGame):
         self._register_feature(ArkhamCityModDataChecker())
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         return True
-    
+
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Batman: Arkham City", QFileInfo(self.gameDirectory(), "Binaries/Win32/BatmanAC.exe")
+                "Batman: Arkham City",
+                QFileInfo(self.gameDirectory(), "Binaries/Win32/BatmanAC.exe"),
             ),
             mobase.ExecutableInfo(
-                "Arkham City Launcher", QFileInfo(self.gameDirectory(), "Binaries/Win32/BmLauncher.exe")
-            )
+                "Arkham City Launcher",
+                QFileInfo(self.gameDirectory(), "Binaries/Win32/BmLauncher.exe"),
+            ),
         ]
