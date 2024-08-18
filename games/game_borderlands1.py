@@ -1,9 +1,10 @@
 import re
+
 import mobase
 from mobase import FileTreeEntry, IFileTree, ModDataChecker
+
 from ..basic_features import BasicModDataChecker
 from ..basic_game import BasicGame
-
 
 _extention_pattern = re.compile("\\.(upk|umap|u|int|dll|exe)$", re.I)
 _mapslot_pattern = re.compile("^Mapslot\\d\\d?\\.umap$", re.I)
@@ -57,9 +58,7 @@ def _fix_mapslots(filetree: IFileTree, roottree: IFileTree) -> None:
 
 
 class Borderlands1ModDataChecker(BasicModDataChecker):
-    def dataLooksValid(
-        self, filetree: IFileTree
-    ) -> ModDataChecker.CheckReturn:
+    def dataLooksValid(self, filetree: IFileTree) -> ModDataChecker.CheckReturn:
         parent = filetree.parent()
         if parent:
             return self.dataLooksValid(parent)
