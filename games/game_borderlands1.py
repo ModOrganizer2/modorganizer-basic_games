@@ -42,6 +42,18 @@ def _check_filetree(
     return ModDataChecker.VALID
 
 
+def _get_nest(filetree: IFileTree) -> IFileTree | None:
+    children = tuple(filetree)
+    if (
+        len(children) == 1
+        and children[0].isDir()
+        and isinstance(children[0], IFileTree)
+        and _mod_dirs.get(children[0].name().casefold()) is None
+    ):
+        return children[0]
+    return None
+
+
 def _get_slotstree(roottree: IFileTree) -> IFileTree:
     slotstree: IFileTree | None = roottree.find(_slots_path)  # type: ignore
     if slotstree is None:
@@ -60,12 +72,18 @@ def _fix_mapslots(filetree: IFileTree, roottree: IFileTree) -> None:
 class Borderlands1ModDataChecker(BasicModDataChecker):
     def dataLooksValid(self, filetree: IFileTree) -> ModDataChecker.CheckReturn:
         parent = filetree.parent()
-        if parent:
+        if parent is not None:
             return self.dataLooksValid(parent)
 
-        status = _check_filetree(filetree, False)
-        if status is ModDataChecker.INVALID:
-            return status
+        status = ModDataChecker.VALID
+
+        nest = _get_nest(filetree)
+        if nest is not None:
+            status = ModDataChecker.FIXABLE
+            filetree = nest
+
+        if _check_filetree(filetree, False) is ModDataChecker.INVALID:
+            return ModDataChecker.INVALID
 
         slotstree = filetree.find(_slots_path)
         if slotstree is not None and not slotstree.isDir():
@@ -89,6 +107,17 @@ class Borderlands1ModDataChecker(BasicModDataChecker):
         return status
 
     def fix(self, filetree: IFileTree) -> IFileTree:
+        nest = _get_nest(filetree)
+        if nest is not None:
+            conflict: FileTreeEntry | None = None
+            for child in tuple(nest):
+                if not child.moveTo(filetree):
+                    conflict = child
+                    conflict.detach()
+            filetree.remove(nest)
+            if conflict is not None:
+                conflict.moveTo(filetree)
+
         for child in tuple(filetree):
             if child.isDir() and isinstance(child, IFileTree):
                 destination = _mod_dirs.get(child.name().casefold())
