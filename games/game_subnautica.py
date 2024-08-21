@@ -32,6 +32,9 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                     "run_bepinex.sh",
                     "winhttp.dll",
                     "QMods",
+                    ".doorstop_version",  # Added in Tobey's BepInEx Pack for Subnautica v5.4.23
+                    "changelog.txt",
+                    "libdoorstop.dylib",
                 ],
                 delete=[
                     "*.txt",
