@@ -3,10 +3,10 @@ import json
 import re
 import shutil
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, TypeVar
+from typing import Literal, TypeVar
 
 import mobase
 from PyQt6.QtCore import QDateTime, QDir, qCritical, qInfo, qWarning
@@ -17,7 +17,6 @@ from ..basic_features.basic_save_game_info import (
     BasicGameSaveGameInfo,
     format_date,
 )
-from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
 
 
@@ -36,102 +35,11 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     "engine",
                     "r6",
                     "mods",  # RedMod
-                    "red4ext",  # red4ext/RED4ext.dll is moved to root in .fix()
+                    "red4ext",
                     "bin",  # CET etc. gets handled below
-                    "root",  # RootBuilder: hardlink / copy to game root
                 ],
             )
         )
-
-    _extra_files_to_move = {
-        # Red4ext: only .dll files
-        "red4ext/RED4ext.dll": "root/red4ext/",
-        "bin/x64/winmm.dll": "root/bin/x64/",
-        # CET: all files, folder gets handled in .fix()
-        "bin/x64/version.dll": "root/bin/x64/",
-        "bin/x64/global.ini": "root/bin/x64/",
-        "bin/x64/plugins/cyber_engine_tweaks.asi": "root/bin/x64/plugins/",
-    }
-    _cet_path = "bin/x64/plugins/cyber_engine_tweaks/"
-
-    def dataLooksValid(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
-        # fix: single root folders get traversed by Simple Installer
-        parent = filetree.parent()
-        if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
-            return self.FIXABLE
-        status = mobase.ModDataChecker.INVALID
-        # Check extra fixes
-        if any(filetree.exists(p) for p in self._extra_files_to_move):
-            return mobase.ModDataChecker.FIXABLE
-        rp = self._regex_patterns
-        for entry in filetree:
-            name = entry.name().casefold()
-            if rp.move_match(name) is not None:
-                status = mobase.ModDataChecker.FIXABLE
-            elif rp.valid.match(name):
-                if status is mobase.ModDataChecker.INVALID:
-                    status = mobase.ModDataChecker.VALID
-            elif self._valid_redmod(entry):
-                # Archive with REDmod folders, not in mods/
-                status = mobase.ModDataChecker.FIXABLE
-            # Accept any other entry
-        return status
-
-    def _valid_redmod(self, filetree: mobase.IFileTree | mobase.FileTreeEntry) -> bool:
-        return isinstance(filetree, mobase.IFileTree) and bool(
-            filetree and filetree.find("info.json")
-        )
-
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        for source, target in self._extra_files_to_move.items():
-            if file := filetree.find(source):
-                parent = file.parent()
-                filetree.move(file, target)
-                clear_empty_folder(parent)
-        if filetree := super().fix(filetree):
-            filetree = self._fix_cet_framework(filetree)
-            # REDmod
-            for entry in list(filetree):
-                if not self._regex_patterns.valid.match(
-                    entry.name().casefold()
-                ) and self._valid_redmod(entry):
-                    filetree.move(entry, "mods/")
-        return filetree
-
-    def _fix_cet_framework(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        """Move CET framework to `root/`, except for `mods`.
-        Only CET >= v1.27.0 (Patch 2.01) works with USVFS.
-
-        See: https://github.com/maximegmd/CyberEngineTweaks/pull/877
-        """
-        if cet_folder := filetree.find(
-            self._cet_path, mobase.FileTreeEntry.FileTypes.DIRECTORY
-        ):
-            assert is_directory(cet_folder)
-            root_cet_path = f"root/{self._cet_path}"
-            if not cet_folder.exists("mods"):
-                parent = cet_folder.parent()
-                filetree.move(cet_folder, root_cet_path.rstrip("/\\"))
-            else:
-                parent = cet_folder
-                for entry in list(cet_folder):
-                    if entry.name() != "mods":
-                        filetree.move(entry, root_cet_path)
-            clear_empty_folder(parent)
-        return filetree
-
-
-def clear_empty_folder(filetree: mobase.IFileTree | None):
-    if filetree is None:
-        return
-    while not filetree:
-        parent = filetree.parent()
-        filetree.detach()
-        if parent is None:
-            break
-        filetree = parent
 
 
 def time_from_seconds(s: int | float) -> str:
@@ -269,27 +177,10 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
                 yield mods_path / mod
 
 
-@dataclass
-class PluginDefaultSettings:
-    organizer: mobase.IOrganizer
-    plugin_name: str
-    settings: Mapping[str, mobase.MoVariant]
-
-    def is_plugin_enabled(self) -> bool:
-        return self.organizer.isPluginEnabled(self.plugin_name)
-
-    def apply(self) -> bool:
-        if not self.is_plugin_enabled():
-            return False
-        for setting, value in self.settings.items():
-            self.organizer.setPluginSetting(self.plugin_name, setting, value)
-        return True
-
-
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.3.1"
+    Version = "3.0.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -305,6 +196,9 @@ class Cyberpunk2077Game(BasicGame):
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
         "Game:-Cyberpunk-2077"
     )
+
+    # CET and RED4ext, relative to Cyberpunk2077.exe
+    _forced_libraries = ["version.dll", "winmm.dll"]
 
     _redmod_binary = Path("tools/redmod/bin/redMod.exe")
     _redmod_log = Path("tools/redmod/bin/REDmodLog.txt")
@@ -336,37 +230,7 @@ class Cyberpunk2077Game(BasicGame):
                 reversed_priority=bool(self._get_setting("reverse_redmod_load_order")),
             ),
         )
-        self._rootbuilder_settings = PluginDefaultSettings(
-            organizer,
-            "RootBuilder",
-            {
-                "usvfsmode": False,
-                "linkmode": False,
-                # Available with RootBuilder v4.5+
-                # Currently bugged / incompatible with MO 2.5.2 (Python 3.12)
-                # https://github.com/Kezyma/ModOrganizer-Plugins/issues/36
-                "linkonlymode": False,
-                "backup": True,
-                "cache": True,
-                "autobuild": True,
-                "redirect": False,
-                "installer": False,
-                "exclusions": "archive,setup_redlauncher.exe,tools",
-                "linkextensions": "dll,exe",
-            },
-        )
-
-        def apply_rootbuilder_settings_once(*args: Any):
-            if not self.isActive() or not self._get_setting("configure_RootBuilder"):
-                return
-            if self._rootbuilder_settings.apply():
-                qInfo(f"RootBuilder configured for {self.gameName()}")
-                self._set_setting("configure_RootBuilder", False)
-
-        organizer.onUserInterfaceInitialized(apply_rootbuilder_settings_once)
-        organizer.onPluginEnabled("RootBuilder", apply_rootbuilder_settings_once)
         organizer.onAboutToRun(self._onAboutToRun)
-
         organizer.onPluginSettingChanged(self._on_settings_changed)
         return True
 
@@ -446,11 +310,6 @@ class Cyberpunk2077Game(BasicGame):
                 ),
                 True,
             ),
-            mobase.PluginSetting(
-                "configure_RootBuilder",
-                "Configures RootBuilder for Cyberpunk if installed and enabled",
-                True,
-            ),
         ]
 
     def _get_setting(self, key: str) -> mobase.MoVariant:
@@ -487,6 +346,13 @@ class Cyberpunk2077Game(BasicGame):
                 "REDprelauncher",
                 game_dir.absoluteFilePath(self.getLauncherName()),
             ).withArgument(f"{skip_start_screen}"),
+        ]
+
+    def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
+        exe = Path(self.binaryName()).name
+        return [
+            mobase.ExecutableForcedLoadSetting(exe, lib).withEnabled(True)
+            for lib in self._forced_libraries
         ]
 
     def _get_redmod_binary(self) -> Path:
