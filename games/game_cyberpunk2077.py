@@ -327,7 +327,7 @@ class Cyberpunk2077Game(BasicGame):
             organizer,
             archive=ModListFile(
                 Path("archive/pc/mod/modlist.txt"),
-                "archive/pc/mod/*",
+                "archive/pc/mod/*.archive",
                 reversed_priority=bool(self._get_setting("reverse_archive_load_order")),
             ),
             redmod=ModListFile(
