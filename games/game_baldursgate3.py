@@ -39,7 +39,7 @@ class BG3GamePlugin(mobase.GamePlugins, ABC):
         self._organizer = organizer
 
 
-class BG3Game(BasicGame):
+class BG3Game(BasicGame, mobase.IPluginFileMapper, mobase.IPluginTool):
     Name = "Baldur's Gate 3 Support Plugin"
     Author = "MO2 Team"
 
@@ -84,3 +84,6 @@ class BG3Game(BasicGame):
             save_file = Path(save_directory.absolutePath()) / save_directory.entryList()[0]
             saves.append(BG3SaveGame(save_file))
         return saves
+
+    def mappings(self) -> list[mobase.Mapping]:
+        return []
