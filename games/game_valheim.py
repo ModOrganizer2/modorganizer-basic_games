@@ -289,7 +289,7 @@ class ValheimWorldSaveGame(ValheimSaveGame):
 class ValheimGame(BasicGame):
     Name = "Valheim Support Plugin"
     Author = "Zash"
-    Version = "1.2.1"
+    Version = "1.2.2"
 
     GameName = "Valheim"
     GameShortName = "valheim"
@@ -348,6 +348,7 @@ class ValheimGame(BasicGame):
                         "Jotunn": "BepInEx/plugins/",
                         "*.dll": "BepInEx/plugins/",
                         "*.xml": "BepInEx/plugins/",
+                        "Translations": "BepInEx/plugins/",
                         "config": "BepInEx/",
                         "*.cfg": "BepInEx/config/",
                         #
