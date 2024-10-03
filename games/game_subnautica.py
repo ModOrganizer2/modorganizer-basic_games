@@ -32,6 +32,9 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                     "run_bepinex.sh",
                     "winhttp.dll",
                     "QMods",
+                    ".doorstop_version",  # Added in Tobey's BepInEx Pack for Subnautica v5.4.23
+                    "changelog.txt",
+                    "libdoorstop.dylib",
                 ],
                 delete=[
                     "*.txt",
@@ -53,6 +56,10 @@ class SubnauticaModDataChecker(BasicModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
+        # fix: single root folders get traversed by Simple Installer
+        parent = filetree.parent()
+        if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
+            return self.FIXABLE
         check_return = super().dataLooksValid(filetree)
         # A single unknown folder with a dll file in is to be moved to BepInEx/plugins/
         if (
