@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 import mobase
 from PyQt6.QtCore import QDateTime, QDir, qCritical, qInfo, qWarning
@@ -199,6 +199,7 @@ class Cyberpunk2077Game(BasicGame):
 
     # CET and RED4ext, relative to Cyberpunk2077.exe
     _forced_libraries = ["version.dll", "winmm.dll"]
+    _crashreporter_path = "bin/x64/CrashReporter/CrashReporter.exe"
 
     _redmod_binary = Path("tools/redmod/bin/redMod.exe")
     _redmod_log = Path("tools/redmod/bin/REDmodLog.txt")
@@ -232,6 +233,8 @@ class Cyberpunk2077Game(BasicGame):
         )
         organizer.onAboutToRun(self._onAboutToRun)
         organizer.onPluginSettingChanged(self._on_settings_changed)
+        organizer.modList().onModInstalled(self._check_disable_crashreporter)
+        organizer.onUserInterfaceInitialized(self._check_disable_crashreporter)
         return True
 
     def _on_settings_changed(
@@ -246,6 +249,73 @@ class Cyberpunk2077Game(BasicGame):
                 self._modlist_files["archive"].reversed_priority = bool(new)
             elif setting == "reverse_remod_load_order":
                 self._modlist_files["redmod"].reversed_priority = bool(new)
+
+    def _check_disable_crashreporter(
+        self, mod: mobase.IModInterface | None | Any = None
+    ):
+        """
+        Disable Crashreporter with CET installed in VFS, since it crashes
+        when trying to resolve `version.dll`.
+        """
+        if not self.isActive() or not self._get_setting("disable_crashreporter"):
+            return
+        cet_mod_name = self._find_cet_mod_name(
+            mod if isinstance(mod, mobase.IModInterface) else None
+        )
+        if (
+            cet_mod_name
+            and (cr_origin := self._organizer.getFileOrigins(self._crashreporter_path))
+            and cr_origin[0] == "data"
+        ):
+            self._create_dummy_crashreporter_mod(
+                self._organizer.modList().priority(cet_mod_name) + 1
+            )
+
+    def _find_cet_mod_name(self, mod: mobase.IModInterface | None = None) -> str:
+        """
+        Find the mod containing `version.dll`.
+
+        Args:
+            mod (optional): check the mods filetree instead. Defaults to None.
+
+        Returns:
+            The mods name if `version.dll` is found, else ''.
+        """
+        cet_mod_name = ""
+        if mod:
+            if mod.fileTree().find("bin/x64/version.dll"):
+                cet_mod_name = mod.name()
+        elif dll_origins := self._organizer.getFileOrigins("bin/x64/version.dll"):
+            cet_mod_name = dll_origins[0]
+        return cet_mod_name if cet_mod_name != "data" else ""
+
+    def _create_dummy_crashreporter_mod(self, priority: int = 0):
+        """
+        Disables CrashReporter by creating an empty dummy file to replace
+        `CrashReporter.exe`.
+        """
+        mod_name = "disable CrashReporter (MO CET fix)"
+        modlist = self._organizer.modList()
+        if modlist.getMod(mod_name):
+            return
+        qInfo(f"CET VFS fix: creating mod {mod_name}")
+        new_mod = self._organizer.createMod(mobase.GuessedString(mod_name))
+        if not new_mod:
+            return
+        mod_name = new_mod.name()
+        new_mod.setGameName(self.gameShortName())
+        new_mod.setUrl(f"{self.getSupportURL()}#crashreporter")
+        crashReporter = Path(new_mod.absolutePath(), self._crashreporter_path)
+        crashReporter.parent.mkdir(parents=True)
+        crashReporter.touch()
+
+        def callback():
+            modlist.setActive(mod_name, True)
+            modlist.setPriority(mod_name, priority)
+
+        self._organizer.onNextRefresh(callback, False)
+        self._organizer.refresh()
+        self._set_setting("disable_crashreporter", False)
 
     def iniFiles(self):
         return ["UserSettings.json"]
@@ -307,6 +377,14 @@ class Cyberpunk2077Game(BasicGame):
                 (
                     'Clears "overwrite/r6/cache/*" if the original game files changed'
                     " (after update)"
+                ),
+                True,
+            ),
+            mobase.PluginSetting(
+                "disable_crashreporter",
+                (
+                    "Creates a dummy mod/file to disable CrashReporter.exe, "
+                    "which is not compatible with VFS version.dll, see wiki"
                 ),
                 True,
             ),
