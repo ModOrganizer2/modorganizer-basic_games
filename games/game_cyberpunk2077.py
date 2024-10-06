@@ -2,6 +2,8 @@ import filecmp
 import json
 import re
 import shutil
+import tempfile
+import textwrap
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -9,7 +11,14 @@ from pathlib import Path
 from typing import Any, Literal, TypeVar
 
 import mobase
-from PyQt6.QtCore import QDateTime, QDir, qCritical, qInfo, qWarning
+from PyQt6.QtCore import QDateTime, QDir, Qt, qCritical, qInfo, qWarning
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QMainWindow,
+    QMessageBox,
+    QProgressDialog,
+    QWidget,
+)
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import (
@@ -207,6 +216,9 @@ class Cyberpunk2077Game(BasicGame):
     _redmod_deploy_args = "deploy -reportProgress"
     """Deploy arguments for `redmod.exe`, -modlist=... is added."""
 
+    _parentWidget: QWidget
+    """Set with `_organizer.onUserInterfaceInitialized()`"""
+
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
@@ -234,7 +246,7 @@ class Cyberpunk2077Game(BasicGame):
         organizer.onAboutToRun(self._onAboutToRun)
         organizer.onPluginSettingChanged(self._on_settings_changed)
         organizer.modList().onModInstalled(self._check_disable_crashreporter)
-        organizer.onUserInterfaceInitialized(self._check_disable_crashreporter)
+        organizer.onUserInterfaceInitialized(self._on_user_interface_initialized)
         return True
 
     def _on_settings_changed(
@@ -244,11 +256,27 @@ class Cyberpunk2077Game(BasicGame):
         old: mobase.MoVariant,
         new: mobase.MoVariant,
     ):
-        if self.name() == plugin_name:
-            if setting == "reverse_archive_load_order":
+        if self.name() != plugin_name:
+            return
+        match setting:
+            case "reverse_archive_load_order":
                 self._modlist_files["archive"].reversed_priority = bool(new)
-            elif setting == "reverse_remod_load_order":
+            case "reverse_remod_load_order":
                 self._modlist_files["redmod"].reversed_priority = bool(new)
+            case "show_rootbuilder_conversion":
+                if new and (dialog := self._get_rootbuilder_conversion_dialog()):
+                    dialog.open()  # type: ignore
+            case _:
+                return
+
+    def _on_user_interface_initialized(self, window: QMainWindow):
+        self._parentWidget = window
+        if not self.isActive():
+            return
+        if dialog := self._get_rootbuilder_conversion_dialog(window):
+            dialog.open()  # type: ignore
+        else:
+            self._check_disable_crashreporter()
 
     def _check_disable_crashreporter(
         self, mod: mobase.IModInterface | None | Any = None
@@ -385,6 +413,14 @@ class Cyberpunk2077Game(BasicGame):
                 (
                     "Creates a dummy mod/file to disable CrashReporter.exe, "
                     "which is not compatible with VFS version.dll, see wiki"
+                ),
+                True,
+            ),
+            mobase.PluginSetting(
+                "show_rootbuilder_conversion",
+                (
+                    "Shows a dialog to convert legacy RootBuilder mods to native MO mods,"
+                    " using force load libraries"
                 ),
                 True,
             ),
@@ -587,3 +623,125 @@ class Cyberpunk2077Game(BasicGame):
                 yield Path(file).absolute().relative_to(data_path)
             except ValueError:
                 continue
+
+    def _get_rootbuilder_conversion_dialog(
+        self, parent_widget: QWidget | None = None
+    ) -> QMessageBox | None:
+        """
+        Dialog to convert any mods with `root` folder, if applicable.
+        CET and RED4ext work with forced load libraries since ~ Cyberpunk v2.12,
+        making RootBuilder unnecessary.
+        """
+        setting = "show_rootbuilder_conversion"
+        if not self.isActive() or not self._get_setting(setting):
+            return None
+        if not (
+            (root_folder := self._organizer.virtualFileTree().find("root"))
+            and root_folder.isDir()
+        ):
+            return None
+        parent_widget = parent_widget or self._parentWidget
+        message_box = QMessageBox(
+            QMessageBox.Icon.Question,
+            "RootBuilder obsolete",
+            textwrap.dedent(
+                """
+                Mod Organizer now supports Cyberpunk Engine Tweaks (CET) and
+                RED4ext native via forced load libraries, making RootBuilder
+                unnecessary.
+
+                Do you want to convert all mods with a `root` folder now?
+                <br/>This usually only affects CET, RED4ext and overwrite.
+
+                You can disable RootBuilder afterwards.
+                """
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            parent_widget,
+        )
+        message_box.setTextFormat(Qt.TextFormat.MarkdownText)
+        checkbox = QCheckBox("&Do not show again*", parent_widget)
+        checkbox.setChecked(True)
+        checkbox.setToolTip(f"Settings/Plugins/{self.name()}/{setting}")
+        message_box.setCheckBox(checkbox)
+
+        def accept_callback():
+            if unfolded_mods := unfold_root_folders(self._organizer, parent_widget):
+                n_mods = len(unfolded_mods)
+                info = QMessageBox(
+                    QMessageBox.Icon.Information,
+                    "Root mods converted",
+                    (
+                        f"{n_mods} mod{'s' if n_mods > 1 else ''} converted."
+                        "You can disable RootBuilder in the settings now."
+                    ),
+                    parent=parent_widget,
+                )
+                info.setDetailedText(f"Converted mods:\n{'\n'.join(unfolded_mods)}")
+                info.open()  # type: ignore
+
+        message_box.accepted.connect(accept_callback)  # type: ignore
+
+        def finished_callback():
+            if checkbox.isChecked():
+                self._set_setting(setting, False)
+            self._check_disable_crashreporter()
+
+        message_box.finished.connect(finished_callback)  # type: ignore
+        return message_box
+
+
+def unfold_root_folders(
+    organizer: mobase.IOrganizer, parent_widget: QWidget | None = None
+) -> list[str]:
+    """Unfolds (RootBuilders) root folders of all mods (excluding backups)."""
+    mods = organizer.modList().allMods()
+    progress = None
+    unfolded_mods: list[str] = []
+    if parent_widget:
+        progress = QProgressDialog(
+            "Merging/unfolding root folders...",
+            "Abort",
+            0,
+            len(mods),
+            parent_widget,
+        )
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+    for i, mod_name in enumerate(mods):
+        if progress:
+            if progress.wasCanceled():
+                break
+            progress.setValue(i)
+        if mod_name == "data":
+            continue
+        mod = organizer.modList().getMod(mod_name)
+        if mod.isBackup() or mod.isSeparator() or mod.isForeign():
+            continue
+        root_folder = mod.fileTree().find("root")
+        if root_folder is None or not root_folder.isDir():
+            continue
+        qInfo(f"Merging root folder of {mod_name}")
+        mod_path = Path(mod.absolutePath())
+        root_folder_path = mod_path / "root"
+        unfold_folder(root_folder_path)
+        unfolded_mods.append(mod_name)
+    if progress:
+        progress.setValue(len(mods))
+    organizer.refresh()
+    return unfolded_mods
+
+
+def unfold_folder(src_path: Path):
+    """
+    Unfolds a folder (`parent/src/* -> parent/*`), overwriting existing files/folders.
+    Preserves a subfolder with same name (`parent/src/src -> parent/src`).
+    """
+    parent = src_path.parent
+    if (src_path / src_path.name).exists():
+        # Contains a file/folder with same name
+        with tempfile.TemporaryDirectory(dir=parent) as temp_folder:
+            src_path = src_path.rename(parent / temp_folder / src_path.name)
+            shutil.copytree(src_path, parent, symlinks=True, dirs_exist_ok=True)
+    else:
+        shutil.copytree(src_path, parent, symlinks=True, dirs_exist_ok=True)
+        shutil.rmtree(src_path)
