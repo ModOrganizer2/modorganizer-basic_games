@@ -47,6 +47,8 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
                 yield mods_parent_path / mod
 
     def _active_mod_mappings(self, mod_paths: List[Path]) -> Iterable[mobase.Mapping]:
+        if not mod_paths:
+            return
         pak_priority_digits = math.floor(math.log10(len(mod_paths))) + 1
 
         for priority, mod_path in enumerate(mod_paths):
