@@ -23,19 +23,20 @@ from ..basic_game import BasicGame
 from .stalkeranomaly import XRSave
 
 
-
-
 def is_dir_empty(dir: Path):
     return not any(Path(dir).iterdir())
+
 
 def move_file(source: Path, target: Path):
     if not target.parent.exists():
         target.parent.mkdir(parents=True)
     shutil.move(str(source.resolve()), str(target.resolve()))
 
+
 def replace_file(source: Path, target: Path):
     shutil.copytree(str(source.resolve()), str(target.resolve()), dirs_exist_ok=True)
     shutil.rmtree(str(source.resolve()))
+
 
 def copy_file(source: Path, target: Path):
     if not target.parent.exists():
@@ -45,9 +46,12 @@ def copy_file(source: Path, target: Path):
         target.mkdir(parents=True)
 
     try:
-        shutil.copytree(str(source.resolve()), str(target.resolve()), dirs_exist_ok=True)
+        shutil.copytree(
+            str(source.resolve()), str(target.resolve()), dirs_exist_ok=True
+        )
     except:
         shutil.copy2(str(source.resolve()), str(target.resolve()))
+
 
 class StalkerAnomalyModDataChecker(mobase.ModDataChecker):
     _valid_folders: List[str] = [
@@ -245,7 +249,6 @@ class StalkerAnomalySaveGameInfo(BasicGameSaveGameInfo):
         return StalkerAnomalySaveGameInfoWidget(parent)
 
 
-
 class StalkerAnomalyLocalSavegames(mobase.LocalSavegames):
     def __init__(self, myGameSaveDir):
         super().__init__()
@@ -253,40 +256,39 @@ class StalkerAnomalyLocalSavegames(mobase.LocalSavegames):
 
     def create_appdata_content(self, profile_save_dir):
         profile_dir = Path(profile_save_dir.absolutePath())
-        profile_appdata = profile_dir.joinpath('saves/appdata')
+        profile_appdata = profile_dir.joinpath("saves/appdata")
 
         if not profile_appdata.exists():
             profile_appdata.mkdir()
 
-        if not profile_appdata.joinpath('logs').exists():
-            profile_appdata.joinpath('logs').mkdir()
+        if not profile_appdata.joinpath("logs").exists():
+            profile_appdata.joinpath("logs").mkdir()
 
-        if not profile_appdata.joinpath('savedgames').exists():
-            profile_appdata.joinpath('savedgames').mkdir()
+        if not profile_appdata.joinpath("savedgames").exists():
+            profile_appdata.joinpath("savedgames").mkdir()
 
-        if not profile_appdata.joinpath('shaders_cache').exists():
-            profile_appdata.joinpath('shaders_cache').mkdir()
+        if not profile_appdata.joinpath("shaders_cache").exists():
+            profile_appdata.joinpath("shaders_cache").mkdir()
 
-        if not profile_appdata.joinpath('screenshots').exists():
-            profile_appdata.joinpath('screenshots').mkdir()
+        if not profile_appdata.joinpath("screenshots").exists():
+            profile_appdata.joinpath("screenshots").mkdir()
 
-        if not profile_appdata.joinpath('user.ltx').exists():
-            (Path(  profile_appdata / "user.ltx"  )).write_text(" ")
+        if not profile_appdata.joinpath("user.ltx").exists():
+            (Path(profile_appdata / "user.ltx")).write_text(" ")
 
     def mappings(self, profile_save_dir):
         root_game = Path(self._savesDir).parent
 
-
-        profile_src = profile_save_dir.absolutePath()   + '/appdata'
+        profile_src = profile_save_dir.absolutePath() + "/appdata"
         profile_dest = Path(self._savesDir)
         profile_dest = str(profile_dest.resolve())
-        print(f'!{profile_src = }')
-        print(f'!{profile_dest = }')
+        print(f"!{profile_src = }")
+        print(f"!{profile_dest = }")
 
         # if not Path(profile_src).exists():
         #     Path(profile_src).mkdir()
 
-        root_src= Path(self._savesDir).parent.joinpath("appdata")
+        root_src = Path(self._savesDir).parent.joinpath("appdata")
         root_dest = Path(self._savesDir).parent.joinpath("mo__appdata")
 
         root_src.rename(root_dest)
@@ -299,7 +301,7 @@ class StalkerAnomalyLocalSavegames(mobase.LocalSavegames):
                 is_directory=True,
                 create_target=True,
             )
-            ]
+        ]
 
     def prepareProfile(self, profile):
         return profile.localSavesEnabled()
@@ -339,20 +341,17 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         self.localsaves = False
         return True
 
-
     def does_moappdata_exist(self) -> bool:
         root_game = Path(self.GameSavesDirectory).parent
-        mo_appdata = root_game.joinpath('mo__appdata')
+        mo_appdata = root_game.joinpath("mo__appdata")
 
         return mo_appdata.exists()
 
-
     def does_appdata_exist(self):
         root_game = Path(self.GameSavesDirectory).parent
-        appdata = root_game.joinpath('appdata')
+        appdata = root_game.joinpath("appdata")
 
         return appdata.exists()
-
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self._featureMap[mobase.LocalSavegames] = StalkerAnomalyLocalSavegames(
@@ -361,14 +360,15 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
 
         super().initializeProfile(directory, settings)
 
-
     def aboutToRun(self, _str: str) -> bool:
         gamedir = self.gameDirectory()
         if gamedir.exists():
             # For mappings
             if gamedir.joinpath("mo__appdata").exists():
                 if gamedir.joinpath("mo__appdata").exists():
-                    replace_file(gamedir.joinpath("mo__appdata"), gamedir.joinpath("appdata"))
+                    replace_file(
+                        gamedir.joinpath("mo__appdata"), gamedir.joinpath("appdata")
+                    )
             else:
                 gamedir.mkdir("appdata")
             # The game will crash if this file exists in the
@@ -399,43 +399,41 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
 
     def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
         save_games = super().listSaves(folder)
-        path = Path(folder.absolutePath() + '/savedgames')
+        path = Path(folder.absolutePath() + "/savedgames")
         ext = self._mappings.savegameExtension.get()
         save_games.extend(StalkerAnomalySaveGame(f) for f in path.glob(f"*.{ext}"))
         return save_games
 
-
-
     def create_appdata_content(self, profile):
-        profile_dir = Path( profile.absolutePath() )
-        print(f'{profile_dir = }')
-        profile_appdata = profile_dir.joinpath('saves/appdata')
+        profile_dir = Path(profile.absolutePath())
+        print(f"{profile_dir = }")
+        profile_appdata = profile_dir.joinpath("saves/appdata")
 
         # print(f'{profile_appdata.absolute() = }')
         if not profile_appdata.exists():
             # if not profile_dir.joinpath('saves').exists():
             profile_appdata.mkdir(parents=True)
 
-        if not profile_appdata.joinpath('logs').exists():
-            profile_appdata.joinpath('logs').mkdir()
+        if not profile_appdata.joinpath("logs").exists():
+            profile_appdata.joinpath("logs").mkdir()
 
-        if not profile_appdata.joinpath('savedgames').exists():
-            profile_appdata.joinpath('savedgames').mkdir()
+        if not profile_appdata.joinpath("savedgames").exists():
+            profile_appdata.joinpath("savedgames").mkdir()
 
-        if not profile_appdata.joinpath('shaders_cache').exists():
-            profile_appdata.joinpath('shaders_cache').mkdir()
+        if not profile_appdata.joinpath("shaders_cache").exists():
+            profile_appdata.joinpath("shaders_cache").mkdir()
 
-        if not profile_appdata.joinpath('screenshots').exists():
-            profile_appdata.joinpath('screenshots').mkdir()
+        if not profile_appdata.joinpath("screenshots").exists():
+            profile_appdata.joinpath("screenshots").mkdir()
 
-        if not profile_appdata.joinpath('user.ltx').exists():
-            (Path(  profile_appdata / "user.ltx"  )).write_text(" ")
+        if not profile_appdata.joinpath("user.ltx").exists():
+            (Path(profile_appdata / "user.ltx")).write_text(" ")
 
     def copy_base_appdata_content(self, profile):
-        profile_dir = Path( profile.absolutePath() )
-        profile_appdata = profile_dir.joinpath('saves/appdata')
+        profile_dir = Path(profile.absolutePath())
+        profile_appdata = profile_dir.joinpath("saves/appdata")
         root_appdata = Path(self.savesDirectory().absolutePath())
-        print(f'{root_appdata.absolute() = }')
+        print(f"{root_appdata.absolute() = }")
         print(f'{(profile_appdata.joinpath("logs").absolute())} = ')
         # copy_file(root_appdata.joinpath('logs').absolute(), profile_appdata.absolute())
         # shutil.copy2(root_appdata.joinpath('logs/xray_allinux.log').absolute(), profile_appdata.joinpath('logs').absolute())
@@ -448,7 +446,6 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         copy_file(root_appdata, profile_appdata)
         return True
 
-
     def mappings(self) -> List[mobase.Mapping]:
         appdata = self.gameDirectory().filePath("appdata")
         m = mobase.Mapping()
@@ -458,26 +455,26 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         m.destination = appdata
         return [m]
 
-
     def _register_event_handler(self):
-        self._organizer.onUserInterfaceInitialized(lambda win: self._organizer_onUiInitalized_event_handler())
+        self._organizer.onUserInterfaceInitialized(
+            lambda win: self._organizer_onUiInitalized_event_handler()
+        )
         self._organizer.onAboutToRun(self._game_aboutToRun_event_handler)
         self._organizer.onFinishedRun(self._game_finished_event_handler)
         self._organizer.onProfileCreated(self._organizer_onProfileCreated_event_handler)
         self._organizer.onProfileChanged(self._organizer_onProfileChanged_event_handler)
 
-        if self._organizer.appVersion().displayString()[0:3].find('2.5') > 0:
-            immediate_if_possible:bool = True
+        if self._organizer.appVersion().displayString()[0:3].find("2.5") > 0:
+            immediate_if_possible: bool = True
             # self._organizer.onNextRefresh(self._organizer_onNextRefresh_event_handler, immediate_if_possible)
         else:
             pass
 
-
     # version 2.5 or greater
     def _organizer_onNextRefresh_event_handler(self) -> bool:
         root_game = Path(self.GameSavesDirectory).parent
-        appdata = root_game.joinpath('appdata')
-        mo_appdata = root_game.joinpath('mo__appdata')
+        appdata = root_game.joinpath("appdata")
+        mo_appdata = root_game.joinpath("mo__appdata")
 
         # if not self.does_appdata_exist():
         #     if self.does_moappdata_exist():
@@ -492,27 +489,25 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         #     if self.does_moappdata_exist() and ( len(appdata.glob('*')) <= 1):
         #         appdata.rename("test")
 
-
     def _organizer_onUiInitalized_event_handler(self) -> bool:
         self.UiInitialized = True
-
 
     def _organizer_onProfileCreated_event_handler(self, newProfile):
         print("_organizer_onProfileCreated_event_handler")
 
-        root_game = Path( self.gameDirectory().absolutePath() )
-        game_appdata = root_game.joinpath('appdata')
-        mo_appdata = root_game.joinpath('mo__appdata')
+        root_game = Path(self.gameDirectory().absolutePath())
+        game_appdata = root_game.joinpath("appdata")
+        mo_appdata = root_game.joinpath("mo__appdata")
 
         if newProfile.localSavesEnabled():
             self.localsaves = True
             self.create_appdata_content(newProfile)
 
         # if newProfile.localSavesEnabled() and not mo__appdata.exists():
-            # if newProfile.
-            # self.create_appdata_content(newProfile)
-            # # if Default profile exists
-            # default_pro = profile_dir.parent.joinpath('Default')
+        # if newProfile.
+        # self.create_appdata_content(newProfile)
+        # # if Default profile exists
+        # default_pro = profile_dir.parent.joinpath('Default')
         # if mo_appdata.exists():
         #     if game_appdata.exists():
         #         # try:
@@ -520,15 +515,14 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
         #         # except():
         #     mo_appdata.rename(game_appdata)
 
-    def _organizer_onProfileChanged_event_handler(self, oldProfile, newProfile ):
+    def _organizer_onProfileChanged_event_handler(self, oldProfile, newProfile):
         print("_organizer_onProfileChanged_event_handler")
 
-        root_game = Path( self.gameDirectory().absolutePath() )
-        game_appdata = root_game.joinpath('appdata')
-        mo_appdata = root_game.joinpath('mo__appdata')
+        root_game = Path(self.gameDirectory().absolutePath())
+        game_appdata = root_game.joinpath("appdata")
+        mo_appdata = root_game.joinpath("mo__appdata")
 
         self.localsaves = newProfile.localSavesEnabled
-
 
         if newProfile.localSavesEnabled():
             print("new profile local saves enabled")
@@ -547,15 +541,15 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
             # virtual tree rather than the game dir
 
             # local saves
-            root_game = Path( self.gameDirectory().absolutePath() )
-            game_appdata = root_game.joinpath('appdata')
-            mo_appdata = root_game.joinpath('mo__appdata')
+            root_game = Path(self.gameDirectory().absolutePath())
+            game_appdata = root_game.joinpath("appdata")
+            mo_appdata = root_game.joinpath("mo__appdata")
             if root_game.joinpath("mo__appdata").exists():
-                replace_file(root_game.joinpath("mo__appdata"), root_game.joinpath("appdata"))
+                replace_file(
+                    root_game.joinpath("mo__appdata"), root_game.joinpath("appdata")
+                )
 
             # if root_game.joinpath("")
-
-
 
             dbg_path = Path(self._gamePath, "gamedata/configs/cache_dbg.ltx")
             if not dbg_path.exists():
@@ -564,12 +558,11 @@ class StalkerAnomalyGame(BasicGame, mobase.IPluginFileMapper):
                     pass
         return True
 
-
     def _game_finished_event_handler(self, app_path: str, exit_code: int) -> None:
         print("_game_finished_event_handler")
 
-        root_game = Path( self.gameDirectory().absolutePath() )
-        appdata = root_game.joinpath('appdata')
-        mo_appdata = root_game.joinpath('mo__appdata')
+        root_game = Path(self.gameDirectory().absolutePath())
+        appdata = root_game.joinpath("appdata")
+        mo_appdata = root_game.joinpath("mo__appdata")
         if mo_appdata.exists():
             replace_file(mo_appdata, appdata)
