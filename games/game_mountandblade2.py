@@ -1,17 +1,11 @@
-# -*- encoding: utf-8 -*-
-
-from typing import List
-
-from PyQt5.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
 
 class MountAndBladeIIModDataChecker(mobase.ModDataChecker):
-
-    _valid_folders: List[str] = [
+    _valid_folders: list[str] = [
         "native",
         "sandbox",
         "sandboxcore",
@@ -23,10 +17,9 @@ class MountAndBladeIIModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-
-        for e in tree:
+        for e in filetree:
             if e.isDir():
                 if e.name().lower() in self._valid_folders:
                     return mobase.ModDataChecker.VALID
@@ -45,6 +38,10 @@ class MountAndBladeIIGame(BasicGame):
     GameName = "Mount & Blade II: Bannerlord"
     GameShortName = "mountandblade2bannerlord"
     GameDataPath = "Modules"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Mount-&-Blade-II:-Bannerlord"
+    )
 
     GameBinary = "bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.Launcher.exe"
 
@@ -57,7 +54,7 @@ class MountAndBladeIIGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = MountAndBladeIIModDataChecker()
+        self._register_feature(MountAndBladeIIModDataChecker())
         return True
 
     def executables(self):

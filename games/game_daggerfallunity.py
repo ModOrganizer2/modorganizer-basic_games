@@ -1,6 +1,6 @@
-from ..basic_game import BasicGame
-
 import mobase
+
+from ..basic_game import BasicGame
 
 
 class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
@@ -25,9 +25,9 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
         ]
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        for entry in tree:
+        for entry in filetree:
             if not entry.isDir():
                 continue
             if entry.name().casefold() in self.validDirNames:
@@ -38,7 +38,7 @@ class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
 class DaggerfallUnityGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = DaggerfallUnityModDataChecker()
+        self._register_feature(DaggerfallUnityModDataChecker())
         return True
 
     Name = "Daggerfall Unity Support Plugin"
@@ -50,3 +50,7 @@ class DaggerfallUnityGame(BasicGame):
     GameBinary = "DaggerfallUnity.exe"
     GameLauncher = "DaggerfallUnity.exe"
     GameDataPath = "%GAME_PATH%/DaggerfallUnity_Data/StreamingAssets"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Daggerfall-Unity"
+    )

@@ -1,8 +1,5 @@
-# -*- encoding: utf-8 -*-
-
-from PyQt5.QtCore import QFileInfo
-
 import mobase
+from PyQt6.QtCore import QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -12,11 +9,10 @@ class StardewValleyModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-
-        for e in tree:
-            if e.isDir() and e.exists(  # type: ignore
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.exists(
                 "manifest.json", mobase.IFileTree.FILE
             ):
                 return mobase.ModDataChecker.VALID
@@ -39,10 +35,14 @@ class StardewValleyGame(BasicGame):
     GameDataPath = "mods"
     GameDocumentsDirectory = "%DOCUMENTS%/StardewValley"
     GameSavesDirectory = "%GAME_DOCUMENTS%/Saves"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Stardew-Valley"
+    )
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = StardewValleyModDataChecker()
+        self._register_feature(StardewValleyModDataChecker())
         return True
 
     def executables(self):

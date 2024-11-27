@@ -1,37 +1,19 @@
-# -*- encoding: utf-8 -*-
-
 from __future__ import annotations
 
-import fnmatch
 import itertools
 import re
 import shutil
-from collections.abc import Collection, Container, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field, fields
+from collections.abc import Collection, Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, TextIO, Union
-
-from PyQt5.QtCore import QDir
+from typing import Any, Optional, TextIO
 
 import mobase
+from PyQt6.QtCore import QDir
 
+from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
-
-
-def convert_entry_to_tree(entry: mobase.FileTreeEntry) -> Optional[mobase.IFileTree]:
-    if not entry.isDir():
-        return None
-    if isinstance(entry, mobase.IFileTree):
-        return entry
-    if (parent := entry.parent()) is None:
-        return None
-    converted_entry = parent.find(
-        entry.name(), mobase.FileTreeEntry.FileTypes.DIRECTORY
-    )
-    if isinstance(converted_entry, mobase.IFileTree):
-        return converted_entry
-    return None
 
 
 def move_file(source: Path, target: Path):
@@ -44,10 +26,10 @@ def move_file(source: Path, target: Path):
 
 @dataclass
 class PartialMatch:
-    partial_match_regex: re.Pattern = re.compile(r"[A-Z]?[a-z]+")
+    partial_match_regex: re.Pattern[str] = re.compile(r"[A-Z]?[a-z]+")
     """Matches words, for e.g. 'Camel' and 'Case' in 'CamelCase'."""
 
-    exclude: Container = field(default_factory=set)
+    exclude: set[str] = field(default_factory=set)
     min_length: int = 3
 
     def partial_match(self, str_with_parts: str, search_string: str) -> Collection[str]:
@@ -99,10 +81,10 @@ class DebugTable:
         """
         self.new_table(column_keys)
 
-    def __call__(self, **kwargs) -> None:
+    def __call__(self, **kwargs: Any) -> None:
         self.add(**kwargs)
 
-    def new_table(self, column_keys: Optional[Collection[str]] = None) -> None:
+    def new_table(self, column_keys: Collection[str] | None = None) -> None:
         if column_keys:
             self._column_keys = column_keys
         self._table: list[dict[str, str]] = [
@@ -112,7 +94,7 @@ class DebugTable:
 
     def add(
         self,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Add data to the table. Adds a new line if the last row has already data in
         for the column key.
@@ -130,7 +112,8 @@ class DebugTable:
         if self._table:
             for line in self._table:
                 print("|", " | ".join(line.values()), "|", file=output_file)
-            output_file and output_file.flush()
+            if output_file:
+                output_file.flush()
             self._table = []
 
 
@@ -142,9 +125,9 @@ class OverwriteSync:
     overwrite_file_pattern: Iterable[str] = ["BepInEx/config/*"]
     """File pattern (glob) in overwrite folder."""
     partial_match: PartialMatch = PartialMatch(exclude={"valheim", "mod"})
-    content_match: Optional[ContentMatch] = ContentMatch(
+    content_match: ContentMatch = ContentMatch(
         file_glob_patterns=["*.cfg"],
-        content_regex=re.compile(r"\A.*plugin (?P<mod>.+) v[\d\.]+?$", re.I | re.M),
+        content_regex=re.compile(r"\A.*plugin (?P<mod>.+) v[\d.]+?$", re.I | re.M),
         match_group="mod",
     )
 
@@ -174,8 +157,8 @@ class OverwriteSync:
                 self._debug.print()
 
     def _get_active_mods(
-        self, modlist: Optional[mobase.IModList] = None
-    ) -> Mapping[str, mobase.IModInterface]:
+        self, modlist: mobase.IModList | None = None
+    ) -> dict[str, mobase.IModInterface]:
         """Get all active mods.
 
         Args: modlist (optional): the `mobase.IModList`. Defaults to None (get it from
@@ -195,10 +178,10 @@ class OverwriteSync:
             and (modlist.state(name) & mobase.ModState.ACTIVE)
         }
 
-    def _get_mod_dll_map(self, mod_map):
+    def _get_mod_dll_map(self, mod_map: Mapping[str, str | mobase.IModInterface]):
         return {name: self._get_mod_dlls(mod) for name, mod in mod_map.items()}
 
-    def _get_mod_dlls(self, mod: Union[str, mobase.IModInterface]) -> Sequence[str]:
+    def _get_mod_dlls(self, mod: str | mobase.IModInterface) -> Sequence[str]:
         """Get all BepInEx/plugins/*.dll files of a mod."""
         if isinstance(mod, str):
             mod = self.organizer.modList().getMod(mod)
@@ -216,7 +199,7 @@ class OverwriteSync:
         """Find the mod (name) matching a file in Overwrite (using the mods dll name).
 
         Args:
-            file_name: The name of the file.
+            file_path: The name of the file.
             mod_dll_map: Mods names and their dll files `{mod_name: ["ModName.dll"]}`.
 
         Returns:
@@ -250,8 +233,8 @@ class OverwriteSync:
         """Find matching mods for the given `search_str`.
 
         Args:
-            search_name: A string to find a mod match for. mod_dll_map: Mods names and
-            their dll files `{mod_name: ["ModName.dll"]}`.
+            search_str: A string to find a mod match for.
+            mod_dll_map: Mods names and their dll files `{mod_name: ["ModName.dll"]}`.
 
         Returns:
             Mods with partial matches, sorted descending by their metric
@@ -275,165 +258,6 @@ class OverwriteSync:
             key=lambda x: x[1],
             reverse=True,
         )
-
-
-@dataclass
-class RegexFilesDefinition:
-    """Regex pattern for the file lists in `FilesDefinition` - for globbing support.
-    Fields should match `RegexFilesDefinition`.
-    """
-
-    set_as_root: Optional[re.Pattern]
-    valid: Optional[re.Pattern]
-    delete: Optional[re.Pattern]
-    move: Optional[re.Pattern]
-
-    @classmethod
-    def from_filesmap(cls, filesdef: FilesDefinition) -> RegexFilesDefinition:
-        """Returns an instance of `RegexFilesDefinition`,
-        with the file list fields from `FilesDefinition` as regex patterns.
-        """
-        return cls(
-            **{
-                f.name: (
-                    cls.file_list_regex(value)
-                    if (value := getattr(filesdef, f.name))
-                    else None
-                )
-                for f in fields(cls)
-            }
-        )
-
-    @staticmethod
-    def file_list_regex(file_list: Iterable[str]) -> re.Pattern:
-        """Returns a regex pattern for a file list with glob patterns.
-
-        Every pattern has a capturing group,
-        so that match.lastindex - 1 will give the file_list index.
-        """
-        return re.compile(
-            f'(?:{"|".join(f"({fnmatch.translate(f)})" for f in file_list)})', re.I
-        )
-
-
-@dataclass
-class FilesDefinition:
-    """File (pattern) definitions for the `mobase.ModDataChecker`.
-    Fields should match `RegexFilesDefinition`.
-    """
-
-    set_as_root: Optional[set[str]]
-    """If a folder from this set is found, it will be set as new root dir (unfolded)."""
-    valid: Optional[set[str]]
-    """Files and folders in the right path."""
-    delete: Optional[set[str]]
-    """Files/folders to delete."""
-    move: Optional[dict[str, str]]
-    """Files/folders to move, like `{"*.ext": "path/to/folder/"}`.
-        If the path ends with / or \\, the entry will be inserted
-        in the corresponding directory instead of replacing it.
-    """
-
-    regex: RegexFilesDefinition = field(init=False)
-    _move_targets: Sequence[str] = field(init=False, repr=False)
-
-    def __post_init__(self):
-        self.regex = RegexFilesDefinition.from_filesmap(self)
-        if self.move:
-            self._move_targets = list(self.move.values())
-
-    def get_move_target(self, index: int) -> str:
-        return self._move_targets[index]
-
-
-class ValheimGameModDataChecker(mobase.ModDataChecker):
-    files_map = FilesDefinition(
-        set_as_root={
-            "BepInExPack_Valheim",
-        },
-        valid={
-            "meta.ini",  # Included in installed mod folder.
-            "BepInEx",
-            "doorstop_libs",
-            "unstripped_corlib",
-            "doorstop_config.ini",
-            "start_game_bepinex.sh",
-            "start_server_bepinex.sh",
-            "winhttp.dll",
-            #
-            "InSlimVML",
-            "valheim_Data",
-            "inslimvml.ini",
-            #
-            "unstripped_managed",
-            #
-            "AdvancedBuilder",
-        },
-        delete={
-            "*.txt",
-            "*.md",
-            "icon.png",
-            "license",
-            "manifest.json",
-        },
-        move={
-            "*_VML.dll": "InSlimVML/Mods/",
-            #
-            "plugins": "BepInEx/",
-            "*.dll": "BepInEx/plugins/",
-            "config": "BepInEx/",
-            "*.cfg": "BepInEx/config/",
-            #
-            "CustomTextures": "BepInEx/plugins/",
-            "*.png": "BepInEx/plugins/CustomTextures/",
-            #
-            "Builds": "AdvancedBuilder/",
-            "*.vbuild": "AdvancedBuilder/Builds/",
-            #
-            "*.assets": "valheim_Data/",
-        },
-    )
-
-    def dataLooksValid(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
-        status = mobase.ModDataChecker.INVALID
-        for entry in filetree:
-            name = entry.name().casefold()
-            regex = self.files_map.regex
-            if regex.set_as_root and regex.set_as_root.match(name):
-                return mobase.ModDataChecker.FIXABLE
-            elif regex.valid and regex.valid.match(name):
-                if status is not mobase.ModDataChecker.FIXABLE:
-                    status = mobase.ModDataChecker.VALID
-            elif (regex.move and regex.move.match(name)) or (
-                regex.delete and regex.delete.match(name)
-            ):
-                status = mobase.ModDataChecker.FIXABLE
-            else:
-                return mobase.ModDataChecker.INVALID
-        return status
-
-    def fix(self, filetree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
-        for entry in list(filetree):
-            name = entry.name().casefold()
-            regex = self.files_map.regex
-            if regex.set_as_root and regex.set_as_root.match(name):
-                new_root = convert_entry_to_tree(entry)
-                return self.fix(new_root) if new_root else None
-            elif regex.valid and regex.valid.match(name):
-                continue
-            elif regex.delete and regex.delete.match(name):
-                entry.detach()
-            elif regex.move and (match := regex.move.match(name)):
-                if match.lastindex is None:
-                    return None
-                else:
-                    # Get index of matched group
-                    map_index = match.lastindex - 1
-                    # Get the move target corresponding to the matched group
-                    filetree.move(entry, self.files_map.get_move_target(map_index))
-        return filetree
 
 
 class ValheimSaveGame(BasicGameSaveGame):
@@ -462,30 +286,10 @@ class ValheimWorldSaveGame(ValheimSaveGame):
         return files
 
 
-class ValheimLocalSavegames(mobase.LocalSavegames):
-    def __init__(self, myGameSaveDir):
-        super().__init__()
-        self._savesDir = myGameSaveDir.absolutePath()
-
-    def mappings(self, profile_save_dir):
-        return [
-            mobase.Mapping(
-                source=profile_save_dir.absolutePath(),
-                destination=self._savesDir,
-                is_directory=True,
-                create_target=True,
-            )
-        ]
-
-    def prepareProfile(self, profile):
-        return profile.localSavesEnabled()
-
-
 class ValheimGame(BasicGame):
-
     Name = "Valheim Support Plugin"
     Author = "Zash"
-    Version = "1.1.1"
+    Version = "1.2.2"
 
     GameName = "Valheim"
     GameShortName = "valheim"
@@ -494,15 +298,72 @@ class ValheimGame(BasicGame):
     GameBinary = "valheim.exe"
     GameDataPath = ""
     GameSavesDirectory = r"%USERPROFILE%/AppData/LocalLow/IronGate/Valheim"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Valheim"
+    )
 
-    forced_libraries = ["winhttp.dll"]
+    _forced_libraries = ["winhttp.dll"]
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[mobase.ModDataChecker] = ValheimGameModDataChecker()
-        self._featureMap[mobase.LocalSavegames] = ValheimLocalSavegames(
-            self.savesDirectory()
+        self._register_feature(
+            BasicModDataChecker(
+                GlobPatterns(
+                    unfold=[
+                        "BepInExPack_Valheim",
+                    ],
+                    valid=[
+                        "meta.ini",  # Included in installed mod folder.
+                        "BepInEx",
+                        "doorstop_libs",
+                        "unstripped_corlib",
+                        "doorstop_config.ini",
+                        "start_game_bepinex.sh",
+                        "start_server_bepinex.sh",
+                        "winhttp.dll",
+                        "changelog.txt",
+                        #
+                        "InSlimVML",
+                        "valheim_Data",
+                        "inslimvml.ini",
+                        #
+                        "unstripped_managed",
+                        #
+                        "AdvancedBuilder",
+                    ],
+                    delete=[
+                        "*.txt",
+                        "*.md",
+                        "README",
+                        "icon.png",
+                        "license",
+                        "manifest.json",
+                        "*.dll.mdb",
+                        "*.pdb",
+                    ],
+                    move={
+                        "*_VML.dll": "InSlimVML/Mods/",
+                        #
+                        "plugins": "BepInEx/",
+                        "Jotunn": "BepInEx/plugins/",
+                        "*.dll": "BepInEx/plugins/",
+                        "*.xml": "BepInEx/plugins/",
+                        "Translations": "BepInEx/plugins/",
+                        "config": "BepInEx/",
+                        "*.cfg": "BepInEx/config/",
+                        #
+                        "CustomTextures": "BepInEx/plugins/",
+                        "*.png": "BepInEx/plugins/CustomTextures/",
+                        #
+                        "Builds": "AdvancedBuilder/",
+                        "*.vbuild": "AdvancedBuilder/Builds/",
+                        #
+                        "*.assets": "valheim_Data/",
+                    },
+                )
+            )
         )
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         self._overwrite_sync = OverwriteSync(organizer=self._organizer, game=self)
         self._register_event_handler()
         return True
@@ -510,7 +371,7 @@ class ValheimGame(BasicGame):
     def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
         return [
             mobase.ExecutableForcedLoadSetting(self.binaryName(), lib).withEnabled(True)
-            for lib in self.forced_libraries
+            for lib in self._forced_libraries
         ]
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
@@ -540,7 +401,7 @@ class ValheimGame(BasicGame):
         self._organizer.onUserInterfaceInitialized(lambda win: self._sync_overwrite())
         self._organizer.onFinishedRun(self._game_finished_event_handler)
 
-    def _game_finished_event_handler(self, app_path: str, *args) -> None:
+    def _game_finished_event_handler(self, app_path: str, exit_code: int) -> None:
         """Sync overwrite folder with mods after game was closed."""
         if Path(app_path) == Path(
             self.gameDirectory().absolutePath(), self.binaryName()
@@ -548,6 +409,8 @@ class ValheimGame(BasicGame):
             self._sync_overwrite()
 
     def _sync_overwrite(self) -> None:
+        if self._organizer.managedGame() is not self:
+            return
         if self._organizer.pluginSetting(self.name(), "sync_overwrite") is not False:
             self._overwrite_sync.search_file_contents = (
                 self._organizer.pluginSetting(

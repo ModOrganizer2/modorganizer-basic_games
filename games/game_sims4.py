@@ -1,10 +1,9 @@
-from ..basic_game import BasicGame
-
 import mobase
+
+from ..basic_game import BasicGame
 
 
 class TS4Game(BasicGame):
-
     Name = "The Sims 4 Support Plugin"
     Author = "R3z Shark"
 
@@ -18,4 +17,4 @@ class TS4Game(BasicGame):
 
     def version(self):
         # Don't forget to import mobase!
-        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.final)
+        return mobase.VersionInfo(1, 0, 0, mobase.ReleaseType.FINAL)

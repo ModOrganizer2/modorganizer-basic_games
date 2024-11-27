@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-
 import mobase
 
 from ..basic_features import BasicGameSaveGameInfo
@@ -26,10 +24,16 @@ class DivinityOriginalSinGame(BasicGame):
     GameSavesDirectory = (
         "%USERPROFILE%/Documents/Larian Studios/Divinity Original Sin/PlayerProfiles"
     )
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Divinity:-Original-Sin"
+    )
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".lsv", ".png")  # Not confirmed
+        self._register_feature(
+            BasicGameSaveGameInfo(
+                lambda s: s.with_suffix(".png")  # Not confirmed
+            )
         )
         return True

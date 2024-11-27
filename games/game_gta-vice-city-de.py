@@ -1,9 +1,8 @@
 import os
-
 from pathlib import Path
-from PyQt5.QtCore import QDir, QFileInfo
 
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -13,9 +12,9 @@ class GTAViceCitysDefinitiveEditionModDataChecker(mobase.ModDataChecker):
         super().__init__()
 
     def dataLooksValid(
-        self, tree: mobase.IFileTree
+        self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        for entry in tree:
+        for entry in filetree:
             if Path(entry.name().casefold()).suffix == ".pak":
                 return mobase.ModDataChecker.VALID
 
@@ -23,7 +22,6 @@ class GTAViceCitysDefinitiveEditionModDataChecker(mobase.ModDataChecker):
 
 
 class GTAViceCityDefinitiveEditionGame(BasicGame):
-
     Name = "Grand Theft Auto: Vice City - Definitive Edition Support Plugin"
     Author = "dekart811"
     Version = "1.0"
@@ -39,12 +37,14 @@ class GTAViceCityDefinitiveEditionGame(BasicGame):
     )
     GameSavesDirectory = "%GAME_DOCUMENTS%/../../SaveGames"
     GameSaveExtension = "sav"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Grand-Theft-Auto:-The-Trilogy-%E2%80%90-The-Definitive-Edition"
+    )
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._featureMap[
-            mobase.ModDataChecker
-        ] = GTAViceCitysDefinitiveEditionModDataChecker()
+        self._register_feature(GTAViceCitysDefinitiveEditionModDataChecker())
         return True
 
     def executables(self):
@@ -62,10 +62,10 @@ class GTAViceCityDefinitiveEditionGame(BasicGame):
     def iniFiles(self):
         return ["GameUserSettings.ini", "CustomSettings.ini"]
 
-    def initializeProfile(self, path: QDir, settings: int):
+    def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         # Create the mods directory if it doesn't exist
         modsPath = self.dataDirectory().absolutePath()
         if not os.path.exists(modsPath):
             os.mkdir(modsPath)
 
-        super().initializeProfile(path, settings)
+        super().initializeProfile(directory, settings)

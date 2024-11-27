@@ -1,11 +1,8 @@
-# -*- encoding: utf-8 -*-
-
 from pathlib import Path
 from typing import List
 
-from PyQt5.QtCore import QDir
-
 import mobase
+from PyQt6.QtCore import QDir
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
@@ -14,11 +11,10 @@ from ..basic_game import BasicGame
 
 class Witcher3SaveGame(BasicGameSaveGame):
     def allFiles(self):
-        return [self._filename, self._filename.replace(".sav", ".png")]
+        return [self._filepath.name, self._filepath.name.replace(".sav", ".png")]
 
 
 class Witcher3Game(BasicGame):
-
     Name = "Witcher 3 Support Plugin"
     Author = "Holt59"
     Version = "1.0.0a"
@@ -34,12 +30,14 @@ class Witcher3Game(BasicGame):
     GameSaveExtension = "sav"
     GameDocumentsDirectory = "%DOCUMENTS%/The Witcher 3"
     GameSavesDirectory = "%GAME_DOCUMENTS%/gamesaves"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-The-Witcher-3"
+    )
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._featureMap[mobase.SaveGameInfo] = BasicGameSaveGameInfo(
-            lambda s: s.replace(".sav", ".png")
-        )
+        self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".png")))
         return True
 
     def iniFiles(self):

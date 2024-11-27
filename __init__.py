@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# pyright: reportUnboundVariable=false
 
 import glob
 import importlib
@@ -17,19 +17,19 @@ BasicGame.setup()
 
 
 def createPlugins():
-
     # List of game class from python:
     game_plugins: typing.List[BasicGame] = []
 
     # We are going to list all game plugins:
     curpath = os.path.abspath(os.path.dirname(__file__))
+    escaped_games_path = glob.escape(os.path.join(curpath, "games"))
 
     # List all the .ini files:
-    for file in glob.glob(os.path.join(curpath, "games", "*.ini")):
+    for file in glob.glob(os.path.join(escaped_games_path, "*.ini")):
         game_plugins.append(BasicIniGame(file))
 
     # List all the python plugins:
-    for file in glob.glob(os.path.join(curpath, "games", "*.py")):
+    for file in glob.glob(os.path.join(escaped_games_path, "*.py")):
         module_p = os.path.relpath(file, os.path.join(curpath, "games"))
         if module_p == "__init__.py":
             continue

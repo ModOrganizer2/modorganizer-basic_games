@@ -1,26 +1,24 @@
-# -*- encoding: utf-8 -*-
-from typing import List
 from pathlib import Path
-
-from PyQt5.QtCore import QFileInfo, QDir
+from typing import BinaryIO, List
 
 import mobase
+from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 
 
 class Witcher1SaveGame(BasicGameSaveGame):
-    def __init__(self, filepath):
+    def __init__(self, filepath: Path):
         super().__init__(filepath)
         self.areaName: str = ""
         self.parseSaveFile(filepath)
 
     @staticmethod
-    def readInt(fp, length=4) -> int:
+    def readInt(fp: BinaryIO, length: int = 4) -> int:
         return int.from_bytes(fp.read(length), "little")
 
     @staticmethod
-    def readFixedString(fp, length) -> str:
+    def readFixedString(fp: BinaryIO, length: int) -> str:
         b: bytes = fp.read(length)
         res = b.decode("utf-16")
         return res.rstrip("\0")
@@ -74,6 +72,10 @@ class Witcher1Game(BasicGame):
     GameSaveExtension = "TheWitcherSave"
     GameDocumentsDirectory = "%DOCUMENTS%/The Witcher"
     GameSavesDirectory = "%GAME_DOCUMENTS%/saves"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-The-Witcher"
+    )
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)

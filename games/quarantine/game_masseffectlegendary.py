@@ -1,8 +1,7 @@
-from ..basic_game import BasicGame
+from ...basic_game import BasicGame
 
 
 class MassEffectLegendaryGame(BasicGame):
-
     Name = "Mass Effect Legendary Edition Support Plugin"
     Author = "LostDragonist"
     Version = "1.0.0"

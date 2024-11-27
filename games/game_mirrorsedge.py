@@ -1,10 +1,7 @@
-# -*- encoding: utf-8 -*-
-
 from ..basic_game import BasicGame
 
 
 class MirrorsEdgeGame(BasicGame):
-
     Name = "Mirror's Edge Support Plugin"
     Author = "Luca/EzioTheDeadPoet"
     Version = "1.0.0"
@@ -16,3 +13,7 @@ class MirrorsEdgeGame(BasicGame):
     GameGogId = 1893001152
     GameBinary = "Binaries/MirrorsEdge.exe"
     GameDataPath = "TdGame"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Mirror's-Edge"
+    )

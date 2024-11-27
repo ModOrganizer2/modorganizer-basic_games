@@ -1,13 +1,12 @@
 import os
 import re
 
-from PyQt5.QtCore import QDir
+from PyQt6.QtCore import QDir
 
 from ..basic_game import BasicGame
 
 
 class MSFS2020Game(BasicGame):
-
     Name = "Microsoft Flight Simulator 2020 Support Plugin"
     Author = "Deorder"
     Version = "0.0.1"
@@ -16,6 +15,10 @@ class MSFS2020Game(BasicGame):
     GameShortName = "msfs2020"
     GameBinary = r"FlightSimulator.exe"
     GameSteamId = [1250410]
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Microsoft-Flight-Simulator-(2020)"
+    )
 
     def dataDirectory(self) -> QDir:
         # Find and use package path specified in Asobo engine options

@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-
 from .XRIO import XRReader
 from .XRMath import IVec3, IVec4
 

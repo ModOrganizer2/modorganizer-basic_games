@@ -2,7 +2,6 @@ from ..basic_game import BasicGame
 
 
 class MonsterHunterWorldGame(BasicGame):
-
     Name = "Monster Hunter: World Support Plugin"
     Author = "prz"
     Version = "1.0.0"
@@ -16,3 +15,7 @@ class MonsterHunterWorldGame(BasicGame):
     GameDataPath = "%GAME_PATH%"
     GameSaveExtension = "dat"
     GameSteamId = 582010
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Monster-Hunter:-World"
+    )

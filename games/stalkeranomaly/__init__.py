@@ -1,20 +1,38 @@
-# -*- encoding: utf-8 -*-
-# flake8: noqa
-
 from .XRIO import XRReader, XRStream
-from .XRMath import IVec3, IVec4, IFlag
+from .XRMath import IFlag, IVec3, IVec4
 from .XRNET import XRNETState
 from .XRObject import (
-    XRFlag,
     XRAbstract,
-    XRVisual,
     XRBoneData,
-    XRSkeleton,
-    XRObject,
+    XRCreatureAbstract,
+    XRCreatureActor,
     XRDynamicObject,
     XRDynamicObjectVisual,
-    XRCreatureAbstract,
+    XRFlag,
+    XRObject,
+    XRSkeleton,
     XRTraderAbstract,
-    XRCreatureActor,
+    XRVisual,
 )
 from .XRSave import XRSave
+
+__all__ = [
+    "IFlag",
+    "IVec3",
+    "IVec4",
+    "XRAbstract",
+    "XRBoneData",
+    "XRCreatureAbstract",
+    "XRCreatureActor",
+    "XRDynamicObject",
+    "XRDynamicObjectVisual",
+    "XRFlag",
+    "XRNETState",
+    "XRObject",
+    "XRReader",
+    "XRSave",
+    "XRSkeleton",
+    "XRStream",
+    "XRTraderAbstract",
+    "XRVisual",
+]
