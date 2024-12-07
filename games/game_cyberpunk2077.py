@@ -581,7 +581,10 @@ class Cyberpunk2077Game(BasicGame):
             self._is_cache_file_updated(file, data_path) for file in cache_files
         ):
             qInfo('Updated game files detected, clearing "overwrite/r6/cache/*"')
-            shutil.rmtree(overwrite_path / "r6/cache")
+            try:
+                shutil.rmtree(overwrite_path / "r6/cache")
+            except FileNotFoundError:
+                pass
             new_cache_files = cache_files
         else:
             new_cache_files = list(self._unmapped_cache_files(data_path))
