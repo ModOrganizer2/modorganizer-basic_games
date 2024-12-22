@@ -2,14 +2,23 @@ import filecmp
 import json
 import re
 import shutil
+import tempfile
+import textwrap
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
 import mobase
-from PyQt6.QtCore import QDateTime, QDir, qCritical, qInfo, qWarning
+from PyQt6.QtCore import QDateTime, QDir, Qt, qCritical, qInfo, qWarning
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QMainWindow,
+    QMessageBox,
+    QProgressDialog,
+    QWidget,
+)
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import (
@@ -17,7 +26,6 @@ from ..basic_features.basic_save_game_info import (
     BasicGameSaveGameInfo,
     format_date,
 )
-from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
 
 
@@ -36,102 +44,11 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     "engine",
                     "r6",
                     "mods",  # RedMod
-                    "red4ext",  # red4ext/RED4ext.dll is moved to root in .fix()
+                    "red4ext",
                     "bin",  # CET etc. gets handled below
-                    "root",  # RootBuilder: hardlink / copy to game root
                 ],
             )
         )
-
-    _extra_files_to_move = {
-        # Red4ext: only .dll files
-        "red4ext/RED4ext.dll": "root/red4ext/",
-        "bin/x64/winmm.dll": "root/bin/x64/",
-        # CET: all files, folder gets handled in .fix()
-        "bin/x64/version.dll": "root/bin/x64/",
-        "bin/x64/global.ini": "root/bin/x64/",
-        "bin/x64/plugins/cyber_engine_tweaks.asi": "root/bin/x64/plugins/",
-    }
-    _cet_path = "bin/x64/plugins/cyber_engine_tweaks/"
-
-    def dataLooksValid(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
-        # fix: single root folders get traversed by Simple Installer
-        parent = filetree.parent()
-        if parent is not None and self.dataLooksValid(parent) is self.FIXABLE:
-            return self.FIXABLE
-        status = mobase.ModDataChecker.INVALID
-        # Check extra fixes
-        if any(filetree.exists(p) for p in self._extra_files_to_move):
-            return mobase.ModDataChecker.FIXABLE
-        rp = self._regex_patterns
-        for entry in filetree:
-            name = entry.name().casefold()
-            if rp.move_match(name) is not None:
-                status = mobase.ModDataChecker.FIXABLE
-            elif rp.valid.match(name):
-                if status is mobase.ModDataChecker.INVALID:
-                    status = mobase.ModDataChecker.VALID
-            elif self._valid_redmod(entry):
-                # Archive with REDmod folders, not in mods/
-                status = mobase.ModDataChecker.FIXABLE
-            # Accept any other entry
-        return status
-
-    def _valid_redmod(self, filetree: mobase.IFileTree | mobase.FileTreeEntry) -> bool:
-        return isinstance(filetree, mobase.IFileTree) and bool(
-            filetree and filetree.find("info.json")
-        )
-
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        for source, target in self._extra_files_to_move.items():
-            if file := filetree.find(source):
-                parent = file.parent()
-                filetree.move(file, target)
-                clear_empty_folder(parent)
-        if filetree := super().fix(filetree):
-            filetree = self._fix_cet_framework(filetree)
-            # REDmod
-            for entry in list(filetree):
-                if not self._regex_patterns.valid.match(
-                    entry.name().casefold()
-                ) and self._valid_redmod(entry):
-                    filetree.move(entry, "mods/")
-        return filetree
-
-    def _fix_cet_framework(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        """Move CET framework to `root/`, except for `mods`.
-        Only CET >= v1.27.0 (Patch 2.01) works with USVFS.
-
-        See: https://github.com/maximegmd/CyberEngineTweaks/pull/877
-        """
-        if cet_folder := filetree.find(
-            self._cet_path, mobase.FileTreeEntry.FileTypes.DIRECTORY
-        ):
-            assert is_directory(cet_folder)
-            root_cet_path = f"root/{self._cet_path}"
-            if not cet_folder.exists("mods"):
-                parent = cet_folder.parent()
-                filetree.move(cet_folder, root_cet_path.rstrip("/\\"))
-            else:
-                parent = cet_folder
-                for entry in list(cet_folder):
-                    if entry.name() != "mods":
-                        filetree.move(entry, root_cet_path)
-            clear_empty_folder(parent)
-        return filetree
-
-
-def clear_empty_folder(filetree: mobase.IFileTree | None):
-    if filetree is None:
-        return
-    while not filetree:
-        parent = filetree.parent()
-        filetree.detach()
-        if parent is None:
-            break
-        filetree = parent
 
 
 def time_from_seconds(s: int | float) -> str:
@@ -269,27 +186,10 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
                 yield mods_path / mod
 
 
-@dataclass
-class PluginDefaultSettings:
-    organizer: mobase.IOrganizer
-    plugin_name: str
-    settings: Mapping[str, mobase.MoVariant]
-
-    def is_plugin_enabled(self) -> bool:
-        return self.organizer.isPluginEnabled(self.plugin_name)
-
-    def apply(self) -> bool:
-        if not self.is_plugin_enabled():
-            return False
-        for setting, value in self.settings.items():
-            self.organizer.setPluginSetting(self.plugin_name, setting, value)
-        return True
-
-
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "2.3.1"
+    Version = "3.0.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -306,11 +206,18 @@ class Cyberpunk2077Game(BasicGame):
         "Game:-Cyberpunk-2077"
     )
 
+    # CET and RED4ext, relative to Cyberpunk2077.exe
+    _forced_libraries = ["version.dll", "winmm.dll"]
+    _crashreporter_path = "bin/x64/CrashReporter/CrashReporter.exe"
+
     _redmod_binary = Path("tools/redmod/bin/redMod.exe")
     _redmod_log = Path("tools/redmod/bin/REDmodLog.txt")
     _redmod_deploy_path = Path("r6/cache/modded/")
     _redmod_deploy_args = "deploy -reportProgress"
     """Deploy arguments for `redmod.exe`, -modlist=... is added."""
+
+    _parentWidget: QWidget
+    """Set with `_organizer.onUserInterfaceInitialized()`"""
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -336,38 +243,10 @@ class Cyberpunk2077Game(BasicGame):
                 reversed_priority=bool(self._get_setting("reverse_redmod_load_order")),
             ),
         )
-        self._rootbuilder_settings = PluginDefaultSettings(
-            organizer,
-            "RootBuilder",
-            {
-                "usvfsmode": False,
-                "linkmode": False,
-                # Available with RootBuilder v4.5+
-                # Currently bugged / incompatible with MO 2.5.2 (Python 3.12)
-                # https://github.com/Kezyma/ModOrganizer-Plugins/issues/36
-                "linkonlymode": False,
-                "backup": True,
-                "cache": True,
-                "autobuild": True,
-                "redirect": False,
-                "installer": False,
-                "exclusions": "archive,setup_redlauncher.exe,tools",
-                "linkextensions": "dll,exe",
-            },
-        )
-
-        def apply_rootbuilder_settings_once(*args: Any):
-            if not self.isActive() or not self._get_setting("configure_RootBuilder"):
-                return
-            if self._rootbuilder_settings.apply():
-                qInfo(f"RootBuilder configured for {self.gameName()}")
-                self._set_setting("configure_RootBuilder", False)
-
-        organizer.onUserInterfaceInitialized(apply_rootbuilder_settings_once)
-        organizer.onPluginEnabled("RootBuilder", apply_rootbuilder_settings_once)
         organizer.onAboutToRun(self._onAboutToRun)
-
         organizer.onPluginSettingChanged(self._on_settings_changed)
+        organizer.modList().onModInstalled(self._check_disable_crashreporter)
+        organizer.onUserInterfaceInitialized(self._on_user_interface_initialized)
         return True
 
     def _on_settings_changed(
@@ -377,11 +256,94 @@ class Cyberpunk2077Game(BasicGame):
         old: mobase.MoVariant,
         new: mobase.MoVariant,
     ):
-        if self.name() == plugin_name:
-            if setting == "reverse_archive_load_order":
+        if self.name() != plugin_name:
+            return
+        match setting:
+            case "reverse_archive_load_order":
                 self._modlist_files["archive"].reversed_priority = bool(new)
-            elif setting == "reverse_remod_load_order":
+            case "reverse_remod_load_order":
                 self._modlist_files["redmod"].reversed_priority = bool(new)
+            case "show_rootbuilder_conversion":
+                if new and (dialog := self._get_rootbuilder_conversion_dialog()):
+                    dialog.open()  # type: ignore
+            case _:
+                return
+
+    def _on_user_interface_initialized(self, window: QMainWindow):
+        self._parentWidget = window
+        if not self.isActive():
+            return
+        if dialog := self._get_rootbuilder_conversion_dialog(window):
+            dialog.open()  # type: ignore
+        else:
+            self._check_disable_crashreporter()
+
+    def _check_disable_crashreporter(
+        self, mod: mobase.IModInterface | None | Any = None
+    ):
+        """
+        Disable Crashreporter with CET installed in VFS, since it crashes
+        when trying to resolve `version.dll`.
+        """
+        if not self.isActive() or not self._get_setting("disable_crashreporter"):
+            return
+        cet_mod_name = self._find_cet_mod_name(
+            mod if isinstance(mod, mobase.IModInterface) else None
+        )
+        if (
+            cet_mod_name
+            and (cr_origin := self._organizer.getFileOrigins(self._crashreporter_path))
+            and cr_origin[0] == "data"
+        ):
+            self._create_dummy_crashreporter_mod(
+                self._organizer.modList().priority(cet_mod_name) + 1
+            )
+
+    def _find_cet_mod_name(self, mod: mobase.IModInterface | None = None) -> str:
+        """
+        Find the mod containing `version.dll`.
+
+        Args:
+            mod (optional): check the mods filetree instead. Defaults to None.
+
+        Returns:
+            The mods name if `version.dll` is found, else ''.
+        """
+        cet_mod_name = ""
+        if mod:
+            if mod.fileTree().find("bin/x64/version.dll"):
+                cet_mod_name = mod.name()
+        elif dll_origins := self._organizer.getFileOrigins("bin/x64/version.dll"):
+            cet_mod_name = dll_origins[0]
+        return cet_mod_name if cet_mod_name != "data" else ""
+
+    def _create_dummy_crashreporter_mod(self, priority: int = 0):
+        """
+        Disables CrashReporter by creating an empty dummy file to replace
+        `CrashReporter.exe`.
+        """
+        mod_name = "disable CrashReporter (MO CET fix)"
+        modlist = self._organizer.modList()
+        if modlist.getMod(mod_name):
+            return
+        qInfo(f"CET VFS fix: creating mod {mod_name}")
+        new_mod = self._organizer.createMod(mobase.GuessedString(mod_name))
+        if not new_mod:
+            return
+        mod_name = new_mod.name()
+        new_mod.setGameName(self.gameShortName())
+        new_mod.setUrl(f"{self.getSupportURL()}#crashreporter")
+        crashReporter = Path(new_mod.absolutePath(), self._crashreporter_path)
+        crashReporter.parent.mkdir(parents=True)
+        crashReporter.touch()
+
+        def callback():
+            modlist.setActive(mod_name, True)
+            modlist.setPriority(mod_name, priority)
+
+        self._organizer.onNextRefresh(callback, False)
+        self._organizer.refresh()
+        self._set_setting("disable_crashreporter", False)
 
     def iniFiles(self):
         return ["UserSettings.json"]
@@ -447,8 +409,19 @@ class Cyberpunk2077Game(BasicGame):
                 True,
             ),
             mobase.PluginSetting(
-                "configure_RootBuilder",
-                "Configures RootBuilder for Cyberpunk if installed and enabled",
+                "disable_crashreporter",
+                (
+                    "Creates a dummy mod/file to disable CrashReporter.exe, "
+                    "which is not compatible with VFS version.dll, see wiki"
+                ),
+                True,
+            ),
+            mobase.PluginSetting(
+                "show_rootbuilder_conversion",
+                (
+                    "Shows a dialog to convert legacy RootBuilder mods to native MO mods,"
+                    " using force load libraries"
+                ),
                 True,
             ),
         ]
@@ -487,6 +460,13 @@ class Cyberpunk2077Game(BasicGame):
                 "REDprelauncher",
                 game_dir.absoluteFilePath(self.getLauncherName()),
             ).withArgument(f"{skip_start_screen}"),
+        ]
+
+    def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
+        exe = Path(self.binaryName()).name
+        return [
+            mobase.ExecutableForcedLoadSetting(exe, lib).withEnabled(True)
+            for lib in self._forced_libraries
         ]
 
     def _get_redmod_binary(self) -> Path:
@@ -601,7 +581,10 @@ class Cyberpunk2077Game(BasicGame):
             self._is_cache_file_updated(file, data_path) for file in cache_files
         ):
             qInfo('Updated game files detected, clearing "overwrite/r6/cache/*"')
-            shutil.rmtree(overwrite_path / "r6/cache")
+            try:
+                shutil.rmtree(overwrite_path / "r6/cache")
+            except FileNotFoundError:
+                pass
             new_cache_files = cache_files
         else:
             new_cache_files = list(self._unmapped_cache_files(data_path))
@@ -643,3 +626,125 @@ class Cyberpunk2077Game(BasicGame):
                 yield Path(file).absolute().relative_to(data_path)
             except ValueError:
                 continue
+
+    def _get_rootbuilder_conversion_dialog(
+        self, parent_widget: QWidget | None = None
+    ) -> QMessageBox | None:
+        """
+        Dialog to convert any mods with `root` folder, if applicable.
+        CET and RED4ext work with forced load libraries since ~ Cyberpunk v2.12,
+        making RootBuilder unnecessary.
+        """
+        setting = "show_rootbuilder_conversion"
+        if not self.isActive() or not self._get_setting(setting):
+            return None
+        if not (
+            (root_folder := self._organizer.virtualFileTree().find("root"))
+            and root_folder.isDir()
+        ):
+            return None
+        parent_widget = parent_widget or self._parentWidget
+        message_box = QMessageBox(
+            QMessageBox.Icon.Question,
+            "RootBuilder obsolete",
+            textwrap.dedent(
+                """
+                Mod Organizer now supports Cyberpunk Engine Tweaks (CET) and
+                RED4ext native via forced load libraries, making RootBuilder
+                unnecessary.
+
+                Do you want to convert all mods with a `root` folder now?
+                <br/>This usually only affects CET, RED4ext and overwrite.
+
+                You can disable RootBuilder afterwards.
+                """
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            parent_widget,
+        )
+        message_box.setTextFormat(Qt.TextFormat.MarkdownText)
+        checkbox = QCheckBox("&Do not show again*", parent_widget)
+        checkbox.setChecked(True)
+        checkbox.setToolTip(f"Settings/Plugins/{self.name()}/{setting}")
+        message_box.setCheckBox(checkbox)
+
+        def accept_callback():
+            if unfolded_mods := unfold_root_folders(self._organizer, parent_widget):
+                n_mods = len(unfolded_mods)
+                info = QMessageBox(
+                    QMessageBox.Icon.Information,
+                    "Root mods converted",
+                    (
+                        f"{n_mods} mod{'s' if n_mods > 1 else ''} converted."
+                        "You can disable RootBuilder in the settings now."
+                    ),
+                    parent=parent_widget,
+                )
+                info.setDetailedText(f"Converted mods:\n{'\n'.join(unfolded_mods)}")
+                info.open()  # type: ignore
+
+        message_box.accepted.connect(accept_callback)  # type: ignore
+
+        def finished_callback():
+            if checkbox.isChecked():
+                self._set_setting(setting, False)
+            self._check_disable_crashreporter()
+
+        message_box.finished.connect(finished_callback)  # type: ignore
+        return message_box
+
+
+def unfold_root_folders(
+    organizer: mobase.IOrganizer, parent_widget: QWidget | None = None
+) -> list[str]:
+    """Unfolds (RootBuilders) root folders of all mods (excluding backups)."""
+    mods = organizer.modList().allMods()
+    progress = None
+    unfolded_mods: list[str] = []
+    if parent_widget:
+        progress = QProgressDialog(
+            "Merging/unfolding root folders...",
+            "Abort",
+            0,
+            len(mods),
+            parent_widget,
+        )
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+    for i, mod_name in enumerate(mods):
+        if progress:
+            if progress.wasCanceled():
+                break
+            progress.setValue(i)
+        if mod_name == "data":
+            continue
+        mod = organizer.modList().getMod(mod_name)
+        if mod.isBackup() or mod.isSeparator() or mod.isForeign():
+            continue
+        root_folder = mod.fileTree().find("root")
+        if root_folder is None or not root_folder.isDir():
+            continue
+        qInfo(f"Merging root folder of {mod_name}")
+        mod_path = Path(mod.absolutePath())
+        root_folder_path = mod_path / "root"
+        unfold_folder(root_folder_path)
+        unfolded_mods.append(mod_name)
+    if progress:
+        progress.setValue(len(mods))
+    organizer.refresh()
+    return unfolded_mods
+
+
+def unfold_folder(src_path: Path):
+    """
+    Unfolds a folder (`parent/src/* -> parent/*`), overwriting existing files/folders.
+    Preserves a subfolder with same name (`parent/src/src -> parent/src`).
+    """
+    parent = src_path.parent
+    if (src_path / src_path.name).exists():
+        # Contains a file/folder with same name
+        with tempfile.TemporaryDirectory(dir=parent) as temp_folder:
+            src_path = src_path.rename(parent / temp_folder / src_path.name)
+            shutil.copytree(src_path, parent, symlinks=True, dirs_exist_ok=True)
+    else:
+        shutil.copytree(src_path, parent, symlinks=True, dirs_exist_ok=True)
+        shutil.rmtree(src_path)
