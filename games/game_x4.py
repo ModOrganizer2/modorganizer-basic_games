@@ -1,9 +1,7 @@
-from PyQt6.QtCore import QDir
 from ..basic_game import BasicGame
 
 
 class X4FoundationsGame(BasicGame):
-
     Name = "X4 Foundations Support Plugin"
     Author = "Twinki,BrandonM4"
     Version = "0.1.0"
