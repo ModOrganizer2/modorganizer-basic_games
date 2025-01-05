@@ -16,6 +16,7 @@ class ControlGame(BasicGame):
     GameNexusId = 2936
     GameSteamId = 870780
     GameGogId = 2049187585
+    GameEpicId = "calluna"
     GameBinary = "Control.exe"
     GameDataPath = ""
 
