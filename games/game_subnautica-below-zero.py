@@ -13,6 +13,7 @@ class SubnauticaBelowZeroGame(game_subnautica.SubnauticaGame):
     GameShortName = "subnauticabelowzero"
     GameNexusName = "subnauticabelowzero"
     GameSteamId = 848450
+    GameEpicId = "foxglove"
     GameBinary = "SubnauticaZero.exe"
     GameDataPath = "_ROOT"
     GameDocumentsDirectory = "%GAME_PATH%"
