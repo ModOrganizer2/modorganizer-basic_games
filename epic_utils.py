@@ -38,10 +38,10 @@ def find_epic_games() -> Iterable[tuple[str, Path]]:
                 )
 
 
-def find_legendary_games() -> Iterable[tuple[str, Path]]:
+def find_legendary_games(config_path: str | None = None) -> Iterable[tuple[str, Path]]:
     # Based on legendary source:
     # https://github.com/derrod/legendary/blob/master/legendary/lfs/lgndry.py
-    if config_path := os.environ.get("XDG_CONFIG_HOME"):
+    if config_path := config_path or os.environ.get("XDG_CONFIG_HOME"):
         legendary_config_path = Path(config_path, "legendary")
     else:
         legendary_config_path = Path("~/.config/legendary").expanduser()
@@ -61,8 +61,14 @@ def find_legendary_games() -> Iterable[tuple[str, Path]]:
             )
 
 
+def find_heroic_games():
+    return find_legendary_games(os.path.expandvars(r"%AppData%\heroic\legendaryConfig"))
+
+
 def find_games() -> dict[str, Path]:
-    return dict(itertools.chain(find_epic_games(), find_legendary_games()))
+    return dict(
+        itertools.chain(find_epic_games(), find_legendary_games(), find_heroic_games())
+    )
 
 
 if __name__ == "__main__":
