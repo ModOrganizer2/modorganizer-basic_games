@@ -16,11 +16,11 @@ def find_epic_games() -> Iterable[tuple[str, Path]]:
             winreg.HKEY_LOCAL_MACHINE,
             r"Software\Wow6432Node\Epic Games\EpicGamesLauncher",
         ) as key:
-            epic_app_data_path, _ = winreg.QueryValueEx(key, "AppDataPath")
+            epic_data_path, _ = winreg.QueryValueEx(key, "AppDataPath")
     except FileNotFoundError:
-        return
+        epic_data_path = r"%ProgramData%\Epic\EpicGamesLauncher\Data"
 
-    manifests_path = Path(os.path.expandvars(epic_app_data_path)).joinpath("Manifests")
+    manifests_path = Path(os.path.expandvars(epic_data_path)).joinpath("Manifests")
     if manifests_path.exists():
         for manifest_file_path in manifests_path.glob("*.item"):
             try:
