@@ -16,11 +16,11 @@ def find_epic_games() -> Iterable[tuple[str, Path]]:
             winreg.HKEY_LOCAL_MACHINE,
             r"Software\Wow6432Node\Epic Games\EpicGamesLauncher",
         ) as key:
-            epic_app_data_path, _ = winreg.QueryValueEx(key, "AppDataPath")
+            epic_data_path, _ = winreg.QueryValueEx(key, "AppDataPath")
     except FileNotFoundError:
-        return
+        epic_data_path = r"%ProgramData%\Epic\EpicGamesLauncher\Data"
 
-    manifests_path = Path(os.path.expandvars(epic_app_data_path)).joinpath("Manifests")
+    manifests_path = Path(os.path.expandvars(epic_data_path)).joinpath("Manifests")
     if manifests_path.exists():
         for manifest_file_path in manifests_path.glob("*.item"):
             try:
@@ -38,10 +38,10 @@ def find_epic_games() -> Iterable[tuple[str, Path]]:
                 )
 
 
-def find_legendary_games() -> Iterable[tuple[str, Path]]:
+def find_legendary_games(config_path: str | None = None) -> Iterable[tuple[str, Path]]:
     # Based on legendary source:
     # https://github.com/derrod/legendary/blob/master/legendary/lfs/lgndry.py
-    if config_path := os.environ.get("XDG_CONFIG_HOME"):
+    if config_path := config_path or os.environ.get("XDG_CONFIG_HOME"):
         legendary_config_path = Path(config_path, "legendary")
     else:
         legendary_config_path = Path("~/.config/legendary").expanduser()
@@ -61,8 +61,14 @@ def find_legendary_games() -> Iterable[tuple[str, Path]]:
             )
 
 
+def find_heroic_games():
+    return find_legendary_games(os.path.expandvars(r"%AppData%\heroic\legendaryConfig"))
+
+
 def find_games() -> dict[str, Path]:
-    return dict(itertools.chain(find_epic_games(), find_legendary_games()))
+    return dict(
+        itertools.chain(find_epic_games(), find_legendary_games(), find_heroic_games())
+    )
 
 
 if __name__ == "__main__":

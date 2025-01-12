@@ -206,7 +206,8 @@ Game IDs can be found here:
 - For Origin from `C:\ProgramData\Origin\LocalContent` (.mfst files)
 - For Epic Games (`AppName`) from:
   - `C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\` (.item files)
-  - or: `C:\ProgramData\Epic\EpicGamesLauncher\UnrealEngineLauncher\LauncherInstalled.dat`
+  - or `C:\ProgramData\Epic\EpicGamesLauncher\UnrealEngineLauncher\LauncherInstalled.dat`
+  - or [Unofficial EGS ID DB](https://erri120.github.io/egs-db/)
 - For Legendary (alt. Epic launcher) via command `legendary list-games`
     or from: `%USERPROFILE%\.config\legendary\installed.json`
 - For EA Desktop from `<EA Games install location>\<game title>\__Installer\installerdata.xml`
