@@ -575,25 +575,27 @@ class Cyberpunk2077Game(BasicGame):
         """
         data_path = Path(self.dataDirectory().absolutePath())
         overwrite_path = Path(self._organizer.overwritePath())
-        cache_files = [
-            file.relative_to(data_path) for file in data_path.glob("r6/cache/*")
-        ]
+        data_cache_path = data_path / "r6/cache"
+        overwrite_cache_path = overwrite_path / "r6/cache"
+        cache_files = (
+            file.relative_to(data_path) for file in data_cache_path.glob("*")
+        )
         if self._get_setting("clear_cache_after_game_update") and any(
             self._is_cache_file_updated(file, data_path) for file in cache_files
         ):
             qInfo('Updated game files detected, clearing "overwrite/r6/cache/*"')
             try:
-                shutil.rmtree(overwrite_path / "r6/cache")
+                shutil.rmtree(overwrite_cache_path)
             except FileNotFoundError:
                 pass
-            new_cache_files = cache_files
+            qInfo('Updating "r6/cache" in overwrite')
+            shutil.copytree(data_cache_path, overwrite_cache_path, dirs_exist_ok=True)
         else:
-            new_cache_files = list(self._unmapped_cache_files(data_path))
-        for file in new_cache_files:
-            qInfo(f'Copying "{file}" to overwrite (to catch file overwrites)')
-            dst = overwrite_path / file
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(data_path / file, dst)
+            for file in self._unmapped_cache_files(data_path):
+                qInfo(f'Copying "{file}" to overwrite (to catch file overwrites)')
+                dst = overwrite_path / file
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(data_path / file, dst)
 
     def _is_cache_file_updated(self, file: Path, data_path: Path) -> bool:
         """Checks if a cache file is updated (in game dir).
