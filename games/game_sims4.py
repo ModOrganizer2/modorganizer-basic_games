@@ -1,12 +1,13 @@
+from collections.abc import Callable
 from enum import IntEnum
 from re import match
-from typing import List, cast
+from typing import Any, List, Set, cast
 from mobase import (
     FileTreeEntry,
     ModDataChecker,
     ReleaseType,
     IFileTree,
-    FileTreeEntry,
+    IOrganizer,
     VersionInfo,
     ModDataContent,
 )
@@ -42,11 +43,12 @@ class TS4Game(BasicGame):
     def documentsDirectory(self):
         return self.dataDirectory()
 
-    def init(self, organizer):
+    def init(self, organizer: IOrganizer):
         if super().init(organizer):
             self._register_feature(TS4ModDataChecker())
             self._register_feature(TS4ModDataContent())
             return True
+        return False
 
 
 class TS4ModDataChecker(ModDataChecker):
@@ -54,21 +56,27 @@ class TS4ModDataChecker(ModDataChecker):
     # The first capturing group lazily captures any parent folders exceeding that depth, see below
     _fixableOrValid = r"(?i)^(.*?)((?:[^\\]+\\){0,5}[^\\]*\.package|(?:[^\\]+\\)?[^\\]*\.(?:ts4script|py))$"
 
-    def dataLooksValid(self, tree: IFileTree) -> ModDataChecker.CheckReturn:
-        return cast(ModDataChecker.CheckReturn, self.fix(tree, validateMode=True))
+    def dataLooksValid(self, filetree: IFileTree) -> ModDataChecker.CheckReturn:
+        return cast(
+            ModDataChecker.CheckReturn,
+            self._fixOrValidateTree(filetree, validateMode=True),
+        )
 
-    def fix(
+    def fix(self, filetree: IFileTree) -> IFileTree | None:
+        return cast(IFileTree, self._fixOrValidateTree(filetree))
+
+    def _fixOrValidateTree(
         self,
         tree: IFileTree,
-        validateMode=False,
+        validateMode: bool = False,
     ) -> IFileTree | ModDataChecker.CheckReturn:
         validationResult = ValidationResult.INVALID
         checkReturn = ModDataChecker.INVALID
         walkReturn = IFileTree.CONTINUE
 
         def setValidationResult(
-            newResult=ValidationResult.INVALID,
-            actionCallback=lambda: None,
+            newResult: ValidationResult = ValidationResult.INVALID,
+            actionCallback: Callable[[], Any] = lambda: None,
         ):
             nonlocal validationResult
             nonlocal checkReturn
@@ -81,6 +89,8 @@ class TS4ModDataChecker(ModDataChecker):
                     case ValidationResult.FIXABLE:
                         checkReturn = ModDataChecker.FIXABLE
                         walkReturn = IFileTree.STOP
+                    case _:
+                        pass
             else:
                 actionCallback()
 
@@ -100,6 +110,8 @@ class TS4ModDataChecker(ModDataChecker):
                             ValidationResult.FIXABLE,
                             lambda: tree.move(entry, innerPath),
                         )
+                    case _:
+                        pass
             return walkReturn
 
         tree.walk(fixOrValidateEntry)
@@ -119,8 +131,8 @@ class TS4ModDataContent(ModDataContent):
             ModDataContent.Content(Content.SCRIPT, "Script", ":/MO/gui/content/script"),
         ]
 
-    def getContentsFor(self: ModDataContent, tree: IFileTree) -> List[int]:
-        contents = set()
+    def getContentsFor(self: ModDataContent, filetree: IFileTree) -> List[int]:
+        contents: Set[int] = set()
 
         def getContentForEntry(path: str, entry: FileTreeEntry):
             nonlocal contents
@@ -129,10 +141,12 @@ class TS4ModDataContent(ModDataContent):
                     contents.add(Content.PACKAGE)
                 case "ts4script" | "py":
                     contents.add(Content.SCRIPT)
+                case _:
+                    pass
             if len(contents) == 2:
                 return IFileTree.STOP
             else:
                 return IFileTree.CONTINUE
 
-        tree.walk(getContentForEntry)
+        filetree.walk(getContentForEntry)
         return list(contents)
