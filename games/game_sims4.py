@@ -111,8 +111,6 @@ class TS4ModDataChecker(ModDataChecker):
                             ValidationResult.FIXABLE,
                             lambda: tree.move(entry, innerPath),
                         )
-                    case _:
-                        pass
             return walkReturn
 
         tree.walk(fixOrValidateEntry)
