@@ -2,14 +2,15 @@ from collections.abc import Callable
 from enum import IntEnum
 from re import match
 from typing import Any, List, Set, cast
+
 from mobase import (
     FileTreeEntry,
-    ModDataChecker,
-    ReleaseType,
     IFileTree,
     IOrganizer,
-    VersionInfo,
+    ModDataChecker,
     ModDataContent,
+    ReleaseType,
+    VersionInfo,
 )
 
 from ..basic_game import BasicGame
@@ -84,13 +85,13 @@ class TS4ModDataChecker(ModDataChecker):
             if validateMode:
                 validationResult = max(validationResult, newResult)
                 match validationResult:
+                    case ValidationResult.INVALID:
+                        pass
                     case ValidationResult.VALID:
                         checkReturn = ModDataChecker.VALID
                     case ValidationResult.FIXABLE:
                         checkReturn = ModDataChecker.FIXABLE
                         walkReturn = IFileTree.STOP
-                    case _:
-                        pass
             else:
                 actionCallback()
 
