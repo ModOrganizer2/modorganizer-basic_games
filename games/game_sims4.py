@@ -11,8 +11,6 @@ from mobase import (
     ModDataContent,
 )
 
-from PyQt6.QtCore import QDir
-
 from ..basic_game import BasicGame
 
 
