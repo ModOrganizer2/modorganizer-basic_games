@@ -55,7 +55,7 @@ class TS4Game(BasicGame):
 class TS4ModDataChecker(ModDataChecker):
     # .package files are allowed at a maximum depth of 5 subfolders, script files can be at most one level deep
     # The first capturing group lazily captures any parent folders exceeding that depth, see below
-    _fixableOrValid = r"(?i)^(.*?)((?:[^\\]+\\){0,5}[^\\]*\.package|(?:[^\\]+\\)?[^\\]*\.(?:ts4script|py))$"
+    _fixableOrValid = r"(?i)^(.*?)((?:[^\\]+\\){0,5}[^\\]*\.package|(?:[^\\]+\\)?[^\\]*\.ts4script|(?:[^\\]+\\)scripts\\.*\.py)$"
 
     def dataLooksValid(self, filetree: IFileTree) -> ModDataChecker.CheckReturn:
         return cast(
