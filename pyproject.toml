@@ -1,22 +1,26 @@
 # note: this file is for local development, currently the file is not used to build
 # the plugin
-[tool.poetry]
+[project]
 name = "basic-games"
 version = "0.1.0"
 description = ""
 authors = []
 license = "MIT"
 readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dynamic = ["dependencies"]
+
+[tool.poetry]
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.12"
 psutil = "^5.8.0"
 vdf = "3.4"
 lzokay = "1.1.5"
 pyqt6 = "6.7.0"
 
 [tool.poetry.group.dev.dependencies]
-mobase-stubs = { version = "^2.5.1a0", allow-prereleases = true }
+mobase-stubs = "^2.5.2"
 pyqt6 = "^6.7.0"
 pyright = "^1.1.365"
 ruff = "^0.2.1"
@@ -24,7 +28,7 @@ types-psutil = "^5.9.5.20240516"
 poethepoet = "^0.23.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core (>=2.0)"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poe.tasks]
@@ -44,7 +48,7 @@ target-version = "py310"
 extend-select = ["B", "Q", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ['tas']
+known-first-party = ["tas"]
 
 [tool.pyright]
 exclude = ["lib", "**/.*", "venv"]
