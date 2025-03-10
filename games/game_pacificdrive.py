@@ -1,5 +1,4 @@
 import mobase
-from PyQt6.QtCore import QDir
 
 from ..basic_features import BasicModDataChecker, GlobPatterns
 from ..basic_game import BasicGame
