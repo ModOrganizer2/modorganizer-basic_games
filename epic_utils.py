@@ -9,8 +9,12 @@ import winreg
 from collections.abc import Iterable
 from pathlib import Path
 
+ErrorList = list[tuple[str, Exception]]
 
-def find_epic_games() -> Iterable[tuple[str, Path]]:
+
+def find_epic_games(
+    errors: ErrorList | None = None,
+) -> Iterable[tuple[str, Path]]:
     try:
         with winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE,
@@ -30,15 +34,23 @@ def find_epic_games() -> Iterable[tuple[str, Path]]:
                     manifest_file_data["AppName"],
                     Path(manifest_file_data["InstallLocation"]),
                 )
-            except (json.JSONDecodeError, KeyError):
+            except (json.JSONDecodeError, KeyError) as e:
+                error_message = (
+                    f'Unable to parse Epic Games manifest file: "{manifest_file_path}"\n'
+                    " Try to run the launcher recreate it."
+                )
                 print(
-                    "Unable to parse Epic Games manifest file",
-                    manifest_file_path,
+                    error_message,
+                    e,
                     file=sys.stderr,
                 )
+                if errors is not None:
+                    errors.append((error_message, e))
 
 
-def find_legendary_games(config_path: str | None = None) -> Iterable[tuple[str, Path]]:
+def find_legendary_games(
+    config_path: str | None = None, errors: ErrorList | None = None
+) -> Iterable[tuple[str, Path]]:
     # Based on legendary source:
     # https://github.com/derrod/legendary/blob/master/legendary/lfs/lgndry.py
     if config_path := config_path or os.environ.get("XDG_CONFIG_HOME"):
@@ -53,21 +65,33 @@ def find_legendary_games(config_path: str | None = None) -> Iterable[tuple[str, 
                 installed_games = json.load(installed_file)
             for game in installed_games.values():
                 yield game["app_name"], Path(game["install_path"])
-        except (json.JSONDecodeError, AttributeError, KeyError):
+        except (json.JSONDecodeError, AttributeError, KeyError) as e:
+            error_message = (
+                f'Unable to parse installed games from Legendary/Heroic launcher: "{installed_path}"\n'
+                " Try to run the launcher to recrated the file."
+            )
             print(
-                "Unable to parse installed games from Legendary",
-                installed_path,
+                error_message,
+                e,
                 file=sys.stderr,
             )
+            if errors is not None:
+                errors.append((error_message, e))
 
 
-def find_heroic_games():
-    return find_legendary_games(os.path.expandvars(r"%AppData%\heroic\legendaryConfig"))
+def find_heroic_games(errors: ErrorList | None = None):
+    return find_legendary_games(
+        os.path.expandvars(r"%AppData%\heroic\legendaryConfig"), errors
+    )
 
 
-def find_games() -> dict[str, Path]:
+def find_games(errors: ErrorList | None = None) -> dict[str, Path]:
     return dict(
-        itertools.chain(find_epic_games(), find_legendary_games(), find_heroic_games())
+        itertools.chain(
+            find_epic_games(errors=errors),
+            find_legendary_games(errors=errors),
+            find_heroic_games(errors=errors),
+        )
     )
 
 
