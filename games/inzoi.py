@@ -25,9 +25,6 @@ logger.setLevel(logging.DEBUG)
 LogLevel = "NONE"  # Shitty workaround but whatever
 
 
-# logging.basicConfig(level=logging.DEBUG)
-
-
 class InzoiModDataChecker(BasicModDataChecker):
     def __init__(self):
         # Directly pass the GlobPatterns to BasicModDataChecker
@@ -105,8 +102,10 @@ class InzoiModDataChecker(BasicModDataChecker):
         ):
             # List of extensions to check, can be extended dynamically
             file_extensions = ["*.pak", "*.utoc", "*.ucas"]  # Add more as needed
-            matched_files = []  # To track matched files for debugging
-            files_to_move = []  # To store files that need to be moved
+            matched_files: list[str] = []  # To track matched files for debugging
+            files_to_move: list[mobase.IFileTreeEntry] = (
+                []
+            )  # To store files that need to be moved
 
             # Debugging: Output all files in the folder to ensure everything is being found
             all_files = [
@@ -185,6 +184,9 @@ class InzoiGame(BasicGame):
             return False
 
         self._register_feature(InzoiModDataChecker())
+        organizer.onAboutToRun(self._onAboutToRun)
+        organizer.onFinishedRun(self._onFinishedRun)
+        # Not really doing anything with this right now.
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         self._organizer = organizer
         modList = self._organizer.modList()
@@ -242,7 +244,7 @@ class InzoiGame(BasicGame):
         for mod_name, state in mod_states.items():
             mod = self._organizer.modList().getMod(mod_name)
             if not mod:
-                logger.warning(f"Mod not found: {mod_name}")
+                logger.warning(f"🧐Mod not found: {mod_name}")
                 continue
 
             mod_path = Path(mod.absolutePath())
@@ -256,45 +258,111 @@ class InzoiGame(BasicGame):
 
             # Handle enabling and disabling of the mod
             if state & mobase.ModState.ACTIVE:
-                logger.info(f"{mod_name} enabled.")
+                logger.info(f"✔️{mod_name} enabled.")
                 if is_printer_mod:
                     logger.info(f"🖨️ {mod_name} is a 3DPrinter mod!")
                     target_dir = (
-                        printer_base / actual_mod_folder
+                        printer_base / actual_mod_folder.name
                     )  # Use the actual folder name for the symlink
                     if target_dir.exists():
                         logger.info(
-                            f"Removing old symlink or directory at: {target_dir}"
+                            f"Removing old 🔗symlink or directory at: {target_dir}"
                         )
-                        if target_dir.is_symlink() or target_dir.is_file():
-                            target_dir.unlink()
-                        elif target_dir.is_dir():
-                            shutil.rmtree(target_dir)
+                        if target_dir.is_symlink():
+                            target_dir.unlink()  # Remove the symlink if it exists
                     try:
                         logger.info(
-                            f"Creating symlink: {target_dir} → {actual_mod_folder}"
+                            f"Creating 🔗symlink: {target_dir} → {actual_mod_folder}"
                         )
                         os.symlink(
                             actual_mod_folder, target_dir, target_is_directory=True
                         )
                     except Exception as e:
-                        logger.error(f"Failed to create symlink for {mod_name}: {e}")
+                        logger.error(
+                            f"❌Failed to create 🔗symlink for {mod_name}: {e}"
+                        )
             else:
-                logger.info(f"{mod_name} disabled.")
+                logger.info(f"➖{mod_name} disabled.")
                 if is_printer_mod:
                     logger.info(f"🖨️ {mod_name} is a 3DPrinter mod!")
-                    target_dir = printer_base / actual_mod_folder
+                    target_dir = printer_base / actual_mod_folder.name
                     if target_dir.exists():
                         try:
-                            if target_dir.is_symlink() or target_dir.is_file():
-                                target_dir.unlink()
-                            elif target_dir.is_dir():
-                                shutil.rmtree(target_dir)
-                            logger.info(f"Removed 🖨️ printer symlink for {mod_name}")
+                            if target_dir.is_symlink():
+                                target_dir.unlink()  # Remove the symlink on disable
+                                logger.info(
+                                    f"Removed 🖨️ printer 🔗symlink: {target_dir} for {mod_name}"
+                                )
                         except Exception as e:
                             logger.error(
-                                f"Failed to remove printer link for {mod_name}: {e}"
+                                f"❌Failed to remove 🖨️ printer 🔗symlink for {mod_name}: {e}"
                             )
+
+    def AddSymlinksOnLaunch(self):
+        mods_parent_path = Path(self._organizer.modsPath())
+        modlist = self._organizer.modList().allModsByProfilePriority()
+
+        for mod in modlist:
+            if self._organizer.modList().state(mod) & mobase.ModState.ACTIVE:
+                mod_path = mods_parent_path / mod
+                for file_name in ["bitfix", "dsound.dll"]:
+                    file_src = (
+                        mod_path / "BlueClient" / "Binaries" / "Win64" / file_name
+                    )
+                    if file_src.exists():
+                        file_dst = (
+                            Path(self.gameDirectory().absolutePath())
+                            / "BlueClient"
+                            / "Binaries"
+                            / "Win64"
+                            / file_name
+                        )
+                        if file_dst.exists():
+                            logger.info(
+                                f"Checking existing 🔗symlink or file: {file_dst}"
+                            )
+                            # Only remove if it's a symlink
+                            if file_dst.is_symlink():
+                                logger.info(f"Removing existing 🔗symlink: {file_dst}")
+                                file_dst.unlink()
+                            else:
+                                logger.info(
+                                    f"Skipping removal of file or directory: {file_dst}"
+                                )
+                        try:
+                            logger.info(f"Creating 🔗symlink: {file_dst} → {file_src}")
+                            os.symlink(file_src, file_dst, target_is_directory=False)
+                        except Exception as e:
+                            logger.error(
+                                f"❌Failed to create 🔗symlink for {file_src}: {e}"
+                            )
+
+    def RemoveSymlinksOnExit(self):
+        modlist = self._organizer.modList().allModsByProfilePriority()
+
+        for mod in modlist:
+            if self._organizer.modList().state(mod) & mobase.ModState.ACTIVE:
+                for file_name in ["bitfix", "dsound.dll"]:
+                    file_dst = (
+                        Path(self.gameDirectory().absolutePath())
+                        / "BlueClient"
+                        / "Binaries"
+                        / "Win64"
+                        / file_name
+                    )
+                    if file_dst.is_symlink():
+                        logger.info(f"Removing 🔗symlink: {file_dst}")
+                        file_dst.unlink()
+
+    def _onAboutToRun(self, path: str):
+        logger.info(f"🐸 Application about to run: {path}")
+        self.AddSymlinksOnLaunch()
+        return True
+
+    def _onFinishedRun(self, path: str, exit_code: int):
+        logger.info(f"🐸 Application finished running: {path}, exit code: {exit_code}")
+        self.RemoveSymlinksOnExit()  # Clean up symlinks when game finishes
+        return True
 
 
 def createPlugin() -> IPlugin:
