@@ -1,6 +1,5 @@
 # Misc Modules
 import os
-import shutil
 import logging
 import fnmatch
 from pathlib import Path
@@ -19,10 +18,7 @@ from ..basic_game import BasicGame
 # Set up logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.DEBUG)  # Fuck it's annoying this doesn't work, something is reconfiguring the root logger and removing debug
-# logger.addHandler(console_handler) # well debug statements show but so do duplicate logs.
-LogLevel = "NONE"  # Shitty workaround but whatever
+LogLevel = "Prod"  # Shitty workaround but whatever
 
 
 class InzoiModDataChecker(BasicModDataChecker):
@@ -72,7 +68,19 @@ class InzoiModDataChecker(BasicModDataChecker):
         # Call the parent class method to get the base check
         check_return = super().dataLooksValid(filetree)
 
-        # A single unknown folder with a pak or utoc file in is to be moved
+        # Case: AFolder/BlueClient/... (needs flattening)
+        if (
+            check_return is self.INVALID
+            and len(filetree) == 1
+            and is_directory(wrapper := filetree[0])
+            and any(
+                is_directory(entry) and entry.name().lower() == "blueclient"
+                for entry in wrapper
+            )
+        ):
+            return self.FIXABLE
+
+        # Case: A folder that only contains a single directory which has pak/utoc/ucas
         if (
             check_return is self.INVALID
             and len(filetree) == 1
@@ -86,79 +94,130 @@ class InzoiModDataChecker(BasicModDataChecker):
         ):
             return self.FIXABLE
 
+        # Check for 3D printer mod folder with *.glb files
+        for entry in filetree:
+            if is_directory(entry) and entry.name():
+                # Look for *.glb files in the directory
+                glb_files = [
+                    f
+                    for f in entry
+                    if f.isFile() and fnmatch.fnmatch(f.name(), "*.glb")
+                ]
+                if glb_files:
+                    return self.FIXABLE
+
         return check_return
 
-    # Corrects the mod data structure for specfic file types
+    # Fixes all incorecctly packaged mods
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
         filetree = super().fix(filetree)
 
-        # Check if the filetree looks valid and contains at least one item
+        # Step 1: Flatten AFolder/BlueClient/... to just BlueClient/...
+        if (
+            len(filetree) == 1
+            and is_directory(wrapper := filetree[0])
+            and any(
+                is_directory(entry) and entry.name().lower() == "blueclient"
+                for entry in wrapper
+            )
+        ):
+            for entry in wrapper:
+                if is_directory(entry) and entry.name().lower() == "blueclient":
+                    logger.info(
+                        f"Flattening wrapper folder: {wrapper.name()} → {entry.name()}"
+                    )
+                    filetree.move(entry, entry.name())
+                    filetree.remove(wrapper)
+                    break
+
+        # Step 2: Handle single-folder case with .pak/.utoc/.ucas
         if (
             self.dataLooksValid(filetree) is self.FIXABLE
-            and len(filetree) > 0  # Ensure there's at least one entry in the filetree
-            and is_directory(folder := filetree[0])  # Ensure folder is a directory
-            and folder is not None  # Ensure folder is not None
-            and len(folder) > 0  # Ensure the folder has files before proceeding
+            and len(filetree) > 0
+            and is_directory(folder := filetree[0])
+            and folder is not None
+            and len(folder) > 0
         ):
-            # List of extensions to check, can be extended dynamically
-            file_extensions = ["*.pak", "*.utoc", "*.ucas"]  # Add more as needed
-            matched_files: list[str] = []  # To track matched files for debugging
-            files_to_move: list[mobase.IFileTreeEntry] = (
-                []
-            )  # To store files that need to be moved
+            file_extensions = ["*.pak", "*.utoc", "*.ucas"]
+            matched_files: list[str] = []
+            files_to_move: list[mobase.IFileTreeEntry] = []
 
-            # Debugging: Output all files in the folder to ensure everything is being found
             all_files = [
                 entry.name() for entry in folder if entry is not None and entry.isFile()
             ]
             logger.info(
-                f"Found files in folder: {', '.join(all_files)}"
-            )  # Log all files in the folder
+                f"🧐 Checking for PAK,UTOC or UCAS files in folder: {folder.name()}"
+            )
+            logger.info(f"🗂️ Found files in folder: {', '.join(all_files)}")
 
-            # Collect files that need to be moved
             for entry in folder:
-                if (
-                    entry is not None and entry.isFile()
-                ):  # Ensure entry is valid and is a file
+                if entry is not None and entry.isFile():
                     file_name = entry.name()
 
-                    # Debug: Check if we are even entering the loop for each file
                     if LogLevel == "Debug":
-                        logger.info(f"Checking file: {file_name}")
+                        logger.info(f"🧐 Checking file: {file_name}")
 
-                    # Check for matches with file extensions
                     for ext in file_extensions:
                         if fnmatch.fnmatch(file_name, ext):
-                            logger.info(
-                                f"File matches: {file_name} (Matches {ext})"
-                            )  # Debug which file extension matches
-                            files_to_move.append(
-                                entry
-                            )  # Add to the list of files to move
-                            matched_files.append(file_name)  # Track matched files
-                            break  # Break after the first match to prevent unnecessary checks
+                            logger.info(f"🗂️ File matches: {file_name} (Matches {ext})")
+                            files_to_move.append(entry)
+                            matched_files.append(file_name)
+                            break
 
-            # Move the files after the loop to ensure no file is skipped
             for file in files_to_move:
                 filetree.move(file, "BlueClient/Content/Paks/~mods/")
                 if LogLevel == "Debug":
                     logger.info(
-                        f"Moved {file.name()} to BlueClient/Content/Paks/~mods/"
+                        f"✈️ Moved {file.name()} to BlueClient/Content/Paks/~mods/"
                     )
 
-            # Log moved files
             if matched_files:
-                logger.info(f"Moved files: {', '.join(matched_files)}")
+                logger.info(f"✈️ Moved files: {', '.join(matched_files)}")
             else:
-                logger.warning("No matching files were moved.")
+                logger.info("👍 No matching files were moved.")
 
-            # After moving the files, check if the folder is empty and delete it if so
-            if not any(
-                entry.isFile() for entry in folder
-            ):  # Check if folder still contains files
-                if LogLevel == "Debug":
-                    logger.info(f"Removing empty folder: {folder}")
+            if not any(entry.isFile() for entry in folder):
+                logger.info(f"🧹 Removing empty folder: {folder.name()}")
                 filetree.remove(folder)
+
+        # Step 3: Handle 3D printer mod folder logic
+        for entry in filetree:
+            if entry is not None and is_directory(entry) and entry.name():
+                all_files = [f for f in entry if f is not None and f.isFile()]
+
+                if all_files:
+                    folder_name = entry.name()
+                    glb_files = [
+                        f for f in all_files if f.name().lower().endswith(".glb")
+                    ]
+
+                    logger.info(
+                        f"Found incorrectly formatted 🖨️ 3DPrinter mod folder: {folder_name}"
+                    )  # ← log once per folder
+
+                    # Rename folder to match .glb if applicable
+                    if len(glb_files) == 1:
+                        expected_name = Path(glb_files[0].name()).stem
+                        if folder_name != expected_name:
+                            logger.info(
+                                f"Renaming 🖨️ 3DPrinter mod folder: {folder_name} → {expected_name}"
+                            )
+                            filetree.move(entry, expected_name)
+                            folder_name = expected_name
+
+                    logger.info(f"🛠️ Fixing 🖨️ 3DPrinter mod folder: {folder_name}")
+                    target_dir = Path("My3DPrinter") / folder_name
+                    target_dir.mkdir(parents=True, exist_ok=True)
+
+                    for file in all_files:
+                        if file is not None and file.isFile():
+                            logger.info(f"✈️ Moving file: {file.name()} to {target_dir}")
+                            filetree.move(file, str(target_dir / file.name()))
+
+                    if not any(f is not None and f.isFile() for f in entry):
+                        logger.info(f"🧹Removing empty folder: {folder_name}")
+                        filetree.remove(entry)
+                    break
 
         return filetree
 
@@ -186,13 +245,20 @@ class InzoiGame(BasicGame):
         self._register_feature(InzoiModDataChecker())
         organizer.onAboutToRun(self._onAboutToRun)
         organizer.onFinishedRun(self._onFinishedRun)
+        organizer.onPluginSettingChanged(self._settings_change_callback)
         # Not really doing anything with this right now.
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        # self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         self._organizer = organizer
         modList = self._organizer.modList()
         modList.onModStateChanged(self.mod_state_changed)
 
         return True
+
+    @property
+    def deploy_3dprinter(self) -> bool:
+        return self._organizer.pluginSetting(
+            self.name(), "Deploy 3DPrinter mods on launch"
+        )
 
     def executables(self):
         return [
@@ -244,58 +310,55 @@ class InzoiGame(BasicGame):
         for mod_name, state in mod_states.items():
             mod = self._organizer.modList().getMod(mod_name)
             if not mod:
-                logger.warning(f"🧐Mod not found: {mod_name}")
+                logger.warning(f"🧐 Mod not found: {mod_name}")
                 continue
 
             mod_path = Path(mod.absolutePath())
             source_dir = mod_path / "My3DPrinter"
-
-            # Get the actual folder inside My3DPrinter (e.g., 0AE242564857369BAF5F84BC366FDB64)
             actual_mod_folder = next(source_dir.glob("*"), None)
-
-            # Check if this is a 3DPrinter mod
             is_printer_mod = actual_mod_folder and actual_mod_folder.is_dir()
 
-            # Handle enabling and disabling of the mod
             if state & mobase.ModState.ACTIVE:
-                logger.info(f"✔️{mod_name} enabled.")
+                logger.info(f"✔️ {mod_name} enabled.")
                 if is_printer_mod:
                     logger.info(f"🖨️ {mod_name} is a 3DPrinter mod!")
-                    target_dir = (
-                        printer_base / actual_mod_folder.name
-                    )  # Use the actual folder name for the symlink
+                    if self.deploy_3dprinter:
+                        continue  # just log, no symlink now
+                    target_dir = printer_base / actual_mod_folder.name
                     if target_dir.exists():
                         logger.info(
-                            f"Removing old 🔗symlink or directory at: {target_dir}"
+                            f"Removing old 🔗 symlink or directory at: {target_dir}"
                         )
                         if target_dir.is_symlink():
-                            target_dir.unlink()  # Remove the symlink if it exists
+                            target_dir.unlink()
                     try:
                         logger.info(
-                            f"Creating 🔗symlink: {target_dir} → {actual_mod_folder}"
+                            f"Creating 🔗 symlink: {target_dir} → {actual_mod_folder}"
                         )
                         os.symlink(
                             actual_mod_folder, target_dir, target_is_directory=True
                         )
                     except Exception as e:
                         logger.error(
-                            f"❌Failed to create 🔗symlink for {mod_name}: {e}"
+                            f"❌ Failed to create 🔗 symlink for {mod_name}: {e}"
                         )
             else:
-                logger.info(f"➖{mod_name} disabled.")
+                logger.info(f"➖ {mod_name} disabled.")
                 if is_printer_mod:
                     logger.info(f"🖨️ {mod_name} is a 3DPrinter mod!")
+                    if self.deploy_3dprinter:
+                        continue  # just log, no unlink now
                     target_dir = printer_base / actual_mod_folder.name
                     if target_dir.exists():
                         try:
                             if target_dir.is_symlink():
-                                target_dir.unlink()  # Remove the symlink on disable
+                                target_dir.unlink()
                                 logger.info(
-                                    f"Removed 🖨️ printer 🔗symlink: {target_dir} for {mod_name}"
+                                    f"🧹 Removed 🖨️ printer 🔗 symlink: {target_dir} for {mod_name}"
                                 )
                         except Exception as e:
                             logger.error(
-                                f"❌Failed to remove 🖨️ printer 🔗symlink for {mod_name}: {e}"
+                                f"❌ Failed to remove 🖨️ printer 🔗 symlink for {mod_name}: {e}"
                             )
 
     def AddSymlinksOnLaunch(self):
@@ -323,7 +386,9 @@ class InzoiGame(BasicGame):
                             )
                             # Only remove if it's a symlink
                             if file_dst.is_symlink():
-                                logger.info(f"Removing existing 🔗symlink: {file_dst}")
+                                logger.info(
+                                    f"🧹 Removing existing 🔗symlink: {file_dst}"
+                                )
                                 file_dst.unlink()
                             else:
                                 logger.info(
@@ -351,18 +416,96 @@ class InzoiGame(BasicGame):
                         / file_name
                     )
                     if file_dst.is_symlink():
-                        logger.info(f"Removing 🔗symlink: {file_dst}")
+                        logger.info(f"🧹 Removing 🔗symlink: {file_dst}")
                         file_dst.unlink()
+
+    def Add3DPrinterSymlinksOnLaunch(self):
+        printer_base = (
+            Path(self.documentsDirectory().absolutePath())
+            / "AIGenerated"
+            / "My3DPrinter"
+        )
+        printer_base.mkdir(parents=True, exist_ok=True)
+
+        modlist = self._organizer.modList().allModsByProfilePriority()
+        for mod_name in modlist:
+            if self._organizer.modList().state(mod_name) & mobase.ModState.ACTIVE:
+                mod = self._organizer.modList().getMod(mod_name)
+                if not mod:
+                    continue
+
+                mod_path = Path(mod.absolutePath())
+                source_dir = mod_path / "My3DPrinter"
+                actual_mod_folder = next(source_dir.glob("*"), None)
+
+                if actual_mod_folder and actual_mod_folder.is_dir():
+                    target_dir = printer_base / actual_mod_folder.name
+                    if target_dir.exists() and target_dir.is_symlink():
+                        target_dir.unlink()
+                    try:
+                        os.symlink(
+                            actual_mod_folder, target_dir, target_is_directory=True
+                        )
+                        logger.info(
+                            f"Created 3DPrinter 🔗symlink: {target_dir} → {actual_mod_folder}"
+                        )
+                    except Exception as e:
+                        logger.error(f"❌ Failed to create 3DPrinter symlink: {e}")
+
+    def Remove3DPrinterSymlinksOnExit(self):
+        printer_base = (
+            Path(self.documentsDirectory().absolutePath())
+            / "AIGenerated"
+            / "My3DPrinter"
+        )
+
+        if printer_base.exists():
+            for child in printer_base.iterdir():
+                if child.is_symlink():
+                    try:
+                        child.unlink()
+                        logger.info(f"🧹 Removed 3DPrinter 🔗symlink: {child}")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to remove 3DPrinter symlink: {e}")
 
     def _onAboutToRun(self, path: str):
         logger.info(f"🐸 Application about to run: {path}")
         self.AddSymlinksOnLaunch()
+        if self.deploy_3dprinter:
+            self.Add3DPrinterSymlinksOnLaunch()
         return True
 
     def _onFinishedRun(self, path: str, exit_code: int):
         logger.info(f"🐸 Application finished running: {path}, exit code: {exit_code}")
         self.RemoveSymlinksOnExit()  # Clean up symlinks when game finishes
+        if self.deploy_3dprinter:
+            self.Remove3DPrinterSymlinksOnExit()
         return True
+
+    def settings(self) -> list[mobase.PluginSetting]:
+        return [
+            mobase.PluginSetting(
+                "Deploy 3DPrinter mods on launch",
+                (
+                    "Deploys 3DPrinter mods on launch instead of when the mod is enabled."
+                ),
+                default_value=False,
+            )
+        ]
+
+    def _settings_change_callback(
+        self,
+        plugin_name: str,
+        setting: str,
+        old: mobase.MoVariant,
+        new: mobase.MoVariant,
+    ):
+        if plugin_name == self.name() and setting == "Deploy 3DPrinter mods on launch":
+            # self.deploy_3dprinter = bool(new)
+            if LogLevel == "Debug":
+                logger.info(
+                    f"🐸 Plugin setting changed: {setting} = {new}, old value: {old}"
+                )
 
 
 def createPlugin() -> IPlugin:
