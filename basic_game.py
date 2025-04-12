@@ -8,6 +8,7 @@ from typing import Callable, Generic, TypeVar
 import mobase
 from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QMessageBox
 
 from .basic_features.basic_save_game_info import (
     BasicGameSaveGame,
@@ -380,11 +381,22 @@ class BasicGame(mobase.IPluginGame):
         from .origin_utils import find_games as find_origin_games
         from .steam_utils import find_games as find_steam_games
 
+        errors: list[tuple[str, Exception]] = []
         BasicGame.steam_games = find_steam_games()
         BasicGame.gog_games = find_gog_games()
         BasicGame.origin_games = find_origin_games()
-        BasicGame.epic_games = find_epic_games()
-        BasicGame.eadesktop_games = find_eadesktop_games()
+        BasicGame.epic_games = find_epic_games(errors)
+        BasicGame.eadesktop_games = find_eadesktop_games(errors)
+
+        if errors:
+            QMessageBox.critical(
+                None,
+                "Errors loading game list",
+                (
+                    "The following errors occurred while loading the list of available games:\n"
+                    f"\n- {'\n\n- '.join('\n '.join(str(e) for e in messageError) for messageError in errors)}"
+                ),
+            )
 
     # File containing the plugin:
     _fromName: str
