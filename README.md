@@ -45,6 +45,8 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 
 ## Supported games
 
+<!-- START: GAMES -->
+
 | Game | Author | File | Extras |
 |------|--------|------|--------|
 | The Binding of Isaac: Rebirth — [STEAM](https://store.steampowered.com/app/250900/The_Binding_of_Isaac_Rebirth/) |[EzioTheDeadPoet](https://github.com/EzioTheDeadPoet)|[game_thebindingofisaacrebirth.py](games/game_thebindingofisaacrebirth.py)|<ul><li>profile specific ini file</li></ul>|
@@ -81,6 +83,8 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | Trackmania United Forever — [STEAM](https://store.steampowered.com/app/7200/Trackmania_United_Forever/) | [uwx](https://github.com/uwx) | [game_tmuf.py](games/game_tmuf.py) | |
 | Yu-Gi-Oh! Master Duel — [STEAM](https://store.steampowered.com/app/1449850/) | [The Conceptionist](https://github.com/the-conceptionist) & [uwx](https://github.com/uwx) | [game_masterduel.py](games/game_masterduel.py) | |
 | Zeus and Poseidon — [GOG](https://www.gog.com/game/zeus_poseidon) / [STEAM](https://store.steampowered.com/app/566050/Zeus__Poseidon/) | [Holt59](https://github.com/holt59/) | [game_zeusandpoiseidon.py](games/game_zeusandpoiseidon.py) | <ul><li>mod data checker</li></ul> |
+
+<!-- END: GAMES -->
 
 ## How to add a new game?
 

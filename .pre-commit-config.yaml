@@ -28,6 +28,15 @@ repos:
             "-o",
             "plugin-requirements.txt",
           ]
+  - repo: local
+    hooks:
+      - id: update-readme-games
+        name: Update list of games in README.md
+        entry: python
+        language: python
+        # files: ^(.*/)?\.py$
+        args: [pre-commit-hooks/update-readme-games.py]
+        additional_dependencies: [jinja2==3.1.6]
 
 ci:
   autofix_commit_msg: "[pre-commit.ci] Auto fixes from pre-commit.com hooks."
