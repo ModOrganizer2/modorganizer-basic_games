@@ -1,9 +1,10 @@
 from enum import IntEnum
 from pathlib import Path
 
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo, Qt
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+import mobase
 
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,

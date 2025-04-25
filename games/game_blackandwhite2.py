@@ -6,8 +6,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import BinaryIO
 
-import mobase
 from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo
+
+import mobase
 
 from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import (

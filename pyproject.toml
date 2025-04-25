@@ -22,10 +22,10 @@ pyqt6 = "6.7.0"
 [tool.poetry.group.dev.dependencies]
 mobase-stubs = "^2.5.2"
 pyqt6 = "^6.7.0"
-pyright = "^1.1.365"
-ruff = "^0.2.1"
+pyright = "^1.1.400"
+ruff = "^0.11.7"
 types-psutil = "^5.9.5.20240516"
-poethepoet = "^0.23.0"
+poethepoet = "^0.34.0"
 
 [build-system]
 requires = ["poetry-core (>=2.0)"]
@@ -48,7 +48,7 @@ target-version = "py310"
 extend-select = ["B", "Q", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["tas"]
+known-first-party = ["mobase"]
 
 [tool.pyright]
 exclude = ["lib", "**/.*", "venv"]

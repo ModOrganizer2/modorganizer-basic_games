@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
+
+import mobase
 
 from ..basic_game import BasicGame, BasicGameSaveGame
 from ..steam_utils import find_steam_path
