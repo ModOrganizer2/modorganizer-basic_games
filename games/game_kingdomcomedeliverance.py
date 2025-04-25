@@ -1,7 +1,8 @@
 import os
 
-import mobase
 from PyQt6.QtCore import QDir
+
+import mobase
 
 from ..basic_game import BasicGame
 

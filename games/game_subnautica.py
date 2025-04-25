@@ -6,8 +6,9 @@ from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
 
-import mobase
 from PyQt6.QtCore import QDir, qWarning
+
+import mobase
 
 from ..basic_features import BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import (

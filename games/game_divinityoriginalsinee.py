@@ -69,8 +69,7 @@ class DivinityOriginalSinEnhancedEditionGame(BasicGame, mobase.IPluginFileMapper
     GameDataPath = "Data"
     GameSaveExtension = "lsv"
     GameDocumentsDirectory = (
-        "%USERPROFILE%/Documents/Larian Studios/"
-        "Divinity Original Sin Enhanced Edition"
+        "%USERPROFILE%/Documents/Larian Studios/Divinity Original Sin Enhanced Edition"
     )
     GameSavesDirectory = (
         "%USERPROFILE%/Documents/Larian Studios/"
