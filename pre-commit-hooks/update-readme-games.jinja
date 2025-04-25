@@ -1,0 +1,10 @@
+{%- for game in games -%}
+| {{ game.name }} | {%- for author in game.authors -%}
+{%- if author.homepage -%}
+[{{ author.name }}]({{ author.homepage }})
+{%- else -%}
+{{ author.name }}
+{%- endif -%}
+{%- if not loop.last %}, {% endif %}
+{%- endfor -%} | [{{ game.file.split('/') | last }}]({{ game.file }}) | |
+{% endfor %}

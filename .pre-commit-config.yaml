@@ -16,6 +16,27 @@ repos:
       - id: ruff
         args: [--extend-select, I, --fix]
       - id: ruff-format
+  - repo: https://github.com/python-poetry/poetry-plugin-export
+    rev: "1.9.0"
+    hooks:
+      - id: poetry-export
+        args:
+          [
+            "--without=dev",
+            "-f",
+            "requirements.txt",
+            "-o",
+            "plugin-requirements.txt",
+          ]
+  - repo: local
+    hooks:
+      - id: update-readme-games
+        name: Update list of games in README.md
+        entry: python
+        language: python
+        # files: ^(.*/)?\.py$
+        args: [pre-commit-hooks/update-readme-games.py]
+        additional_dependencies: [jinja2==3.1.6]
 
 ci:
   autofix_commit_msg: "[pre-commit.ci] Auto fixes from pre-commit.com hooks."
