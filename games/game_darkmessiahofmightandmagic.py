@@ -1,8 +1,9 @@
 import struct
 from pathlib import Path
 
-import mobase
 from PyQt6.QtGui import QImage
+
+import mobase
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_game import BasicGame

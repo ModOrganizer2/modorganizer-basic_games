@@ -5,10 +5,11 @@ import sys
 from pathlib import Path
 from typing import Callable, Generic, TypeVar
 
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMessageBox
+
+import mobase
 
 from .basic_features.basic_save_game_info import (
     BasicGameSaveGame,
