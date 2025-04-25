@@ -13,11 +13,13 @@ dynamic = ["dependencies"]
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [tool.poetry.dependencies]
 psutil = "^5.8.0"
 vdf = "3.4"
 lzokay = "1.1.5"
-pyqt6 = "6.7.0"
 
 [tool.poetry.group.dev.dependencies]
 mobase-stubs = "^2.5.2"

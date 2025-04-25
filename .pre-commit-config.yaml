@@ -16,6 +16,18 @@ repos:
       - id: ruff
         args: [--extend-select, I, --fix]
       - id: ruff-format
+  - repo: https://github.com/python-poetry/poetry-plugin-export
+    rev: "1.9.0"
+    hooks:
+      - id: poetry-export
+        args:
+          [
+            "--without=dev",
+            "-f",
+            "requirements.txt",
+            "-o",
+            "plugin-requirements.txt",
+          ]
 
 ci:
   autofix_commit_msg: "[pre-commit.ci] Auto fixes from pre-commit.com hooks."
