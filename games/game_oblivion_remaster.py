@@ -1,3 +1,4 @@
+import os.path
 from functools import cmp_to_key
 from pathlib import Path
 from typing import Dict, Sequence
@@ -189,30 +190,34 @@ class OblivionRemasteredGamePlugins(mobase.GamePlugins):
 
     def readLoadOrderList(self, plugin_list: mobase.IPluginList, file_path: str) -> list[str]:
         plugin_names = [plugin for plugin in self._organizer.managedGame().primaryPlugins()]
-        plugin_lookup = []
+        plugin_lookup = set()
         for name in plugin_names:
             if name.lower() not in plugin_lookup:
-                plugin_lookup.append(name.lower())
+                plugin_lookup.add(name.lower())
 
         try:
-            with open(file_path, "r") as file:
+            with open(file_path) as file:
                 for line in file:
-                    if line.lower() not in plugin_lookup:
-                        plugin_lookup.append(line.lower())
-                        plugin_names.append(line)
+                    if line.startswith('#'):
+                        continue
+                    plugin_file = line.rstrip('\n')
+                    if plugin_file.lower() not in plugin_lookup:
+                        plugin_lookup.add(plugin_file.lower())
+                        plugin_names.append(plugin_file)
         except FileNotFoundError:
-            pass
+            return self.readPluginList(plugin_list)
 
         return plugin_names
 
     def readPluginList(self, plugin_list: mobase.IPluginList) -> list[str]:
         plugins = [plugin for plugin in plugin_list.pluginNames()]
+        sorted_plugins = []
         primary = [plugin for plugin in self._organizer.managedGame().primaryPlugins()]
         primary_lower = [plugin.lower() for plugin in primary]
-        load_order = plugins.copy()
         for plugin_name in primary:
             if plugin_list.state(plugin_name) != mobase.PluginState.MISSING:
                 plugin_list.setState(plugin_name, mobase.PluginState.ACTIVE)
+            sorted_plugins.append(plugin_name)
         plugin_remove = [plugin for plugin in plugins if plugin.lower() in primary_lower]
         for plugin in plugin_remove:
             plugins.remove(plugin)
@@ -232,8 +237,9 @@ class OblivionRemasteredGamePlugins(mobase.GamePlugins):
                     encoder = QStringEncoder(QStringEncoder.Encoding.System)
                     file_plugin_name = encoder.encode(line.trimmed().data().decode())
                 if file_plugin_name.size() > 0:
-                    plugin_list.setState(file_plugin_name.data().decode(), mobase.PluginState.ACTIVE)
-                    if file_plugin_name.data().decode() in plugins:
+                    if file_plugin_name.data().decode().lower() in [plugin.lower() for plugin in plugins]:
+                        plugin_list.setState(file_plugin_name.data().decode(), mobase.PluginState.ACTIVE)
+                        sorted_plugins.append(file_plugin_name.data().decode())
                         plugins.remove(file_plugin_name.data().decode())
 
             file.close()
@@ -244,7 +250,7 @@ class OblivionRemasteredGamePlugins(mobase.GamePlugins):
             for plugin_name in plugins:
                 plugin_list.setState(plugin_name, mobase.PluginState.INACTIVE)
 
-        return load_order
+        return sorted_plugins + plugins
 
     def lightPluginsAreSupported(self) -> bool:
         return False
@@ -256,16 +262,47 @@ class OblivionRemasteredGamePlugins(mobase.GamePlugins):
         return False
 
 
+class OblivionRemasteredScriptExtender(mobase.ScriptExtender):
+    def __init__(self, game: mobase.IPluginGame):
+        super().__init__()
+        self._game = game
+
+    def binaryName(self):
+        return 'obse64_loader.exe'
+
+    def loaderName(self) -> str:
+        return self.binaryName()
+
+    def loaderPath(self) -> str:
+        return self._game.gameDirectory().absolutePath() + '\\OblivionRemastered\\Binaries\\Win64\\' + self.loaderName()
+
+    def pluginPath(self) -> str:
+        return 'OBSE/Plugins'
+
+    def savegameExtension(self) -> str:
+        return ''
+
+    def isInstalled(self) -> bool:
+        return os.path.exists(self.loaderPath())
+
+    def getExtenderVersion(self) -> str:
+        return mobase.getFileVersion(self.loaderPath())
+
+    def getArch(self) -> int:
+        return 0x8664 if self.isInstalled() else 0x0
+
+
+
 class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
-    Name = "Oblivion Remake Support Plugin"
+    Name = "Oblivion Remastered Support Plugin"
     Author = "Silarn"
-    Version = "0.0.0-a.1"
+    Version = "0.1.0-b.1"
+    Description = "TES IV: Oblivion Remastered; an unholy hybrid of Gamebryo and Unreal"
 
     GameName = "Oblivion Remastered"
     GameShortName = "oblivionremastered"
     GameNexusId = 7587
     GameSteamId = 2623190
-    #GameGogId = 2049187585
     GameBinary = "OblivionRemastered.exe"
     GameDataPath = r"%GAME_PATH%\OblivionRemastered\Content\Dev\ObvData\Data"
     UserHome = QStandardPaths.writableLocation(
@@ -284,9 +321,15 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(BasicGameSaveGameInfo())
         self._register_feature(OblivionRemasteredGamePlugins(self._organizer))
         self._register_feature(OblivionRemasteredModDataChecker())
+        self._register_feature(OblivionRemasteredScriptExtender(self))
+        self.detectGame()
+        paks_dir = QDir(self.gameDirectory().absolutePath() + r'\OblivionRemastered\Content\Paks')
+        if paks_dir.exists() and not paks_dir.exists('~mods'):
+            paks_dir.mkdir('~mods')
         return True
 
     def executables(self):
+        qDebug(self._organizer.gameFeatures().gameFeature(mobase.ScriptExtender).loaderPath())
         return [
             mobase.ExecutableInfo(
                 "Oblivion Remastered",
@@ -295,28 +338,21 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
                     self.binaryName(),
                 ),
             ),
+            mobase.ExecutableInfo(
+                "OBSE64",
+                QFileInfo(
+                    self._organizer.gameFeatures().gameFeature(mobase.ScriptExtender).loaderPath()
+                )
+            )
         ]
-
-    def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
-        try:
-            efls = super().executableForcedLoads()
-        except AttributeError:
-            efls = []
-
-        libraries = ["xinput1_3.dll"]
-        exePath = (Path(self.gameDirectory().absolutePath()) / 'OblivionRemastered' / 'Binaries' /
-                   'Win64' / 'OblivionRemastered-Win64-Shipping.exe')
-        efls.extend(
-            mobase.ExecutableForcedLoadSetting(
-                str(exePath.absolute()), lib
-            ).withEnabled(True)
-            for lib in libraries
-        )
-        return efls
 
     def primaryPlugins(self) -> list[str]:
         return [
-            'Oblivion.esm',
+            'Oblivion.esm'
+        ]
+
+    def enabledPlugins(self) -> list[str]:
+        return [
             'DLCBattlehornCastle.esp',
             'DLCFrostcrag.esp',
             'DLCHorseArmor.esp',
@@ -330,6 +366,20 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             'AltarESPMain.esp',
             'AltarDeluxe.esp',
             'AltarESPLocal.esp'
+        ]
+
+    def DLCPlugins(self) -> list[str]:
+        return [
+            'DLCBattlehornCastle.esp',
+            'DLCFrostcrag.esp',
+            'DLCHorseArmor.esp',
+            'DLCMehrunesRazor.esp',
+            'DLCOrrery.esp',
+            'DLCShiveringIsles.esp',
+            'DLCSpellTomes.esp',
+            'DLCThievesDen.esp',
+            'DLCVileLair.esp',
+            'Knights.esp'
         ]
 
     def secondaryDataDirectories(self) -> Dict[str, QDir]:
