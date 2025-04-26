@@ -1,6 +1,5 @@
 import os.path
 from functools import cmp_to_key
-from pathlib import Path
 from typing import Dict, Sequence
 
 import PyQt6.QtCore
@@ -8,7 +7,7 @@ import mobase
 from PyQt6.QtCore import QByteArray, QDir, QFileInfo, QFile, QDateTime, QCoreApplication, QStandardPaths, \
     QStringEncoder, QStringConverter, qCritical, qDebug
 
-from ..basic_features import BasicLocalSavegames, BasicGameSaveGameInfo, BasicModDataChecker, GlobPatterns
+from ..basic_features import BasicLocalSavegames, BasicGameSaveGameInfo
 from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
 
@@ -60,6 +59,9 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                                 elif sub_name.endswith(tuple(extensions)):
                                     status = mobase.ModDataChecker.FIXABLE
                             else:
+                                if name == 'Paks':
+                                    status = mobase.ModDataChecker.FIXABLE
+                                    break
                                 new_status = self.dataLooksValid(entry)
                                 if new_status != mobase.ModDataChecker.INVALID:
                                     status = new_status
@@ -106,13 +108,28 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         for entry in next_dir:
             name = entry.name().casefold()
             if is_directory(entry):
+                if name == '~mods':
+                    main_filetree.merge(entry)
+                    entry.detach()
+                    continue
                 self.parse_directory(main_filetree, entry)
             else:
                 if name.endswith(tuple(extensions)):
                     main_filetree.merge(next_dir)
-                    next_dir.detach()
+                    parent = next_dir.parent() if next_dir.parent().parent() is not None else next_dir
+                    while parent.parent().parent() is not None:
+                        parent = parent.parent()
+                    parent.detach()
                 elif name.endswith('.pak'):
-                    main_filetree.move(next_dir, '/')
+                    if entry.parent().name().casefold() == 'Paks':
+                        main_filetree.merge(entry.parent())
+                        parent = entry.parent() if entry.parent().parent() is not None else entry
+                        while parent.parent().parent() is not None:
+                            parent = parent.parent()
+                        parent.detach()
+                        return main_filetree
+                    else:
+                        main_filetree.move(next_dir, '/')
 
         return main_filetree
 
