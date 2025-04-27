@@ -192,10 +192,13 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         return main_filetree
 
     def detach_parents(self, directory: mobase.IFileTree) -> None:
-        parent = directory.parent() if directory.parent().parent() is not None else directory
-        while parent.parent().parent() is not None:
-            parent = parent.parent()
-        parent.detach()
+        if directory.parent() is not None:
+            parent = directory.parent() if directory.parent().parent() is not None else directory
+            while parent.parent().parent() is not None:
+                parent = parent.parent()
+            parent.detach()
+        else:
+            directory.detach()
 
 
 class OblivionRemasteredGamePlugins(mobase.GamePlugins):
@@ -405,8 +408,8 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(OblivionRemasteredModDataChecker())
         self._register_feature(OblivionRemasteredScriptExtender(self))
         self.detectGame()
-        if self.paksDirectory().exists() and not self.paksDirectory().exists('~mods'):
-            self.paksDirectory().mkdir('~mods')
+        if not self.paksDirectory().exists():
+            os.mkdir(self.paksDirectory().absolutePath())
         if not self.obseDirectory().exists():
             os.mkdir(self.obseDirectory().absolutePath())
         return True
