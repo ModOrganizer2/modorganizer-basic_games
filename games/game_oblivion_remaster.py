@@ -1,6 +1,8 @@
 import os.path
+import shutil
 from functools import cmp_to_key
-from typing import Dict, Sequence
+from pathlib import Path
+from typing import Sequence
 
 import PyQt6.QtCore
 import mobase
@@ -12,126 +14,188 @@ from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
 
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
+    _dirs = [
+        'Data',
+        'Paks',
+        'OBSE'
+    ]
+    _data_dirs = [
+        'meshes',
+        'textures',
+        'music',
+        'scripts',
+        'fonts',
+        'interface',
+        'shaders',
+        'strings',
+        'materials'
+    ]
+    _extensions = [
+        '.esm',
+        '.esp',
+        '.bsa',
+        '.ini',
+        '.dll'
+    ]
     def __init__(self):
         super().__init__()
 
     def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
         status = mobase.ModDataChecker.INVALID
-        dirs = [
-            'meshes',
-            'textures',
-            'music',
-            'scripts',
-            'fonts',
-            'interface',
-            'shaders',
-            'strings',
-            'materials'
-        ]
-        extensions = [
-            '.esm',
-            '.esp',
-            '.bsa',
-            '.ini'
-        ]
-        if filetree.parent() is None:
-            paks = filetree.find(r'OblivionRemastered\Content\Paks\~mods', mobase.FileTreeEntry.FileTypes.DIRECTORY)
-            if paks is not None:
-                return mobase.ModDataChecker.FIXABLE
-            data = filetree.find(r'OblivionRemastered\Content\Dev\ObvData\Data', mobase.FileTreeEntry.FileTypes.DIRECTORY)
-            if data is not None:
-                return mobase.ModDataChecker.FIXABLE
         for entry in filetree:
             name = entry.name().casefold()
-
             if entry.parent().parent() is None:
                 if is_directory(entry):
-                    if name in dirs:
-                        status = mobase.ModDataChecker.VALID
-                        break
+                    if name in [dirname.lower() for dirname in self._dirs]:
+                        if name == 'obse':
+                            status = mobase.ModDataChecker.VALID
+                            break
+                        for sub_entry in entry:
+                            if not is_directory(sub_entry):
+                                sub_name = sub_entry.name().casefold()
+                                if name == 'paks':
+                                    if sub_name.endswith('.pak'):
+                                        status = mobase.ModDataChecker.VALID
+                                        break
+                                if name == 'data':
+                                    if sub_name.endswith(tuple(self._extensions)):
+                                        status = mobase.ModDataChecker.VALID
+                                        break
+                            else:
+                                if name == 'paks':
+                                    for paks_entry in sub_entry:
+                                        if not is_directory(paks_entry):
+                                            paks_name = paks_entry.name().casefold()
+                                            if paks_name.endswith('.pak'):
+                                                status = mobase.ModDataChecker.VALID
+                                                break
+                        if status == mobase.ModDataChecker.VALID:
+                            break
                     else:
                         for sub_entry in entry:
                             if not is_directory(sub_entry):
                                 sub_name = sub_entry.name().casefold()
                                 if sub_name.endswith('.pak'):
-                                    status = mobase.ModDataChecker.VALID
-                                    break
-                                elif sub_name.endswith(tuple(extensions)):
+                                    status = mobase.ModDataChecker.FIXABLE
+                                elif sub_name.endswith(tuple(self._extensions)):
                                     status = mobase.ModDataChecker.FIXABLE
                             else:
                                 if name == 'Paks':
                                     status = mobase.ModDataChecker.FIXABLE
-                                    break
-                                new_status = self.dataLooksValid(entry)
-                                if new_status != mobase.ModDataChecker.INVALID:
-                                    status = new_status
+                        new_status = self.dataLooksValid(entry)
+                        if new_status != mobase.ModDataChecker.INVALID:
+                            status = new_status
                         if status == mobase.ModDataChecker.VALID:
                             break
                 else:
-                    if name.endswith(tuple(extensions + ['.pak'])):
-                        status = mobase.ModDataChecker.VALID
-                        break
-
+                    if name.endswith(tuple(self._extensions + ['.pak'])):
+                        status = mobase.ModDataChecker.FIXABLE
             else:
                 if is_directory(entry):
-                    new_status = self.dataLooksValid(entry)
-                    if new_status != mobase.ModDataChecker.INVALID:
-                        status = new_status
-                else:
-                    if name.endswith(tuple(extensions + ['.pak'])):
+                    if name in [dir_name.lower() for dir_name in self._dirs]:
                         status = mobase.ModDataChecker.FIXABLE
-
+                    if name in [dir_name.lower() for dir_name in self._data_dirs]:
+                        status = mobase.ModDataChecker.FIXABLE
+                    else:
+                        new_status = self.dataLooksValid(entry)
+                        if new_status != mobase.ModDataChecker.INVALID:
+                            status = new_status
+                else:
+                    if name.endswith(tuple(self._extensions + ['.pak'])):
+                        status = mobase.ModDataChecker.FIXABLE
+                if status == mobase.ModDataChecker.VALID:
+                    break
         return status
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        paks = filetree.find(r'OblivionRemastered\Content\Paks\~mods', mobase.FileTreeEntry.FileTypes.DIRECTORY)
-        if paks is not None:
-            filetree.merge(paks)
-            filetree.find('OblivionRemastered').detach()
-        data = filetree.find(r'OblivionRemastered\Content\Dev\ObvData\Data', mobase.FileTreeEntry.FileTypes.DIRECTORY)
-        if data is not None:
-            filetree.merge(data)
-            filetree.find('OblivionRemastered').detach()
         for entry in filetree:
-            if is_directory(entry):
-                filetree = self.parse_directory(filetree, entry)
-
+            if entry is not None:
+                if is_directory(entry):
+                    if entry.name().casefold() in [dirname.lower() for dirname in self._data_dirs]:
+                        data_dir = filetree.find('Data')
+                        if data_dir is None:
+                            data_dir = filetree.addDirectory('Data')
+                        entry.moveTo(data_dir)
+                    elif entry.name().casefold() not in [dirname.lower() for dirname in self._dirs]:
+                        filetree = self.parse_directory(filetree, entry)
+                else:
+                    name = entry.name().casefold()
+                    if name.endswith('.pak'):
+                        paks_dir = filetree.find('Paks')
+                        if paks_dir is None:
+                            paks_dir = filetree.addDirectory('Paks')
+                        pak_files: list[mobase.FileTreeEntry] = []
+                        for file in entry.parent():
+                            if file is not None:
+                                if not is_directory(file):
+                                    if file.name().casefold().endswith(('.pak', '.ucas', '.utoc')):
+                                        pak_files.append(file)
+                        for pak_file in pak_files:
+                            pak_file.moveTo(paks_dir)
+                    elif name.endswith(tuple(self._extensions)):
+                        data_dir = filetree.find('Data')
+                        if data_dir is None:
+                            data_dir = filetree.addDirectory('Data')
+                        data_files: list[mobase.FileTreeEntry] = []
+                        for file in entry.parent():
+                            data_files.append(file)
+                        for data_file in data_files:
+                            data_file.moveTo(data_dir)
         return filetree
 
     def parse_directory(self, main_filetree: mobase.IFileTree, next_dir: mobase.IFileTree) -> mobase.IFileTree:
-        extensions = [
-            '.esm',
-            '.esp',
-            '.bsa',
-            '.ini'
-        ]
         for entry in next_dir:
             name = entry.name().casefold()
             if is_directory(entry):
+                for dir_name in self._dirs:
+                    if name == dir_name.lower():
+                        main_dir = main_filetree.find(dir_name)
+                        if main_dir is None:
+                            main_dir = main_filetree.addDirectory(dir_name)
+                        main_dir.merge(entry)
+                        self.detach_parents(entry)
+                        return main_filetree
                 if name == '~mods':
-                    main_filetree.merge(entry)
-                    entry.detach()
+                    paks_dir = main_filetree.find('Paks')
+                    if paks_dir is None:
+                        paks_dir = main_filetree.addDirectory('Paks')
+                    paks_dir.merge(entry)
+                    self.detach_parents(entry)
                     continue
-                self.parse_directory(main_filetree, entry)
+                elif name in [dirname.lower() for dirname in self._data_dirs]:
+                    data_dir = main_filetree.find('Data')
+                    if data_dir is None:
+                        data_dir = main_filetree.addDirectory('Data')
+                    data_dir.merge(entry)
+                    self.detach_parents(entry)
+                    continue
+                return self.parse_directory(main_filetree, entry)
             else:
-                if name.endswith(tuple(extensions)):
-                    main_filetree.merge(next_dir)
-                    parent = next_dir.parent() if next_dir.parent().parent() is not None else next_dir
-                    while parent.parent().parent() is not None:
-                        parent = parent.parent()
-                    parent.detach()
+                if name.endswith(tuple(self._extensions)):
+                    data_dir = main_filetree.find('Data')
+                    if data_dir is None:
+                        data_dir = main_filetree.addDirectory('Data')
+                    data_dir.merge(next_dir)
+                    self.detach_parents(next_dir)
                 elif name.endswith('.pak'):
-                    if entry.parent().name().casefold() == 'Paks':
-                        main_filetree.merge(entry.parent())
-                        parent = entry.parent() if entry.parent().parent() is not None else entry
-                        while parent.parent().parent() is not None:
-                            parent = parent.parent()
-                        parent.detach()
+                    paks_dir = main_filetree.find('Paks')
+                    if paks_dir is None:
+                        paks_dir = main_filetree.addDirectory('Paks')
+                    if next_dir.name().casefold() == 'paks':
+                        paks_dir.merge(next_dir)
+                        self.detach_parents(next_dir)
                         return main_filetree
                     else:
-                        main_filetree.move(next_dir, '/')
+                        main_filetree.move(next_dir, 'Paks/')
+                        return main_filetree
 
         return main_filetree
+
+    def detach_parents(self, directory: mobase.IFileTree) -> None:
+        parent = directory.parent() if directory.parent().parent() is not None else directory
+        while parent.parent().parent() is not None:
+            parent = parent.parent()
+        parent.detach()
 
 
 class OblivionRemasteredGamePlugins(mobase.GamePlugins):
@@ -322,10 +386,12 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
     GameSteamId = 2623190
     GameBinary = "OblivionRemastered.exe"
     GameDataPath = r"%GAME_PATH%\OblivionRemastered\Content\Dev\ObvData\Data"
+    GameDocumentsDirectory = r"%GAME_PATH%\OblivionRemastered\Content\Dev\ObvData"
     UserHome = QStandardPaths.writableLocation(
         QStandardPaths.StandardLocation.HomeLocation
     )
-    GameSavesDirectory = r"{}\Documents\My Games\Oblivion Remastered\Saved\SaveGames".format(UserHome)
+    MyDocumentsDirectory = rf'{UserHome}\Documents\My Games\{GameName}'
+    GameSavesDirectory = rf'{MyDocumentsDirectory}\Saved\SaveGames'
     GameSaveExtension = "sav"
 
     def __init__(self):
@@ -334,19 +400,18 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         self._register_feature(BasicGameSaveGameInfo())
         self._register_feature(OblivionRemasteredGamePlugins(self._organizer))
         self._register_feature(OblivionRemasteredModDataChecker())
         self._register_feature(OblivionRemasteredScriptExtender(self))
         self.detectGame()
-        paks_dir = QDir(self.gameDirectory().absolutePath() + r'\OblivionRemastered\Content\Paks')
-        if paks_dir.exists() and not paks_dir.exists('~mods'):
-            paks_dir.mkdir('~mods')
+        if self.paksDirectory().exists() and not self.paksDirectory().exists('~mods'):
+            self.paksDirectory().mkdir('~mods')
+        if not self.obseDirectory().exists():
+            os.mkdir(self.obseDirectory().absolutePath())
         return True
 
     def executables(self):
-        qDebug(self._organizer.gameFeatures().gameFeature(mobase.ScriptExtender).loaderPath())
         return [
             mobase.ExecutableInfo(
                 "Oblivion Remastered",
@@ -399,13 +464,46 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             'Knights.esp'
         ]
 
-    def secondaryDataDirectories(self) -> Dict[str, QDir]:
-        return {
-            'pak_data': QDir(self.gameDirectory().absolutePath() + '/OblivionRemastered/Content/Paks/~mods')
-        }
+    def modDataDirectory(self) -> str:
+        return 'Data'
+
+    def paksDirectory(self) -> QDir:
+        return QDir(self.gameDirectory().absolutePath() + '/OblivionRemastered/Content/Paks/~mods')
+
+    def obseDirectory(self) -> QDir:
+        return QDir(self.gameDirectory().absolutePath() + '/OblivionRemastered/Binaries/Win64/OBSE')
 
     def loadOrderMechanism(self) -> mobase.LoadOrderMechanism:
         return mobase.LoadOrderMechanism.PLUGINS_TXT
+
+    def initializeProfile(
+        self, directory: QDir, settings: mobase.ProfileSetting
+    ) -> None:
+        if settings & mobase.ProfileSetting.CONFIGURATION:
+            game_ini_file = (self.gameDirectory()
+                                .absoluteFilePath(r'OblivionRemastered\Content\Dev\ObvData\Oblivion.ini'))
+            game_default_ini = (self.gameDirectory()
+                                    .absoluteFilePath(r'OblivionRemastered\Content\Dev\ObvData\Oblivion_default.ini'))
+            profile_ini = directory.absoluteFilePath(QFileInfo('Oblivion.ini').fileName())
+            if not os.path.exists(profile_ini):
+                try:
+                    shutil.copyfile(
+                        game_ini_file,
+                        profile_ini,
+                    )
+                except FileNotFoundError:
+                    if os.path.exists(game_ini_file):
+                        shutil.copyfile(
+                            game_default_ini,
+                            profile_ini,
+                        )
+                    else:
+                        Path(
+                            profile_ini
+                        ).touch()
+
+    def iniFiles(self) -> list[str]:
+        return ['Oblivion.ini']
 
     def mappings(self) -> list[mobase.Mapping]:
         mappings: list[mobase.Mapping] = []
@@ -414,3 +512,8 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
                                            self.dataDirectory().absolutePath() + "/" + profile_file,
                                            False))
         return mappings
+
+    def getModMappings(self) -> dict[str, list[str]]:
+        return {'Data': [self.dataDirectory().absolutePath()],
+                'Paks': [self.paksDirectory().absolutePath()],
+                'OBSE': [self.obseDirectory().absolutePath()]}
