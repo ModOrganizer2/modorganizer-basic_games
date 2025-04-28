@@ -407,11 +407,6 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(OblivionRemasteredGamePlugins(self._organizer))
         self._register_feature(OblivionRemasteredModDataChecker())
         self._register_feature(OblivionRemasteredScriptExtender(self))
-        self.detectGame()
-        if not self.paksDirectory().exists():
-            os.mkdir(self.paksDirectory().absolutePath())
-        if not self.obseDirectory().exists():
-            os.mkdir(self.obseDirectory().absolutePath())
         return True
 
     def executables(self):
@@ -504,6 +499,12 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
                         Path(
                             profile_ini
                         ).touch()
+
+        if self._organizer.managedGame() and self._organizer.managedGame().gameName() == self.gameName():
+            if not self.paksDirectory().exists():
+                os.makedirs(self.paksDirectory().absolutePath())
+            if not self.obseDirectory().exists():
+                os.makedirs(self.obseDirectory().absolutePath())
 
     def iniFiles(self) -> list[str]:
         return ['Oblivion.ini']
