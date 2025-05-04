@@ -27,15 +27,31 @@ from ..basic_game import BasicGame
 
 
 def getLootPath() -> Path | None:
-    try:
-        with winreg.OpenKeyEx(
+    paths = [
+        (
+            winreg.HKEY_CURRENT_USER,
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-A657-0DCE38040374}_is1",
+            "InstallLocation",
+        ),
+        (
             winreg.HKEY_LOCAL_MACHINE,
-            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-A657-0DCE38040374}_is1",
-        ) as key:
-            value = winreg.QueryValueEx(key, "InstallLocation")
-            return Path((value[0] + "/LOOT.exe").replace("/", "\\"))
-    except FileNotFoundError:
-        return None
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-A657-0DCE38040374}_is1",
+            "InstallLocation",
+        ),
+        (winreg.HKEY_LOCAL_MACHINE, "Software\\LOOT", "Installed Path"),
+    ]
+
+    for path in paths:
+        try:
+            with winreg.OpenKeyEx(
+                path[0],
+                path[1],
+            ) as key:
+                value = winreg.QueryValueEx(key, path[2])
+                return Path((value[0] + "/LOOT.exe").replace("/", "\\"))
+        except FileNotFoundError:
+            pass
+    return None
 
 
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
