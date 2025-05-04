@@ -265,9 +265,19 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         return main_filetree
                 elif name.endswith(".lua"):
                     if next_dir.parent() and next_dir.parent() != main_filetree:
-                        if main_filetree.find("Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods") is None:
-                            main_filetree.addDirectory("Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods")
-                        main_filetree.move(next_dir.parent(), "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods/")
+                        if (
+                            main_filetree.find(
+                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
+                            )
+                            is None
+                        ):
+                            main_filetree.addDirectory(
+                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
+                            )
+                        main_filetree.move(
+                            next_dir.parent(),
+                            "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods/",
+                        )
                         self.detach_parents(main_filetree)
                         return main_filetree
                 elif name.endswith(".bk2"):
@@ -675,5 +685,5 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             "Data": [self.dataDirectory().absolutePath()],
             "Paks": [self.paksDirectory().absolutePath()],
             "OBSE": [self.obseDirectory().absolutePath()],
-            "Movies": [self.moviesDirectory().absolutePath()]
+            "Movies": [self.moviesDirectory().absolutePath()],
         }
