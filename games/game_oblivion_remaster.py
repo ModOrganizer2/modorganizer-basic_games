@@ -55,7 +55,7 @@ def getLootPath() -> Path | None:
 
 
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
-    _dirs = ["Data", "Paks", "OBSE", "Movies", "UE4SS"]
+    _dirs = ["Data", "Paks", "OBSE", "Movies", "Root"]
     _data_dirs = [
         "meshes",
         "textures",
@@ -81,7 +81,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             if entry.parent().parent() is None:
                 if is_directory(entry):
                     if name in [dirname.lower() for dirname in self._dirs]:
-                        if name in ["obse", "ue4ss", "movies"]:
+                        if name in ["obse", "root", "movies"]:
                             status = mobase.ModDataChecker.VALID
                             break
                         for sub_entry in entry:
@@ -265,9 +265,9 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         return main_filetree
                 elif name.endswith(".lua"):
                     if next_dir.parent() and next_dir.parent() != main_filetree:
-                        if main_filetree.find("UE4SS") is None:
-                            main_filetree.addDirectory("UE4SS")
-                        main_filetree.move(next_dir.parent(), "UE4SS/")
+                        if main_filetree.find("Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods") is None:
+                            main_filetree.addDirectory("Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods")
+                        main_filetree.move(next_dir.parent(), "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods/")
                         self.detach_parents(main_filetree)
                         return main_filetree
                 elif name.endswith(".bk2"):
@@ -675,6 +675,5 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             "Data": [self.dataDirectory().absolutePath()],
             "Paks": [self.paksDirectory().absolutePath()],
             "OBSE": [self.obseDirectory().absolutePath()],
-            "Movies": [self.moviesDirectory().absolutePath()],
-            "UE4SS": [self.ue4ssDirectory().absolutePath()],
+            "Movies": [self.moviesDirectory().absolutePath()]
         }
