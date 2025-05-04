@@ -28,9 +28,12 @@ from ..basic_game import BasicGame
 
 def getLootPath() -> Path | None:
     try:
-        with winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-A657-0DCE38040374}_is1") as key:
+        with winreg.OpenKeyEx(
+            winreg.HKEY_LOCAL_MACHINE,
+            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{BF634210-A0D4-443F-A657-0DCE38040374}_is1",
+        ) as key:
             value = winreg.QueryValueEx(key, "InstallLocation")
-            return Path((value[0]+"/LOOT.exe").replace("/", "\\"))
+            return Path((value[0] + "/LOOT.exe").replace("/", "\\"))
     except FileNotFoundError:
         return None
 
@@ -542,12 +545,9 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
                     .loaderPath()
                 ),
             ),
-            mobase.ExecutableInfo(
-                "LOOT",
-                QFileInfo(str(getLootPath()))
-            ).withArgument(
+            mobase.ExecutableInfo("LOOT", QFileInfo(str(getLootPath()))).withArgument(
                 '--game="Oblivion Remastered"'
-            )
+            ),
         ]
 
     def primaryPlugins(self) -> list[str]:
