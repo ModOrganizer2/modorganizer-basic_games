@@ -249,7 +249,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                             paks_dir.merge(next_dir)
                             self.detach_parents(next_dir)
                             return main_filetree
-                        elif next_dir.name().casefold() in ['~mods', '~logicmods']:
+                        elif next_dir.name().casefold() in ["~mods", "~logicmods"]:
                             next_dir.moveTo(paks_dir)
                             return main_filetree
                         else:
