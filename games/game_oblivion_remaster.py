@@ -66,8 +66,9 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         "shaders",
         "strings",
         "materials",
+        "magicloader",
     ]
-    _extensions = [".esm", ".esp", ".bsa", ".ini", ".dll"]
+    _extensions = [".esm", ".esp", ".bsa", ".ini", ".dll", ".json"]
 
     def __init__(self):
         super().__init__()
@@ -78,42 +79,24 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         status = mobase.ModDataChecker.INVALID
         if filetree.find("ue4ss/UE4SS.dll") is not None:
             return mobase.ModDataChecker.FIXABLE
+        elif (
+            filetree.find("OblivionRemastered/Binaries/Win64/ue4ss/UE4SS.dll")
+            is not None
+        ):
+            return mobase.ModDataChecker.FIXABLE
         for entry in filetree:
             name = entry.name().casefold()
             if entry.parent().parent() is None:
                 if is_directory(entry):
                     if name in [dirname.lower() for dirname in self._dirs]:
-                        if name in ["obse", "root", "movies", "paks"]:
-                            status = mobase.ModDataChecker.VALID
-                            break
-                        for sub_entry in entry:
-                            if not is_directory(sub_entry):
-                                sub_name = sub_entry.name().casefold()
-                                if name == "paks":
-                                    if sub_name.endswith(".pak"):
-                                        status = mobase.ModDataChecker.VALID
-                                        break
-                                if name == "data":
-                                    if sub_name.endswith(tuple(self._extensions)):
-                                        status = mobase.ModDataChecker.VALID
-                                        break
-                            else:
-                                if name == "paks":
-                                    for paks_entry in sub_entry:
-                                        paks_name = paks_entry.name().casefold()
-                                        if is_directory(paks_entry):
-                                            if paks_name in ["~mods", "logicmods"]:
-                                                status = mobase.ModDataChecker.VALID
-                                                break
-                                        else:
-                                            if paks_name.endswith(".pak"):
-                                                return mobase.ModDataChecker.VALID
-                        if status == mobase.ModDataChecker.VALID:
-                            break
+                        status = mobase.ModDataChecker.VALID
+                        break
                     else:
                         for sub_entry in entry:
                             if not is_directory(sub_entry):
                                 sub_name = sub_entry.name().casefold()
+                                if sub_name.endswith(".exe"):
+                                    return mobase.ModDataChecker.INVALID
                                 if sub_name.endswith((".pak", ".lua", ".bk2")):
                                     status = mobase.ModDataChecker.FIXABLE
                                 elif sub_name.endswith(tuple(self._extensions)):
@@ -127,7 +110,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         if status == mobase.ModDataChecker.VALID:
                             break
                 else:
-                    if name == "obse64_loader.exe":
+                    if name.endswith(".exe"):
                         return mobase.ModDataChecker.INVALID
                     if name.endswith(
                         tuple(self._extensions + [".pak", ".lua", ".bk2"])
@@ -144,6 +127,8 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         if new_status != mobase.ModDataChecker.INVALID:
                             status = new_status
                 else:
+                    if name.endswith(".exe"):
+                        return mobase.ModDataChecker.INVALID
                     if name.endswith(
                         tuple(self._extensions + [".pak", ".lua", ".bk2"])
                     ):
@@ -153,9 +138,14 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         return status
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        if filetree.find("ue4ss/UE4SS.dll") is not None:
+        ue4ss_dll = filetree.find("ue4ss/UE4SS.dll")
+        if ue4ss_dll is None:
+            ue4ss_dll = filetree.find(
+                "OblivionRemastered/Binaries/Win64/ue4ss/UE4SS.dll"
+            )
+        if ue4ss_dll is not None:
             entries = []
-            for entry in filetree:
+            for entry in ue4ss_dll.parent().parent():
                 entries.append(entry)
             for entry in entries:
                 filetree.move(
@@ -163,7 +153,6 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     "Root/OblivionRemastered/Binaries/Win64/",
                     mobase.IFileTree.MERGE,
                 )
-            return filetree
         for entry in filetree:
             if entry is not None:
                 if is_directory(entry):
@@ -172,6 +161,10 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     ]:
                         data_dir = self.get_dir(filetree, "Data")
                         entry.moveTo(data_dir)
+                    elif entry.name().casefold() in [
+                        dirname.lower() for dirname in self._dirs
+                    ]:
+                        break
                     elif entry.name().casefold() not in [
                         dirname.lower() for dirname in self._dirs
                     ]:
@@ -218,16 +211,16 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             if entry is not None:
                 name = entry.name().casefold()
                 if is_directory(entry):
+                    stop = False
                     for dir_name in self._dirs:
                         if name == dir_name.lower():
-                            if name == "paks":
-                                paks_dir = self.get_dir(main_filetree, "Paks")
-                                paks_dir.merge(entry)
-                                self.detach_parents(entry)
-                                continue
                             main_dir = self.get_dir(main_filetree, dir_name)
                             main_dir.merge(entry)
                             self.detach_parents(entry)
+                            stop = True
+                            break
+                    if stop:
+                        continue
                     if name in ["~mods", "logicmods"]:
                         paks_dir = self.get_dir(main_filetree, "Paks")
                         entry.moveTo(paks_dir)
@@ -249,7 +242,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                             paks_dir.merge(next_dir)
                             self.detach_parents(next_dir)
                             return main_filetree
-                        elif next_dir.name().casefold() in ['~mods', '~logicmods']:
+                        elif next_dir.name().casefold() in ["~mods", "logicmods"]:
                             next_dir.moveTo(paks_dir)
                             return main_filetree
                         else:
