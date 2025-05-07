@@ -66,9 +66,8 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         "shaders",
         "strings",
         "materials",
-        "magicloader",
     ]
-    _extensions = [".esm", ".esp", ".bsa", ".ini", ".dll", ".json"]
+    _extensions = [".esm", ".esp", ".bsa", ".ini", ".dll"]
 
     def __init__(self):
         super().__init__()
@@ -91,13 +90,15 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     if name in [dirname.lower() for dirname in self._dirs]:
                         status = mobase.ModDataChecker.VALID
                         break
+                    elif name in [dirname.lower() for dirname in self._data_dirs]:
+                        status = mobase.ModDataChecker.FIXABLE
                     else:
                         for sub_entry in entry:
                             if not is_directory(sub_entry):
                                 sub_name = sub_entry.name().casefold()
                                 if sub_name.endswith(".exe"):
                                     return mobase.ModDataChecker.INVALID
-                                if sub_name.endswith((".pak", ".lua", ".bk2")):
+                                if sub_name.endswith((".pak", ".bk2")):
                                     status = mobase.ModDataChecker.FIXABLE
                                 elif sub_name.endswith(tuple(self._extensions)):
                                     status = mobase.ModDataChecker.FIXABLE
@@ -112,9 +113,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 else:
                     if name.endswith(".exe"):
                         return mobase.ModDataChecker.INVALID
-                    if name.endswith(
-                        tuple(self._extensions + [".pak", ".lua", ".bk2"])
-                    ):
+                    if name.endswith(tuple(self._extensions + [".pak", ".bk2"])):
                         status = mobase.ModDataChecker.FIXABLE
             else:
                 if is_directory(entry):
@@ -153,23 +152,24 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     "Root/OblivionRemastered/Binaries/Win64/",
                     mobase.IFileTree.MERGE,
                 )
+        directories = []
         for entry in filetree:
             if entry is not None:
                 if is_directory(entry):
-                    if entry.name().casefold() in [
-                        dirname.lower() for dirname in self._data_dirs
-                    ]:
-                        data_dir = self.get_dir(filetree, "Data")
-                        entry.moveTo(data_dir)
-                    elif entry.name().casefold() in [
-                        dirname.lower() for dirname in self._dirs
-                    ]:
-                        break
-                    elif entry.name().casefold() not in [
-                        dirname.lower() for dirname in self._dirs
-                    ]:
-                        filetree = self.parse_directory(filetree, entry)
-                else:
+                    directories.append(entry)
+        for directory in directories:
+            if directory.name().casefold() in [
+                dirname.lower() for dirname in self._data_dirs
+            ]:
+                data_dir = self.get_dir(filetree, "Data")
+                directory.moveTo(data_dir)
+            elif directory.name().casefold() not in [
+                dirname.lower() for dirname in self._dirs
+            ]:
+                filetree = self.parse_directory(filetree, directory)
+        for entry in filetree:
+            if entry is not None:
+                if not is_directory(entry):
                     name = entry.name().casefold()
                     if name.endswith(".pak"):
                         paks_dir = self.get_dir(filetree, "Paks/~mods")
@@ -207,70 +207,80 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
     def parse_directory(
         self, main_filetree: mobase.IFileTree, next_dir: mobase.IFileTree
     ) -> mobase.IFileTree:
+        directories = []
         for entry in next_dir:
             if entry is not None:
-                name = entry.name().casefold()
                 if is_directory(entry):
-                    stop = False
-                    for dir_name in self._dirs:
-                        if name == dir_name.lower():
-                            main_dir = self.get_dir(main_filetree, dir_name)
-                            main_dir.merge(entry)
-                            self.detach_parents(entry)
-                            stop = True
-                            break
-                    if stop:
-                        continue
-                    if name in ["~mods", "logicmods"]:
-                        paks_dir = self.get_dir(main_filetree, "Paks")
-                        entry.moveTo(paks_dir)
-                        continue
-                    elif name in [dirname.lower() for dirname in self._data_dirs]:
-                        data_dir = self.get_dir(main_filetree, "Data")
-                        data_dir.merge(entry)
-                        self.detach_parents(entry)
-                        continue
-                    main_filetree = self.parse_directory(main_filetree, entry)
-                else:
-                    if name.endswith(tuple(self._extensions)):
-                        data_dir = self.get_dir(main_filetree, "Data")
-                        data_dir.merge(next_dir)
+                    directories.append(entry)
+        for directory in directories:
+            name = directory.name().casefold()
+            stop = False
+            for dir_name in self._dirs:
+                if name == dir_name.lower():
+                    main_dir = self.get_dir(main_filetree, dir_name)
+                    main_dir.merge(directory)
+                    self.detach_parents(directory)
+                    stop = True
+                    break
+            if stop:
+                continue
+            if name in ["~mods", "logicmods"]:
+                paks_dir = self.get_dir(main_filetree, "Paks")
+                directory.moveTo(paks_dir)
+                continue
+            elif name in [dirname.lower() for dirname in self._data_dirs]:
+                data_dir = self.get_dir(main_filetree, "Data")
+                data_dir.merge(directory)
+                self.detach_parents(directory)
+                continue
+            main_filetree = self.parse_directory(main_filetree, directory)
+        for entry in next_dir:
+            if not is_directory(entry):
+                name = entry.name().casefold()
+                if name.endswith(tuple(self._extensions)):
+                    data_dir = self.get_dir(main_filetree, "Data")
+                    data_dir.merge(next_dir)
+                    self.detach_parents(next_dir)
+                elif name.endswith(".pak"):
+                    paks_dir = self.get_dir(main_filetree, "Paks")
+                    if next_dir.name().casefold() == "paks":
+                        paks_dir.merge(next_dir)
                         self.detach_parents(next_dir)
-                    elif name.endswith(".pak"):
-                        paks_dir = self.get_dir(main_filetree, "Paks")
-                        if next_dir.name().casefold() == "paks":
-                            paks_dir.merge(next_dir)
-                            self.detach_parents(next_dir)
-                            return main_filetree
-                        elif next_dir.name().casefold() in ["~mods", "logicmods"]:
-                            next_dir.moveTo(paks_dir)
-                            return main_filetree
-                        else:
-                            main_filetree.move(
-                                next_dir, "Paks/~mods/", mobase.IFileTree.MERGE
+                        return main_filetree
+                    elif next_dir.name().casefold() in ["~mods", "logicmods"]:
+                        next_dir.moveTo(paks_dir)
+                        return main_filetree
+                    else:
+                        parent = next_dir.parent()
+                        main_filetree.move(
+                            next_dir, "Paks/~mods/", mobase.IFileTree.MERGE
+                        )
+                        self.detach_parents(parent)
+                        return main_filetree
+                elif name.endswith(".lua"):
+                    if next_dir.parent() and next_dir.parent() != main_filetree:
+                        if (
+                            main_filetree.find(
+                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
                             )
-                            return main_filetree
-                    elif name.endswith(".lua"):
-                        if next_dir.parent() and next_dir.parent() != main_filetree:
-                            if (
-                                main_filetree.find(
-                                    "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-                                )
-                                is None
-                            ):
-                                main_filetree.addDirectory(
-                                    "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-                                )
-                            main_filetree.move(
-                                next_dir.parent(),
-                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods/",
+                            is None
+                        ):
+                            main_filetree.addDirectory(
+                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
                             )
-                            self.detach_parents(main_filetree)
-                            return main_filetree
-                    elif name.endswith(".bk2"):
-                        movies_dir = self.get_dir(main_filetree, "Movies/Modern")
-                        movies_dir.merge(next_dir)
-                        self.detach_parents(next_dir)
+                        parent = next_dir.parent().parent()
+                        main_filetree.move(
+                            next_dir.parent(),
+                            "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods/",
+                            mobase.IFileTree.MERGE,
+                        )
+                        if parent is not None:
+                            self.detach_parents(parent)
+                        return main_filetree
+                elif name.endswith(".bk2"):
+                    movies_dir = self.get_dir(main_filetree, "Movies/Modern")
+                    movies_dir.merge(next_dir)
+                    self.detach_parents(next_dir)
 
         return main_filetree
 
