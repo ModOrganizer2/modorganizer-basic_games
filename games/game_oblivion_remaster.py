@@ -67,7 +67,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         "strings",
         "materials",
     ]
-    _extensions = [".esm", ".esp", ".bsa", ".ini", ".dll"]
+    _data_extensions = [".esm", ".esp", ".bsa"]
 
     def __init__(self):
         super().__init__()
@@ -100,7 +100,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                                     return mobase.ModDataChecker.INVALID
                                 if sub_name.endswith((".pak", ".bk2")):
                                     status = mobase.ModDataChecker.FIXABLE
-                                elif sub_name.endswith(tuple(self._extensions)):
+                                elif sub_name.endswith(tuple(self._data_extensions)):
                                     status = mobase.ModDataChecker.FIXABLE
                             else:
                                 if name == "Paks":
@@ -113,7 +113,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 else:
                     if name.endswith(".exe"):
                         return mobase.ModDataChecker.INVALID
-                    if name.endswith(tuple(self._extensions + [".pak", ".bk2"])):
+                    if name.endswith(tuple(self._data_extensions + [".pak", ".bk2"])):
                         status = mobase.ModDataChecker.FIXABLE
             else:
                 if is_directory(entry):
@@ -129,7 +129,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     if name.endswith(".exe"):
                         return mobase.ModDataChecker.INVALID
                     if name.endswith(
-                        tuple(self._extensions + [".pak", ".lua", ".bk2"])
+                        tuple(self._data_extensions + [".pak", ".lua", ".bk2"])
                     ):
                         status = mobase.ModDataChecker.FIXABLE
                 if status == mobase.ModDataChecker.VALID:
@@ -152,6 +152,14 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     "Root/OblivionRemastered/Binaries/Win64/",
                     mobase.IFileTree.MERGE,
                 )
+        exe_dir = filetree.find(r"OblivionRemastered\Binaries\Win64")
+        if exe_dir is not None:
+            root_exe_dir = self.get_dir(
+                filetree, "Root/OblivionRemastered/Binaries/Win64"
+            )
+            parent = exe_dir.parent()
+            exe_dir.moveTo(root_exe_dir)
+            self.detach_parents(parent)
         directories = []
         for entry in filetree:
             if entry is not None:
@@ -195,7 +203,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                                         movie_files.append(file)
                         for movie_file in movie_files:
                             movie_file.moveTo(movies_dir)
-                    elif name.endswith(tuple(self._extensions)):
+                    elif name.endswith(tuple(self._data_extensions)):
                         data_dir = self.get_dir(filetree, "Data")
                         data_files: list[mobase.FileTreeEntry] = []
                         for file in entry.parent():
@@ -237,7 +245,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         for entry in next_dir:
             if not is_directory(entry):
                 name = entry.name().casefold()
-                if name.endswith(tuple(self._extensions)):
+                if name.endswith(tuple(self._data_extensions)):
                     data_dir = self.get_dir(main_filetree, "Data")
                     data_dir.merge(next_dir)
                     self.detach_parents(next_dir)
@@ -285,17 +293,18 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         return main_filetree
 
     def detach_parents(self, directory: mobase.IFileTree) -> None:
-        if directory.parent() is not None:
+        if directory.parent() is not None and len(directory.parent()) == 1:
             parent = (
                 directory.parent()
                 if directory.parent().parent() is not None
                 else directory
             )
-            while parent.parent().parent() is not None:
+            while parent.parent().parent() is not None and len(parent.parent()) == 1:
                 parent = parent.parent()
             parent.detach()
         else:
-            directory.detach()
+            if len(directory) == 1:
+                directory.detach()
 
     def get_dir(self, filetree: mobase.IFileTree, directory: str) -> mobase.IFileTree:
         tree_dir = filetree.find(directory)
@@ -560,8 +569,12 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             mobase.ExecutableInfo(
                 "Oblivion Remastered",
                 QFileInfo(
-                    self.gameDirectory(),
-                    self.binaryName(),
+                    QDir(
+                        self.gameDirectory().absoluteFilePath(
+                            "OblivionRemastered/Binaries/Win64"
+                        )
+                    ),
+                    "OblivionRemastered-Win64-Shipping.exe",
                 ),
             ),
             mobase.ExecutableInfo(
