@@ -1,11 +1,11 @@
 import os.path
 import shutil
 import winreg
+from enum import IntEnum, auto
 from functools import cmp_to_key
 from pathlib import Path
 from typing import Sequence
 
-import PyQt6.QtCore
 from PyQt6.QtCore import (
     QByteArray,
     QCoreApplication,
@@ -17,6 +17,7 @@ from PyQt6.QtCore import (
     QStringConverter,
     QStringEncoder,
     qCritical,
+    qWarning,
 )
 
 import mobase
@@ -54,8 +55,23 @@ def getLootPath() -> Path | None:
     return None
 
 
+class Content(IntEnum):
+    PLUGIN = auto()
+    BSA = auto()
+    PAK = auto()
+    OBSE = auto()
+    OBSE_FILES = auto()
+    MOVIE = auto()
+    UE4SS = auto()
+    MAGIC_LOADER = auto()
+
+
+class Problems(IntEnum):
+    UE4SS_LOADER = auto()
+
+
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
-    _dirs = ["Data", "Paks", "OBSE", "Movies", "Root"]
+    _dirs = ["Data", "Paks", "OBSE", "Movies", "UE4SS", "Root"]
     _data_dirs = [
         "meshes",
         "textures",
@@ -154,12 +170,25 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 )
         exe_dir = filetree.find(r"OblivionRemastered\Binaries\Win64")
         if exe_dir is not None:
-            root_exe_dir = self.get_dir(
-                filetree, "Root/OblivionRemastered/Binaries/Win64"
-            )
-            parent = exe_dir.parent()
-            exe_dir.moveTo(root_exe_dir)
-            self.detach_parents(parent)
+            obse_dir = exe_dir.find("OBSE")
+            if obse_dir:
+                obse_main = self.get_dir(filetree, "OBSE")
+                obse_main.merge(obse_dir, True)
+                obse_dir.detach()
+            ue4ss_mod_dir = exe_dir.find("ue4ss/Mods")
+            if ue4ss_mod_dir:
+                ue4ss_main = self.get_dir(filetree, "UE4SS")
+                ue4ss_main.merge(ue4ss_mod_dir, True)
+                ue4ss_mod_dir.detach()
+            if len(exe_dir):
+                root_exe_dir = self.get_dir(
+                    filetree, "Root/OblivionRemastered/Binaries"
+                )
+                parent = exe_dir.parent()
+                exe_dir.moveTo(root_exe_dir)
+                self.detach_parents(parent)
+            else:
+                self.detach_parents(exe_dir)
         directories = []
         for entry in filetree:
             if entry is not None:
@@ -267,19 +296,12 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         return main_filetree
                 elif name.endswith(".lua"):
                     if next_dir.parent() and next_dir.parent() != main_filetree:
-                        if (
-                            main_filetree.find(
-                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-                            )
-                            is None
-                        ):
-                            main_filetree.addDirectory(
-                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-                            )
+                        if main_filetree.find("UE4SS") is None:
+                            main_filetree.addDirectory("UE4SS")
                         parent = next_dir.parent().parent()
                         main_filetree.move(
                             next_dir.parent(),
-                            "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods/",
+                            "UE4SS/",
                             mobase.IFileTree.MERGE,
                         )
                         if parent is not None:
@@ -311,6 +333,66 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         if tree_dir is None:
             tree_dir = filetree.addDirectory(directory)
         return tree_dir
+
+
+class OblivionRemasteredDataContent(mobase.ModDataContent):
+    OR_CONTENTS: tuple[Content, str, str, bool | None] = [
+        (Content.PLUGIN, "Plugins (ESM/ESP)", ":/MO/gui/content/plugin"),
+        (Content.BSA, "Bethesda Archive", ":/MO/gui/content/bsa"),
+        (Content.PAK, "Paks", ":/MO/gui/content/geometries"),
+        (Content.OBSE, "Script Extender Plugin", ":/MO/gui/content/skse"),
+        (Content.OBSE_FILES, "Script Extender Files", "", True),
+        (Content.MOVIE, "Movies", ":/MO/gui/content/media"),
+        (Content.UE4SS, "UE4SS Mods", ":/MO/gui/content/script"),
+        (Content.MAGIC_LOADER, "Magic Loader Mod", ":/MO/gui/content/inifile"),
+    ]
+
+    def getAllContents(self) -> list[mobase.ModDataContent.Content]:
+        return [mobase.ModDataContent.Content(*content) for content in self.OR_CONTENTS]
+
+    def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
+        contents: set[int] = set()
+
+        for entry in filetree:
+            if is_directory(entry):
+                match entry.name().casefold():
+                    case "data":
+                        for data_entry in entry:
+                            if not is_directory(data_entry):
+                                match data_entry.suffix().casefold():
+                                    case "esm" | "esp":
+                                        contents.add(Content.PLUGIN)
+                                    case "bsa":
+                                        contents.add(Content.BSA)
+                                    case _:
+                                        pass
+                            else:
+                                match data_entry.name().casefold():
+                                    case "magicloader":
+                                        contents.add(Content.MAGIC_LOADER)
+                    case "obse":
+                        contents.add(Content.OBSE_FILES)
+                        plugins_dir = entry.find("Plugins")
+                        if plugins_dir:
+                            for plugin_entry in plugins_dir:
+                                if plugin_entry.suffix().casefold() == "dll":
+                                    contents.add(Content.OBSE)
+                                    break
+                    case "paks":
+                        contents.add(Content.PAK)
+                        for paks_entry in entry:
+                            if is_directory(paks_entry):
+                                if paks_entry.name().casefold() == "~mods":
+                                    if paks_entry.find("MagicLoader"):
+                                        contents.add(Content.MAGIC_LOADER)
+                                if paks_entry.name().casefold() == "logicmods":
+                                    contents.add(Content.UE4SS)
+                    case "movies":
+                        contents.add(Content.MOVIE)
+                    case "ue4ss":
+                        contents.add(Content.UE4SS)
+
+        return list(contents)
 
 
 class OblivionRemasteredGamePlugins(mobase.GamePlugins):
@@ -396,7 +478,7 @@ class OblivionRemasteredGamePlugins(mobase.GamePlugins):
                 written_count += 1
 
         if invalid_filenames:
-            PyQt6.QtCore.qCritical(
+            qCritical(
                 QCoreApplication.translate(
                     "MainWindow",
                     "Some of your plugins have invalid names! These "
@@ -407,7 +489,7 @@ class OblivionRemasteredGamePlugins(mobase.GamePlugins):
             )
 
         if written_count == 0:
-            PyQt6.QtCore.qWarning(
+            qWarning(
                 "plugin list would be empty, this is almost certainly wrong. Not saving."
             )
         else:
@@ -532,7 +614,9 @@ class OblivionRemasteredScriptExtender(mobase.ScriptExtender):
         return 0x8664 if self.isInstalled() else 0x0
 
 
-class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
+class OblivionRemasteredGame(
+    BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose
+):
     Name = "Oblivion Remastered Support Plugin"
     Author = "Silarn"
     Version = "0.1.0-b.1"
@@ -555,6 +639,7 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
     def __init__(self):
         BasicGame.__init__(self)
         mobase.IPluginFileMapper.__init__(self)
+        mobase.IPluginDiagnose.__init__(self)
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -562,6 +647,7 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(OblivionRemasteredGamePlugins(self._organizer))
         self._register_feature(OblivionRemasteredModDataChecker())
         self._register_feature(OblivionRemasteredScriptExtender(self))
+        self._register_feature(OblivionRemasteredDataContent())
         return True
 
     def executables(self):
@@ -621,17 +707,16 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             self.gameDirectory().absolutePath() + "/OblivionRemastered/Content/Paks"
         )
 
-    def obseDirectory(self) -> QDir:
+    def exeDirectory(self) -> QDir:
         return QDir(
-            self.gameDirectory().absolutePath()
-            + "/OblivionRemastered/Binaries/Win64/OBSE"
+            self.gameDirectory().absolutePath() + "/OblivionRemastered/Binaries/Win64"
         )
 
+    def obseDirectory(self) -> QDir:
+        return QDir(self.exeDirectory().absolutePath() + "/OBSE")
+
     def ue4ssDirectory(self) -> QDir:
-        return QDir(
-            self.gameDirectory().absolutePath()
-            + "/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-        )
+        return QDir(self.exeDirectory().absolutePath() + "/ue4ss/Mods")
 
     def loadOrderMechanism(self) -> mobase.LoadOrderMechanism:
         return mobase.LoadOrderMechanism.PLUGINS_TXT
@@ -699,4 +784,45 @@ class OblivionRemasteredGame(BasicGame, mobase.IPluginFileMapper):
             "Paks": [self.paksDirectory().absolutePath()],
             "OBSE": [self.obseDirectory().absolutePath()],
             "Movies": [self.moviesDirectory().absolutePath()],
+            "UE4SS": [self.ue4ssDirectory().absolutePath()],
         }
+
+    def activeProblems(self) -> list[int]:
+        if self._organizer.managedGame() == self:
+            problems: set[Problems] = set()
+            ue4ss_loader = QFileInfo(self.exeDirectory().absoluteFilePath("dwmapi.dll"))
+            if ue4ss_loader.exists():
+                problems.add(Problems.UE4SS_LOADER)
+            return list(problems)
+        return []
+
+    def fullDescription(self, key: int) -> str:
+        match key:
+            case Problems.UE4SS_LOADER:
+                return (
+                    "The UE4SS loader DLL is present (dwmapi.dll). This will not function out-of-the box with MO2's virtual filesystem.\n\n"
+                    + "In order to resolve this, the DLL should be renamed (ex. 'ue4ss_loader.dll') and set to force load with the game exe.\n\n"
+                    + "Do this for any executable which runs the game, such as the OBSE64 loader."
+                )
+        return ""
+
+    def hasGuidedFix(self, key: int) -> bool:
+        match key:
+            case Problems.UE4SS_LOADER:
+                return True
+        return False
+
+    def shortDescription(self, key: int) -> str:
+        match key:
+            case Problems.UE4SS_LOADER:
+                return "The UE4SS loader DLL is present (dwmapi.dll)."
+        return ""
+
+    def startGuidedFix(self, key: int) -> None:
+        match key:
+            case Problems.UE4SS_LOADER:
+                os.rename(
+                    self.exeDirectory().absoluteFilePath("dwmapi.dll"),
+                    self.exeDirectory().absoluteFilePath("ue4ss_loader.dll"),
+                )
+        pass
