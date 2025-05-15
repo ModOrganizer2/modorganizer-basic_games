@@ -1,10 +1,11 @@
+import json
 import os.path
 import shutil
 import winreg
 from enum import IntEnum, auto
 from functools import cmp_to_key
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from PyQt6.QtCore import (
     QByteArray,
@@ -13,11 +14,25 @@ from PyQt6.QtCore import (
     QDir,
     QFile,
     QFileInfo,
+    QMimeData,
+    QModelIndex,
     QStandardPaths,
     QStringConverter,
     QStringEncoder,
+    QStringListModel,
+    Qt,
+    pyqtSignal,
     qCritical,
     qWarning,
+)
+from PyQt6.QtGui import QDropEvent
+from PyQt6.QtWidgets import (
+    QAbstractItemView,
+    QGridLayout,
+    QListView,
+    QMainWindow,
+    QTabWidget,
+    QWidget,
 )
 
 import mobase
@@ -25,6 +40,8 @@ import mobase
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
+
+DEFAULT_UE4SS_MODS = ["BPML_GenericFunctions", "BPModLoaderMod"]
 
 
 def getLootPath() -> Path | None:
@@ -68,6 +85,275 @@ class Content(IntEnum):
 
 class Problems(IntEnum):
     UE4SS_LOADER = auto()
+
+
+class UE4SSListModel(QStringListModel):
+    def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
+        super().__init__(parent)
+        self._checked_items: set[str] = set()
+        self._organizer = organizer
+        self._init_mod_states()
+
+    def _init_mod_states(self):
+        profile = QDir(self._organizer.profilePath())
+        mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
+        if mods_json.exists():
+            with open(mods_json.absoluteFilePath(), "r") as json_file:
+                mod_data = json.load(json_file)
+                for mod in mod_data:
+                    if mod["mod_enabled"]:
+                        self._checked_items.add(mod["mod_name"])
+
+    def _set_mod_states(self):
+        profile = QDir(self._organizer.profilePath())
+        mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
+        mod_list: dict[str, bool] = {}
+        if mods_json.exists():
+            with open(mods_json.absoluteFilePath(), "r") as json_file:
+                mod_data = json.load(json_file)
+                for mod in mod_data:
+                    mod_list[mod["mod_name"]] = mod["mod_enabled"]
+            for i in range(self.rowCount()):
+                item = self.index(i, 0)
+                name = self.data(item, Qt.ItemDataRole.DisplayRole)
+                if name in mod_list:
+                    self.setData(
+                        item,
+                        True if mod_list[name] else False,
+                        Qt.ItemDataRole.CheckStateRole,
+                    )
+                else:
+                    self.setData(item, True, Qt.ItemDataRole.CheckStateRole)
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+        flags = super().flags(index)
+        if not index.isValid():
+            return (
+                Qt.ItemFlag.ItemIsSelectable
+                | Qt.ItemFlag.ItemIsDragEnabled
+                | Qt.ItemFlag.ItemIsDropEnabled
+                | Qt.ItemFlag.ItemIsEnabled
+            )
+        return (
+            flags
+            | Qt.ItemFlag.ItemIsUserCheckable
+            | Qt.ItemFlag.ItemIsDragEnabled & Qt.ItemFlag.ItemIsEditable
+        )
+
+    def setData(self, index: QModelIndex, value: Any, role: int = ...) -> bool:
+        if not index.isValid() or role != Qt.ItemDataRole.CheckStateRole:
+            return False
+
+        if (
+            bool(value)
+            and self.data(index, Qt.ItemDataRole.DisplayRole) not in self._checked_items
+        ):
+            self._checked_items.add(self.data(index, Qt.ItemDataRole.DisplayRole))
+        elif (
+            not bool(value)
+            and self.data(index, Qt.ItemDataRole.DisplayRole) in self._checked_items
+        ):
+            self._checked_items.remove(self.data(index, Qt.ItemDataRole.DisplayRole))
+        self.dataChanged.emit(index, index, [role])
+        return True
+
+    def setStringList(self, strings: list[str]):
+        super().setStringList(strings)
+        self._set_mod_states()
+
+    def data(self, index: QModelIndex, role: int = ...) -> Any:
+        if not index.isValid():
+            return None
+
+        if role == Qt.ItemDataRole.CheckStateRole:
+            return (
+                Qt.CheckState.Checked
+                if self.data(index, Qt.ItemDataRole.DisplayRole) in self._checked_items
+                else Qt.CheckState.Unchecked
+            )
+
+        return super().data(index, role)
+
+    def canDropMimeData(
+        self,
+        data: QMimeData | None,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        if action == Qt.DropAction.MoveAction and (row != -1 or column != -1):
+            return True
+        return False
+
+
+class UE4SSView(QListView):
+    data_dropped = pyqtSignal()
+
+    def __init__(self, parent: QWidget | None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(False)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.viewport().setAcceptDrops(True)
+
+    def dropEvent(self, e: QDropEvent | None):
+        super().dropEvent(e)
+        self.data_dropped.emit()
+
+    def dataChanged(self, topLeft, bottomRight, roles=...):
+        super().dataChanged(topLeft, bottomRight, roles)
+        self.repaint()
+
+
+class UE4SSTabWidget(QWidget):
+    def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
+        super().__init__(parent)
+        self._organizer = organizer
+        self._view = UE4SSView(self)
+        self._layout = QGridLayout(self)
+        self._layout.addWidget(self._view)
+        self._model = UE4SSListModel(self._view, organizer)
+        self._view.setModel(self._model)
+        self._model.dataChanged.connect(self.write_mod_list)
+        self._view.data_dropped.connect(self.write_mod_list)
+        self._parse_mod_files()
+
+    def update_mod_files(self, state: dict[str, mobase.ModState]):
+        for mod, state in state.items():
+            tree = self._organizer.modList().getMod(mod).fileTree()
+            ue4ss_files = tree.find("UE4SS")
+            if not ue4ss_files:
+                ue4ss_files = tree.find(
+                    "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
+                )
+            if ue4ss_files:
+                for entry in ue4ss_files:
+                    if entry.isDir():
+                        if entry.find("enabled.txt"):
+                            enabled_txt: mobase.FileTreeEntry = entry.find(
+                                "enabled.txt"
+                            )
+                            try:
+                                os.remove(
+                                    self._organizer.modList().getMod(mod).absolutePath()
+                                    + "/"
+                                    + enabled_txt.path("/")
+                                )
+                                self._organizer.modDataChanged(
+                                    self._organizer.modList().getMod(mod)
+                                )
+                            except FileNotFoundError:
+                                pass
+
+        self._parse_mod_files()
+
+    def _parse_mod_files(self):
+        mod_list = set()
+        for mod in self._organizer.modList().allMods():
+            if (
+                mobase.ModState(self._organizer.modList().state(mod))
+                & mobase.ModState.ACTIVE
+            ):
+                tree = self._organizer.modList().getMod(mod).fileTree()
+                ue4ss_files = tree.find("UE4SS")
+                if not ue4ss_files:
+                    ue4ss_files = tree.find(
+                        "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
+                    )
+                if ue4ss_files:
+                    for entry in ue4ss_files:
+                        if entry.isDir():
+                            if entry.find("scripts/main.lua"):
+                                mod_list.add(entry.name())
+                            if entry.find("enabled.txt"):
+                                enabled_txt: mobase.FileTreeEntry = entry.find(
+                                    "enabled.txt"
+                                )
+                                try:
+                                    os.remove(
+                                        self._organizer.modList()
+                                        .getMod(mod)
+                                        .absolutePath()
+                                        + "/"
+                                        + enabled_txt.path("/")
+                                    )
+                                    self._organizer.modDataChanged(
+                                        self._organizer.modList().getMod(mod)
+                                    )
+                                except FileNotFoundError:
+                                    pass
+
+        game = self._organizer.managedGame()  # type: OblivionRemasteredGame
+        if type(game) is OblivionRemasteredGame:
+            if game.ue4ssDirectory().exists():
+                for dir_info in game.ue4ssDirectory().entryInfoList(
+                    QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
+                ):
+                    if QFileInfo(
+                        QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                            "scripts/main.lua"
+                        )
+                    ).exists():
+                        mod_list.add(dir_info.fileName())
+                    if QFileInfo(
+                        QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                            "enabled.txt"
+                        )
+                    ).exists():
+                        os.remove(dir_info.dir().absoluteFilePath("enabled.txt"))
+        final_list = sorted(mod_list, key=cmp_to_key(self.sort_mods))
+        self._model.setStringList(final_list)
+
+    def write_mod_list(self):
+        mod_list: list[dict] = []
+        profile = QDir(self._organizer.profilePath())
+        mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
+        with open(mods_txt.absoluteFilePath(), "w") as txt_file:
+            for i in range(self._model.rowCount()):
+                item = self._model.index(i, 0)
+                name = self._model.data(item, Qt.ItemDataRole.DisplayRole)
+                active = (
+                    True
+                    if self._model.data(item, Qt.ItemDataRole.CheckStateRole)
+                    == Qt.CheckState.Checked
+                    else False
+                )
+                mod_list.append({"mod_name": name, "mod_enabled": active})
+                txt_file.write(f"{name} : {1 if active else 0}\n")
+        mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
+        with open(mods_json.absoluteFilePath(), "w") as json_file:
+            json_file.write(json.dumps(mod_list, indent=4))
+
+    def sort_mods(self, mod_a: str, mod_b: str) -> int:
+        profile = QDir(self._organizer.profilePath())
+        mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
+        mods_list = []
+        if mods_json.exists() and mods_json.isFile():
+            with open(mods_json.absoluteFilePath(), "r") as json_file:
+                mods = json.load(json_file)
+                for mod in mods:
+                    if mod["mod_enabled"]:
+                        mods_list.append(mod["mod_name"])
+        index_a = -1
+        if mod_a in mods_list:
+            index_a = mods_list.index(mod_a)
+        index_b = -1
+        if mod_b in mods_list:
+            index_b = mods_list.index(mod_b)
+        if index_a != -1 and index_b != -1:
+            return index_a - index_b
+        if index_a != -1:
+            return -1
+        if index_b != -1:
+            return 1
+        if mod_a < mod_b:
+            return -1
+        return 1
 
 
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
@@ -255,7 +541,14 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             for dir_name in self._dirs:
                 if name == dir_name.lower():
                     main_dir = self.get_dir(main_filetree, dir_name)
-                    main_dir.merge(directory)
+                    if name == "ue4ss":
+                        mod_dir = directory.find("Mods")
+                        if mod_dir:
+                            main_dir.merge(mod_dir)
+                        else:
+                            main_dir.merge(directory)
+                    else:
+                        main_dir.merge(directory)
                     self.detach_parents(directory)
                     stop = True
                     break
@@ -640,6 +933,8 @@ class OblivionRemasteredGame(
         BasicGame.__init__(self)
         mobase.IPluginFileMapper.__init__(self)
         mobase.IPluginDiagnose.__init__(self)
+        self._main_window = None
+        self._ue4ss_tab = None
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -648,7 +943,27 @@ class OblivionRemasteredGame(
         self._register_feature(OblivionRemasteredModDataChecker())
         self._register_feature(OblivionRemasteredScriptExtender(self))
         self._register_feature(OblivionRemasteredDataContent())
+
+        organizer.onUserInterfaceInitialized(self.init_tab)
         return True
+
+    def init_tab(self, main_window: QMainWindow):
+        if self._organizer.managedGame() != self:
+            return
+
+        self._main_window = main_window
+        tab_widget: QTabWidget = main_window.findChild(QTabWidget, "tabWidget")
+        if not tab_widget or not tab_widget.findChild(QWidget, "espTab"):
+            return
+
+        self._ue4ss_tab = UE4SSTabWidget(main_window, self._organizer)
+        self._organizer.modList().onModStateChanged(self._ue4ss_tab.update_mod_files)
+
+        plugin_tab = tab_widget.findChild(QWidget, "espTab")
+        tab_index = tab_widget.indexOf(plugin_tab) + 1
+        if not tab_widget.isTabVisible(tab_widget.indexOf(plugin_tab)):
+            tab_index += 1
+        tab_widget.insertTab(tab_index, self._ue4ss_tab, "UE4SS Mods")
 
     def executables(self):
         return [
@@ -751,7 +1066,7 @@ class OblivionRemasteredGame(
                         )
                     else:
                         Path(profile_ini).touch()
-
+        self.write_default_mods(directory)
         if (
             self._organizer.managedGame()
             and self._organizer.managedGame().gameName() == self.gameName()
@@ -763,6 +1078,20 @@ class OblivionRemasteredGame(
             if not self.ue4ssDirectory().exists():
                 os.makedirs(self.ue4ssDirectory().absolutePath())
 
+    def write_default_mods(self, profile: QDir):
+        ue4ss_mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
+        ue4ss_mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
+        if not ue4ss_mods_txt.exists():
+            with open(ue4ss_mods_txt.absoluteFilePath(), "w") as mods_txt:
+                for mod in DEFAULT_UE4SS_MODS:
+                    mods_txt.write(f"{mod} : 1\n")
+        if not ue4ss_mods_json.exists():
+            mods_data = []
+            for mod in DEFAULT_UE4SS_MODS:
+                mods_data.append({"mod_name": mod, "mod_enabled": True})
+            with open(ue4ss_mods_json.absoluteFilePath(), "w") as mods_json:
+                mods_json.write(json.dumps(mods_data, indent=4))
+
     def iniFiles(self) -> list[str]:
         return ["Oblivion.ini"]
 
@@ -773,6 +1102,14 @@ class OblivionRemasteredGame(
                 mobase.Mapping(
                     self._organizer.profilePath() + "/" + profile_file,
                     self.dataDirectory().absolutePath() + "/" + profile_file,
+                    False,
+                )
+            )
+        for profile_file in ["mods.txt", "mods.json"]:
+            mappings.append(
+                mobase.Mapping(
+                    self._organizer.profilePath() + "/" + profile_file,
+                    self.ue4ssDirectory().absolutePath() + "/" + profile_file,
                     False,
                 )
             )
