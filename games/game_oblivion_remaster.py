@@ -1,6 +1,8 @@
 import json
 import os.path
+import re
 import shutil
+import typing
 import winreg
 from enum import IntEnum, auto
 from functools import cmp_to_key
@@ -8,8 +10,10 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from PyQt6.QtCore import (
+    QAbstractItemModel,
     QByteArray,
     QCoreApplication,
+    QDataStream,
     QDateTime,
     QDir,
     QFile,
@@ -21,8 +25,10 @@ from PyQt6.QtCore import (
     QStringEncoder,
     QStringListModel,
     Qt,
+    QVariant,
     pyqtSignal,
     qCritical,
+    qDebug,
     qWarning,
 )
 from PyQt6.QtGui import QDropEvent
@@ -32,6 +38,7 @@ from PyQt6.QtWidgets import (
     QListView,
     QMainWindow,
     QTabWidget,
+    QTreeView,
     QWidget,
 )
 
@@ -41,6 +48,7 @@ from ..basic_features import BasicGameSaveGameInfo
 from ..basic_features.utils import is_directory
 from ..basic_game import BasicGame
 
+PLUGIN_NAME = "Oblivion Remastered Support Plugin"
 DEFAULT_UE4SS_MODS = ["BPML_GenericFunctions", "BPModLoaderMod"]
 
 
@@ -72,6 +80,24 @@ def getLootPath() -> Path | None:
     return None
 
 
+def pak_sort(a: tuple[str, str], b: tuple[str, str]) -> int:
+    a_pak = a[0]
+    b_pak = b[0]
+    a_str = a[1] if a[1] else a[0]
+    b_str = b[1] if b[1] else b[0]
+    if (a_pak.casefold()[-2:] == "_p" and b_pak.casefold()[-2:] == "_p") or (
+        a_pak.casefold()[-2:] != "_p" and b_pak.casefold()[-2:] != "_p"
+    ):
+        if sorted((a_str.casefold(), b_str.casefold()))[0] == a_str.casefold():
+            return 1
+        return -1
+    if a_pak.casefold()[-2:] == "_p":
+        return 1
+    if b_pak.casefold()[-2:] == "_p":
+        return -1
+    return 0
+
+
 class Content(IntEnum):
     PLUGIN = auto()
     BSA = auto()
@@ -85,6 +111,443 @@ class Content(IntEnum):
 
 class Problems(IntEnum):
     UE4SS_LOADER = auto()
+    INVALID_UE4SS_MOD_NAME = auto()
+
+
+class PaksColumns(IntEnum):
+    PRIORITY = auto()
+    PAK_NAME = auto()
+    SOURCE = auto()
+
+
+class PaksModel(QAbstractItemModel):
+    def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
+        super().__init__(parent)
+        self.paks: dict[int, tuple[str, str, str, str]] = {}
+        self._organizer = organizer
+        self._init_mod_states()
+
+    def _init_mod_states(self):
+        profile = QDir(self._organizer.profilePath())
+        paks_txt = QFileInfo(profile.absoluteFilePath("paks.txt"))
+        if paks_txt.exists():
+            with open(paks_txt.absoluteFilePath(), "r") as paks_file:
+                index = 0
+                for line in paks_file:
+                    self.paks[index] = (line, "", "", "")
+                    index += 1
+
+    def set_paks(self, paks: dict[int, tuple[str, str, str, str]]):
+        self.layoutAboutToBeChanged.emit()
+        self.paks = paks
+        self.layoutChanged.emit()
+        self.dataChanged.emit(
+            self.index(0, 0),
+            self.index(self.rowCount(), self.columnCount()),
+            [Qt.ItemDataRole.DisplayRole],
+        )
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+        if not index.isValid():
+            return (
+                Qt.ItemFlag.ItemIsSelectable
+                | Qt.ItemFlag.ItemIsDragEnabled
+                | Qt.ItemFlag.ItemIsDropEnabled
+                | Qt.ItemFlag.ItemIsEnabled
+            )
+        return (
+            super().flags(index)
+            | Qt.ItemFlag.ItemIsDragEnabled
+            | Qt.ItemFlag.ItemIsDropEnabled & Qt.ItemFlag.ItemIsEditable
+        )
+
+    def columnCount(self, parent: QModelIndex = ...) -> int:
+        return len(PaksColumns)
+
+    def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
+        if (
+            row < 0
+            or row >= self.rowCount()
+            or column < 0
+            or column >= self.columnCount()
+        ):
+            return QModelIndex()
+        return self.createIndex(row, column, row)
+
+    def parent(self, child: QModelIndex) -> QModelIndex:
+        return QModelIndex()
+
+    def rowCount(self, parent: QModelIndex = ...) -> int:
+        return len(self.paks)
+
+    def setData(self, index: QModelIndex, value: Any, role: int = ...) -> bool:
+        return False
+
+    def headerData(self, section: int, orientation, role=...) -> typing.Any:
+        if (
+            orientation != Qt.Orientation.Horizontal
+            or role != Qt.ItemDataRole.DisplayRole
+        ):
+            return QVariant()
+
+        column = PaksColumns(section + 1)
+        match column:
+            case PaksColumns.PAK_NAME:
+                return "Pak Group"
+            case PaksColumns.PRIORITY:
+                return "Priority"
+            case PaksColumns.SOURCE:
+                return "Source"
+
+        return QVariant()
+
+    def data(self, index: QModelIndex, role: int = ...) -> Any:
+        if not index.isValid():
+            return None
+        if index.column() + 1 == PaksColumns.PAK_NAME:
+            if role == Qt.ItemDataRole.DisplayRole:
+                return self.paks[index.row()][0]
+        elif index.column() + 1 == PaksColumns.PRIORITY:
+            if role == Qt.ItemDataRole.DisplayRole:
+                return index.row()
+        elif index.column() + 1 == PaksColumns.SOURCE:
+            if role == Qt.ItemDataRole.DisplayRole:
+                return self.paks[index.row()][1]
+        return QVariant()
+
+    def canDropMimeData(
+        self,
+        data: QMimeData | None,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        if action == Qt.DropAction.MoveAction and (row != -1 or column != -1):
+            return True
+        return False
+
+    def supportedDropActions(self) -> Qt.DropAction:
+        return Qt.DropAction.MoveAction
+
+    def dropMimeData(
+        self,
+        data: QMimeData | None,
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
+        if action == Qt.DropAction.IgnoreAction:
+            return True
+
+        encoded: QByteArray = data.data("application/x-qabstractitemmodeldatalist")
+        stream: QDataStream = QDataStream(encoded, QDataStream.OpenModeFlag.ReadOnly)
+        source_rows: list[int] = []
+
+        while not stream.atEnd():
+            source_row = stream.readInt()
+            col = stream.readInt()
+            size = stream.readInt()
+            item_data = {}
+            for _ in range(size):
+                role = stream.readInt()
+                value = stream.readQVariant()
+                item_data[role] = value
+            if col == 0:
+                source_rows.append(source_row)
+
+        if row == -1:
+            row = parent.row()
+
+        if row < 0 or row >= len(self.paks):
+            new_priority = len(self.paks)
+        else:
+            new_priority = row
+
+        new_paks = {}
+        before_paks = []
+        moved_paks = []
+        after_paks = []
+        before_paks_p = []
+        moved_paks_p = []
+        after_paks_p = []
+        for row, paks in sorted(self.paks.items()):
+            if row < new_priority:
+                if row in source_rows:
+                    if paks[0].casefold()[-2:] == "_p":
+                        moved_paks_p.append(paks)
+                    else:
+                        moved_paks.append(paks)
+                else:
+                    if paks[0].casefold()[-2:] == "_p":
+                        before_paks_p.append(paks)
+                    else:
+                        before_paks.append(paks)
+            if row >= new_priority:
+                if row in source_rows:
+                    if paks[0].casefold()[-2:] == "_p":
+                        moved_paks_p.append(paks)
+                    else:
+                        moved_paks.append(paks)
+                else:
+                    if paks[0].casefold()[-2:] == "_p":
+                        after_paks_p.append(paks)
+                    else:
+                        after_paks.append(paks)
+        i = 0
+        for pak in before_paks:
+            new_paks[i] = pak
+            i += 1
+        for pak in moved_paks:
+            new_paks[i] = pak
+            i += 1
+        for pak in after_paks:
+            new_paks[i] = pak
+            i += 1
+        for pak in before_paks_p:
+            new_paks[i] = pak
+            i += 1
+        for pak in moved_paks_p:
+            new_paks[i] = pak
+            i += 1
+        for pak in after_paks_p:
+            new_paks[i] = pak
+            i += 1
+        index = 9999
+        for row, pak in new_paks.items():
+            current_dir = QDir(pak[2])
+            parent_dir = QDir(pak[2])
+            parent_dir.cdUp()
+            if current_dir.exists() and parent_dir.dirName().casefold() == "~mods":
+                new_paks[row] = (
+                    pak[0],
+                    pak[1],
+                    pak[2],
+                    parent_dir.absoluteFilePath(str(index).zfill(4)),
+                )
+                index -= 1
+
+        self.set_paks(new_paks)
+        return False
+
+
+class PaksView(QTreeView):
+    data_dropped = pyqtSignal()
+
+    def __init__(self, parent: QWidget | None):
+        super().__init__(parent)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.viewport().setAcceptDrops(True)
+        self.setItemsExpandable(False)
+        self.setRootIsDecorated(False)
+
+    def dropEvent(self, e: QDropEvent | None):
+        super().dropEvent(e)
+        self.clearSelection()
+        self.data_dropped.emit()
+
+    def dataChanged(self, topLeft, bottomRight, roles=...):
+        super().dataChanged(topLeft, bottomRight, roles)
+        self.repaint()
+
+
+class PaksTabWidget(QWidget):
+    def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
+        super().__init__(parent)
+        self._organizer = organizer
+        self._view = PaksView(self)
+        self._layout = QGridLayout(self)
+        self._layout.addWidget(self._view)
+        self._model = PaksModel(self._view, organizer)
+        self._view.setModel(self._model)
+        self._model.dataChanged.connect(self.write_paks_list)
+        self._view.data_dropped.connect(self.write_paks_list)
+        organizer.onProfileChanged(lambda profile_a, profile_b: self._parse_pak_files())
+        organizer.modList().onModInstalled(lambda mod: self._parse_pak_files())
+        organizer.modList().onModRemoved(lambda mod: self._parse_pak_files())
+        organizer.modList().onModStateChanged(lambda mods: self._parse_pak_files())
+        self._parse_pak_files()
+
+    def write_paks_list(self):
+        profile = QDir(self._organizer.profilePath())
+        paks_txt = QFileInfo(profile.absoluteFilePath("paks.txt"))
+        with open(paks_txt.absoluteFilePath(), "w") as paks_file:
+            for _, pak in sorted(self._model.paks.items()):
+                name, _, _, _ = pak
+                paks_file.write(f"{name}\n")
+        self.write_pak_files()
+
+    def write_pak_files(self):
+        for index, pak in sorted(self._model.paks.items()):
+            name, source, current_path, target_path = pak
+            if current_path and current_path != target_path:
+                path_dir = QDir(current_path)
+                target_dir = QDir(target_path)
+                if not target_dir.exists():
+                    os.mkdir(target_dir.absolutePath())
+                if path_dir.exists():
+                    for entry in path_dir.entryInfoList(QDir.Filter.Files):
+                        if entry.suffix().casefold() == "pak":
+                            match = re.match(r"^(\d{4}_)?(.*)", entry.baseName())
+                            match_name = (
+                                match.group(2) if match.group(2) else match.group(1)
+                            )
+                            if match_name == name:
+                                pak_file = Path(entry.absoluteFilePath())
+                                ucas_file = Path(
+                                    entry.absolutePath()
+                                    + "/"
+                                    + entry.baseName()
+                                    + "."
+                                    + "ucas"
+                                )
+                                utoc_file = Path(
+                                    entry.absolutePath()
+                                    + "/"
+                                    + entry.baseName()
+                                    + "."
+                                    + "utoc"
+                                )
+                                if pak_file.exists():
+                                    try:
+                                        os.rename(
+                                            pak_file.absolute(),
+                                            target_dir.absoluteFilePath(f"{name}.pak"),
+                                        )
+                                        if ucas_file.exists():
+                                            os.rename(
+                                                ucas_file.absolute(),
+                                                target_dir.absoluteFilePath(
+                                                    f"{name}.ucas"
+                                                ),
+                                            )
+                                        if utoc_file.exists():
+                                            os.rename(
+                                                utoc_file.absolute(),
+                                                target_dir.absoluteFilePath(
+                                                    f"{name}.utoc"
+                                                ),
+                                            )
+                                        data = self._model.paks[index]
+                                        self._model.paks[index] = (
+                                            data[0],
+                                            data[1],
+                                            data[3],
+                                            data[3],
+                                        )
+                                    except FileExistsError:
+                                        pass
+                if path_dir.isEmpty():
+                    path_dir.removeRecursively()
+
+    def _parse_pak_files(self):
+        mods = self._organizer.modList().allMods()
+        paks: dict[str, str] = {}
+        pak_paths: dict[str, tuple[str, str]] = {}
+        pak_source: dict[str, str] = {}
+        for mod in mods:
+            mod_item = self._organizer.modList().getMod(mod)
+            if not self._organizer.modList().state(mod) & mobase.ModState.ACTIVE:
+                continue
+            filetree = mod_item.fileTree()
+            pak_mods = filetree.find("Paks/~mods")
+            if not pak_mods:
+                pak_mods = filetree.find("Root/OblivionRemastered/Content/Paks/~mods")
+            if pak_mods:
+                for entry in pak_mods:
+                    if is_directory(entry):
+                        if entry.name().casefold() == "magicloader":
+                            continue
+                        for sub_entry in entry:
+                            if (
+                                sub_entry.isFile()
+                                and sub_entry.suffix().casefold() == "pak"
+                            ):
+                                paks[
+                                    sub_entry.name()[: -1 - len(sub_entry.suffix())]
+                                ] = entry.name()
+                                pak_paths[
+                                    sub_entry.name()[: -1 - len(sub_entry.suffix())]
+                                ] = (
+                                    mod_item.absolutePath()
+                                    + "/"
+                                    + sub_entry.parent().path("/"),
+                                    mod_item.absolutePath() + "/" + pak_mods.path("/"),
+                                )
+                                pak_source[
+                                    sub_entry.name()[: -1 - len(sub_entry.suffix())]
+                                ] = mod_item.name()
+                    else:
+                        if entry.suffix().casefold() == "pak":
+                            paks[entry.name()[: -1 - len(entry.suffix())]] = ""
+                            pak_paths[entry.name()[: -1 - len(entry.suffix())]] = (
+                                mod_item.absolutePath()
+                                + "/"
+                                + entry.parent().path("/"),
+                                mod_item.absolutePath() + "/" + pak_mods.path("/"),
+                            )
+                            pak_source[entry.name()[: -1 - len(entry.suffix())]] = (
+                                mod_item.name()
+                            )
+        game = self._organizer.managedGame()  # type: OblivionRemasteredGame
+        if type(game) is OblivionRemasteredGame:
+            pak_mods = QFileInfo(game.paksDirectory().absoluteFilePath("~mods"))
+            if pak_mods.exists() and pak_mods.isDir():
+                for entry in QDir(pak_mods.absoluteFilePath()).entryInfoList(
+                    QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
+                ):
+                    if entry.isDir():
+                        if entry.baseName().casefold() == "magicloader":
+                            continue
+                        for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(
+                            QDir.Filter.Files
+                        ):
+                            if (
+                                sub_entry.isFile()
+                                and sub_entry.suffix().casefold() == "pak"
+                            ):
+                                paks[sub_entry.baseName()] = entry.baseName()
+                                pak_paths[sub_entry.baseName()] = (
+                                    sub_entry.absolutePath(),
+                                    pak_mods.absolutePath(),
+                                )
+                                pak_source[sub_entry.baseName()] = "Game Directory"
+                    else:
+                        if entry.suffix().casefold() == "pak":
+                            paks[entry.name()[: -1 - len(entry.suffix())]] = ""
+                            pak_paths[entry.baseName()] = (
+                                entry.absolutePath(),
+                                pak_mods.absolutePath(),
+                            )
+                            pak_source[entry.baseName()] = "Game Directory"
+        sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
+        qDebug("Sorted Paks:")
+        for pak, directory in sorted_paks.items():
+            item = directory if directory else pak
+            qDebug(item)
+        final_paks = {}
+        pak_index = 9999
+        for pak in sorted_paks.keys():
+            match = re.match(r"^(\d{4}_)?(.*)$", pak)
+            name = match.group(2) if match.group(2) else match.group(1)
+            target_dir = pak_paths[pak][1] + "/" + str(pak_index).zfill(4)
+            final_paks[name] = (pak_source[pak], pak_paths[pak][0], target_dir)
+            pak_index -= 1
+        new_data_paks: dict[int, tuple[str, str, str, str]] = {}
+        i = 0
+        qDebug("Final Paks:")
+        for pak, data in final_paks.items():
+            qDebug(pak)
+            source, current_path, target_path = data
+            new_data_paks[i] = (pak, source, current_path, target_path)
+            i += 1
+        self._model.set_paks(new_data_paks)
 
 
 class UE4SSListModel(QStringListModel):
@@ -196,7 +659,7 @@ class UE4SSView(QListView):
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDropIndicatorShown(False)
+        self.setDropIndicatorShown(True)
         self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.viewport().setAcceptDrops(True)
@@ -221,11 +684,35 @@ class UE4SSTabWidget(QWidget):
         self._view.setModel(self._model)
         self._model.dataChanged.connect(self.write_mod_list)
         self._view.data_dropped.connect(self.write_mod_list)
+        organizer.onProfileChanged(lambda profile_a, profile_b: self._parse_mod_files())
+        organizer.modList().onModInstalled(self.update_mod_files)
+        organizer.modList().onModRemoved(lambda mod: self._parse_mod_files())
+        organizer.modList().onModStateChanged(self.update_mod_files)
         self._parse_mod_files()
 
-    def update_mod_files(self, state: dict[str, mobase.ModState]):
-        for mod, state in state.items():
-            tree = self._organizer.modList().getMod(mod).fileTree()
+    def get_mod_list(self) -> list[str]:
+        mod_list = []
+        for index in range(self._model.rowCount()):
+            mod_list.append(
+                self._model.data(
+                    self._model.index(index, 0), Qt.ItemDataRole.DisplayRole
+                )
+            )
+        return mod_list
+
+    def update_mod_files(
+        self, mods: dict[str, mobase.ModState] | mobase.IModInterface | str
+    ):
+        mod_list: list[mobase.IModInterface] = []
+        if type(mods) is dict:
+            for mod in mods.keys():
+                mod_list.append(self._organizer.modList().getMod(mod))
+        elif type(mods) is mobase.IModInterface:
+            mod_list.append(mods)
+        else:
+            mod_list.append(self._organizer.modList().getMod(mods))
+        for mod in mod_list:
+            tree = mod.fileTree()
             ue4ss_files = tree.find("UE4SS")
             if not ue4ss_files:
                 ue4ss_files = tree.find(
@@ -240,13 +727,9 @@ class UE4SSTabWidget(QWidget):
                             )
                             try:
                                 os.remove(
-                                    self._organizer.modList().getMod(mod).absolutePath()
-                                    + "/"
-                                    + enabled_txt.path("/")
+                                    mod.absolutePath() + "/" + enabled_txt.path("/")
                                 )
-                                self._organizer.modDataChanged(
-                                    self._organizer.modList().getMod(mod)
-                                )
+                                self._organizer.modDataChanged(mod)
                             except FileNotFoundError:
                                 pass
 
@@ -305,7 +788,11 @@ class UE4SSTabWidget(QWidget):
                             "enabled.txt"
                         )
                     ).exists():
-                        os.remove(dir_info.dir().absoluteFilePath("enabled.txt"))
+                        os.remove(
+                            QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                                "enabled.txt"
+                            )
+                        )
         final_list = sorted(mod_list, key=cmp_to_key(self.sort_mods))
         self._model.setStringList(final_list)
 
@@ -371,8 +858,9 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
     ]
     _data_extensions = [".esm", ".esp", ".bsa"]
 
-    def __init__(self):
+    def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
+        self._organizer = organizer
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
@@ -390,8 +878,29 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             if entry.parent().parent() is None:
                 if is_directory(entry):
                     if name in [dirname.lower() for dirname in self._dirs]:
-                        status = mobase.ModDataChecker.VALID
-                        break
+                        if name == "ue4ss":
+                            if entry.find("Mods"):
+                                for sub_entry in entry.find("Mods"):
+                                    if is_directory(sub_entry):
+                                        if sub_entry.find("scripts/main.lua"):
+                                            status = mobase.ModDataChecker.FIXABLE
+                                            break
+                                        if sub_entry.name().casefold() == "shared":
+                                            status = mobase.ModDataChecker.FIXABLE
+                                            break
+                            else:
+                                for sub_entry in entry:
+                                    if is_directory(sub_entry):
+                                        if sub_entry.find("scripts/main.lua"):
+                                            status = mobase.ModDataChecker.VALID
+                                            break
+                                        if sub_entry.name().casefold() == "shared":
+                                            status = mobase.ModDataChecker.VALID
+                                            break
+                        else:
+                            status = mobase.ModDataChecker.VALID
+                        if status == mobase.ModDataChecker.VALID:
+                            break
                     elif name in [dirname.lower() for dirname in self._data_dirs]:
                         status = mobase.ModDataChecker.FIXABLE
                     else:
@@ -463,7 +972,12 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 obse_dir.detach()
             ue4ss_mod_dir = exe_dir.find("ue4ss/Mods")
             if ue4ss_mod_dir:
-                ue4ss_main = self.get_dir(filetree, "UE4SS")
+                if self._organizer.pluginSetting(PLUGIN_NAME, "ue4ss_use_root_builder"):
+                    ue4ss_main = self.get_dir(
+                        filetree, "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
+                    )
+                else:
+                    ue4ss_main = self.get_dir(filetree, "UE4SS")
                 ue4ss_main.merge(ue4ss_mod_dir, True)
                 ue4ss_mod_dir.detach()
             if len(exe_dir):
@@ -486,6 +1000,27 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             ]:
                 data_dir = self.get_dir(filetree, "Data")
                 directory.moveTo(data_dir)
+            elif directory.name().casefold() == "ue4ss":
+                if directory.find("Mods"):
+                    for sub_entry in directory.find("Mods"):
+                        if is_directory(sub_entry):
+                            if (
+                                sub_entry.find("scripts/main.lua")
+                                or sub_entry.name().casefold() == "shared"
+                            ):
+                                if self._organizer.pluginSetting(
+                                    PLUGIN_NAME, "ue4ss_use_root_builder"
+                                ):
+                                    ue4ss_main = self.get_dir(
+                                        filetree,
+                                        "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods",
+                                    )
+                                    sub_entry.moveTo(ue4ss_main)
+                                    self.detach_parents(directory)
+                                else:
+                                    parent = sub_entry.parent()
+                                    sub_entry.moveTo(directory)
+                                    self.detach_parents(parent)
             elif directory.name().casefold() not in [
                 dirname.lower() for dirname in self._dirs
             ]:
@@ -542,11 +1077,20 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 if name == dir_name.lower():
                     main_dir = self.get_dir(main_filetree, dir_name)
                     if name == "ue4ss":
-                        mod_dir = directory.find("Mods")
-                        if mod_dir:
-                            main_dir.merge(mod_dir)
+                        if self._organizer.pluginSetting(
+                            PLUGIN_NAME, "ue4ss_use_root_builder"
+                        ):
+                            ue4ss_dir = self.get_dir(
+                                main_filetree,
+                                "Root/OblivionRemastered/Binaries/Win64/ue4ss",
+                            )
+                            ue4ss_dir.merge(directory)
                         else:
-                            main_dir.merge(directory)
+                            mod_dir = directory.find("Mods")
+                            if mod_dir:
+                                main_dir.merge(mod_dir)
+                            else:
+                                main_dir.merge(directory)
                     else:
                         main_dir.merge(directory)
                     self.detach_parents(directory)
@@ -589,14 +1133,23 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         return main_filetree
                 elif name.endswith(".lua"):
                     if next_dir.parent() and next_dir.parent() != main_filetree:
-                        if main_filetree.find("UE4SS") is None:
-                            main_filetree.addDirectory("UE4SS")
                         parent = next_dir.parent().parent()
-                        main_filetree.move(
-                            next_dir.parent(),
-                            "UE4SS/",
-                            mobase.IFileTree.MERGE,
-                        )
+                        if self._organizer.pluginSetting(
+                            PLUGIN_NAME, "ue4ss_use_root_builder"
+                        ):
+                            ue4ss_main = self.get_dir(
+                                main_filetree,
+                                "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods",
+                            )
+                            next_dir.parent().moveTo(ue4ss_main)
+                        else:
+                            if main_filetree.find("UE4SS") is None:
+                                main_filetree.addDirectory("UE4SS")
+                            main_filetree.move(
+                                next_dir.parent(),
+                                "UE4SS/",
+                                mobase.IFileTree.MERGE,
+                            )
                         if parent is not None:
                             self.detach_parents(parent)
                         return main_filetree
@@ -910,7 +1463,7 @@ class OblivionRemasteredScriptExtender(mobase.ScriptExtender):
 class OblivionRemasteredGame(
     BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose
 ):
-    Name = "Oblivion Remastered Support Plugin"
+    Name = PLUGIN_NAME
     Author = "Silarn"
     Version = "0.1.0-b.1"
     Description = "TES IV: Oblivion Remastered; an unholy hybrid of Gamebryo and Unreal"
@@ -928,19 +1481,24 @@ class OblivionRemasteredGame(
     MyDocumentsDirectory = rf"{UserHome}\Documents\My Games\{GameName}"
     GameSavesDirectory = rf"{MyDocumentsDirectory}\Saved\SaveGames"
     GameSaveExtension = "sav"
+    GameSupportURL = (
+        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
+        "Game:-Elder-Scrolls-IV:-Oblivion-Remastered"
+    )
 
     def __init__(self):
         BasicGame.__init__(self)
         mobase.IPluginFileMapper.__init__(self)
         mobase.IPluginDiagnose.__init__(self)
-        self._main_window = None
-        self._ue4ss_tab = None
+        self._main_window: QMainWindow | None = None
+        self._ue4ss_tab: UE4SSTabWidget | None = None
+        self._paks_tab: PaksTabWidget | None = None
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._register_feature(BasicGameSaveGameInfo())
         self._register_feature(OblivionRemasteredGamePlugins(self._organizer))
-        self._register_feature(OblivionRemasteredModDataChecker())
+        self._register_feature(OblivionRemasteredModDataChecker(self._organizer))
         self._register_feature(OblivionRemasteredScriptExtender(self))
         self._register_feature(OblivionRemasteredDataContent())
 
@@ -957,13 +1515,24 @@ class OblivionRemasteredGame(
             return
 
         self._ue4ss_tab = UE4SSTabWidget(main_window, self._organizer)
-        self._organizer.modList().onModStateChanged(self._ue4ss_tab.update_mod_files)
 
         plugin_tab = tab_widget.findChild(QWidget, "espTab")
         tab_index = tab_widget.indexOf(plugin_tab) + 1
         if not tab_widget.isTabVisible(tab_widget.indexOf(plugin_tab)):
             tab_index += 1
         tab_widget.insertTab(tab_index, self._ue4ss_tab, "UE4SS Mods")
+
+        self._paks_tab = PaksTabWidget(main_window, self._organizer)
+
+        tab_index = tab_widget.count()
+        tab_widget.insertTab(tab_index, self._paks_tab, "Paks")
+
+    def settings(self) -> list[mobase.PluginSetting]:
+        return [
+            mobase.PluginSetting(
+                "ue4ss_use_root_builder", "Use Root Builder paths for UE4SS mods", False
+            )
+        ]
 
     def executables(self):
         return [
@@ -1130,6 +1699,10 @@ class OblivionRemasteredGame(
             ue4ss_loader = QFileInfo(self.exeDirectory().absoluteFilePath("dwmapi.dll"))
             if ue4ss_loader.exists():
                 problems.add(Problems.UE4SS_LOADER)
+            for mod in self._ue4ss_tab.get_mod_list():
+                if " " in mod:
+                    problems.add(Problems.INVALID_UE4SS_MOD_NAME)
+                    break
             return list(problems)
         return []
 
@@ -1138,8 +1711,14 @@ class OblivionRemasteredGame(
             case Problems.UE4SS_LOADER:
                 return (
                     "The UE4SS loader DLL is present (dwmapi.dll). This will not function out-of-the box with MO2's virtual filesystem.\n\n"
-                    + "In order to resolve this, the DLL should be renamed (ex. 'ue4ss_loader.dll') and set to force load with the game exe.\n\n"
+                    + "In order to resolve this, either delete the DLL and use the OBSE UE4SS Loader plugin, or rename "
+                    + "the DLL (ex. 'ue4ss_loader.dll') and set it to force load with the game exe.\n\n"
                     + "Do this for any executable which runs the game, such as the OBSE64 loader."
+                )
+            case Problems.INVALID_UE4SS_MOD_NAME:
+                return (
+                    "UE4SS mods do not load properly with spaces in the mod name. These are stripped when parsing mods.txt and then"
+                    "fail to match up when parsing the mods.json. Simply remove the spaces and they should load correctly."
                 )
         return ""
 
@@ -1147,12 +1726,16 @@ class OblivionRemasteredGame(
         match key:
             case Problems.UE4SS_LOADER:
                 return True
+            case Problems.INVALID_UE4SS_MOD_NAME:
+                return True
         return False
 
     def shortDescription(self, key: int) -> str:
         match key:
             case Problems.UE4SS_LOADER:
                 return "The UE4SS loader DLL is present (dwmapi.dll)."
+            case Problems.INVALID_UE4SS_MOD_NAME:
+                return "A UE4SS mod name contains a space."
         return ""
 
     def startGuidedFix(self, key: int) -> None:
@@ -1162,4 +1745,59 @@ class OblivionRemasteredGame(
                     self.exeDirectory().absoluteFilePath("dwmapi.dll"),
                     self.exeDirectory().absoluteFilePath("ue4ss_loader.dll"),
                 )
+            case Problems.INVALID_UE4SS_MOD_NAME:
+                for mod in self._organizer.modList().allMods():
+                    filetree = self._organizer.modList().getMod(mod).fileTree()
+                    ue4ss_mod = filetree.find("UE4SS")
+                    if not ue4ss_mod:
+                        filetree.find(
+                            "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
+                        )
+                    if ue4ss_mod:
+                        for entry in ue4ss_mod:
+                            if is_directory(entry) and entry.find("scripts/main.lua"):
+                                if " " in entry.name():
+                                    mod_dir = QDir(
+                                        self._organizer.modList()
+                                        .getMod(mod)
+                                        .absolutePath()
+                                    )
+                                    mod_path = mod_dir.absoluteFilePath(entry.path("/"))
+                                    fixed_path = (
+                                        mod_dir.absoluteFilePath(
+                                            entry.parent().path("/")
+                                        )
+                                        + "/"
+                                        + entry.name().replace(" ", "")
+                                    )
+                                    try:
+                                        os.rename(mod_path, fixed_path)
+                                        self._organizer.modDataChanged(
+                                            self._organizer.modList().getMod(mod)
+                                        )
+                                        self._ue4ss_tab.update_mod_files(mod)
+                                    except FileExistsError:
+                                        pass
+                                    except FileNotFoundError:
+                                        pass
+                for entry in self.ue4ssDirectory().entryInfoList(
+                    QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
+                ):
+                    entry_dir = QDir(entry.absoluteFilePath())
+                    if QFileInfo(
+                        entry_dir.absoluteFilePath("scripts/main.lua")
+                    ).exists():
+                        if " " in entry_dir.dirName():
+                            dest = (
+                                entry_dir.absoluteFilePath("..")
+                                + "/"
+                                + entry_dir.dirName().replace(" ", "")
+                            )
+                            try:
+                                os.rename(entry_dir.absolutePath(), dest)
+                            except FileExistsError:
+                                pass
+                            except FileNotFoundError:
+                                pass
+
         pass
