@@ -3,7 +3,7 @@ from functools import cmp_to_key
 from pathlib import Path
 from typing import cast
 
-from PyQt6.QtCore import QDir, QFileInfo, qDebug
+from PyQt6.QtCore import QDir, QFileInfo
 from PyQt6.QtWidgets import QGridLayout, QWidget
 
 import mobase
@@ -108,9 +108,6 @@ class PaksTabWidget(QWidget):
         shaken_paks: list[str] = []
         shaken_paks_p: list[str] = []
         paks_list = self.load_paks_list()
-        qDebug("Read paks...")
-        for pak in paks_list:
-            qDebug(pak)
         for pak in paks_list:
             if pak in sorted_paks.keys():
                 if pak.casefold().endswith("_p"):
@@ -217,9 +214,6 @@ class PaksTabWidget(QWidget):
                             pak_source[entry.completeBaseName()] = "Game Directory"
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
         shaken_paks: list[str] = self._shake_paks(sorted_paks)
-        qDebug("Shaken paks:")
-        for pak in shaken_paks:
-            qDebug(pak)
         final_paks: dict[str, tuple[str, str, str]] = {}
         pak_index = 9999
         for pak in shaken_paks:
