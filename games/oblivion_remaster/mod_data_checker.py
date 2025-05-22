@@ -197,39 +197,41 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 dirname.lower() for dirname in self._dirs
             ]:
                 filetree = self.parse_directory(filetree, directory)
+        entries: list[mobase.FileTreeEntry] = []
         for entry in filetree:
-            if isinstance(entry, mobase.FileTreeEntry):
-                if entry.isFile():
-                    name = entry.name().casefold()
-                    if name.endswith(".pak"):
-                        paks_dir = self.get_dir(filetree, "Paks/~mods")
-                        pak_files: list[mobase.FileTreeEntry] = []
-                        for file in _parent(entry):
-                            if file.isFile():
-                                if (
-                                    file.name()
-                                    .casefold()
-                                    .endswith((".pak", ".ucas", ".utoc"))
-                                ):
-                                    pak_files.append(file)
-                        for pak_file in pak_files:
-                            pak_file.moveTo(paks_dir)
-                    elif name.endswith(".bk2"):
-                        movies_dir = self.get_dir(filetree, "Movies/Modern")
-                        movie_files: list[mobase.FileTreeEntry] = []
-                        for file in _parent(entry):
-                            if file.isFile():
-                                if file.name().casefold().endswith(".bk2"):
-                                    movie_files.append(file)
-                        for movie_file in movie_files:
-                            movie_file.moveTo(movies_dir)
-                    elif name.endswith(tuple(self._data_extensions)):
-                        data_dir = self.get_dir(filetree, "Data")
-                        data_files: list[mobase.FileTreeEntry] = []
-                        for file in _parent(entry):
-                            data_files.append(file)
-                        for data_file in data_files:
-                            data_file.moveTo(data_dir)
+            entries.append(entry)
+        for entry in entries:
+            if entry.parent() == filetree and entry.isFile():
+                name = entry.name().casefold()
+                if name.endswith(".pak"):
+                    paks_dir = self.get_dir(filetree, "Paks/~mods")
+                    pak_files: list[mobase.FileTreeEntry] = []
+                    for file in _parent(entry):
+                        if file.isFile():
+                            if (
+                                file.name()
+                                .casefold()
+                                .endswith((".pak", ".ucas", ".utoc"))
+                            ):
+                                pak_files.append(file)
+                    for pak_file in pak_files:
+                        pak_file.moveTo(paks_dir)
+                elif name.endswith(".bk2"):
+                    movies_dir = self.get_dir(filetree, "Movies/Modern")
+                    movie_files: list[mobase.FileTreeEntry] = []
+                    for file in _parent(entry):
+                        if file.isFile():
+                            if file.name().casefold().endswith(".bk2"):
+                                movie_files.append(file)
+                    for movie_file in movie_files:
+                        movie_file.moveTo(movies_dir)
+                elif name.endswith(tuple(self._data_extensions)):
+                    data_dir = self.get_dir(filetree, "Data")
+                    data_files: list[mobase.FileTreeEntry] = []
+                    for file in _parent(entry):
+                        data_files.append(file)
+                    for data_file in data_files:
+                        data_file.moveTo(data_dir)
         return filetree
 
     def parse_directory(
