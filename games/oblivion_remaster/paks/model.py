@@ -31,7 +31,7 @@ class PaksColumns(IntEnum):
 class PaksModel(QAbstractItemModel):
     def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
         super().__init__(parent)
-        self.paks: dict[int, tuple[str, str, str, str]] = {}
+        self.paks: dict[int, _PakInfo] = {}
         self._organizer = organizer
         self._init_mod_states()
 
@@ -45,7 +45,7 @@ class PaksModel(QAbstractItemModel):
                     self.paks[index] = (line, "", "", "")
                     index += 1
 
-    def set_paks(self, paks: dict[int, tuple[str, str, str, str]]):
+    def set_paks(self, paks: dict[int, _PakInfo]):
         self.layoutAboutToBeChanged.emit()
         self.paks = paks
         self.layoutChanged.emit()

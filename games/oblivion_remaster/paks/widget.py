@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QGridLayout, QWidget
 import mobase
 
 from ....basic_features.utils import is_directory
-from .model import PaksModel
+from .model import PaksModel, _PakInfo
 from .view import PaksView
 
 
@@ -47,6 +47,16 @@ class PaksTabWidget(QWidget):
         organizer.modList().onModRemoved(lambda mod: self._parse_pak_files())
         organizer.modList().onModStateChanged(lambda mods: self._parse_pak_files())
         self._parse_pak_files()
+
+    def load_paks_list(self) -> list[str]:
+        profile = QDir(self._organizer.profilePath())
+        paks_txt = QFileInfo(profile.absoluteFilePath("paks.txt"))
+        paks_list: list[str] = []
+        if paks_txt.exists():
+            with open(paks_txt.absoluteFilePath(), "r") as paks_file:
+                for line in paks_file:
+                    paks_list.append(line.strip())
+        return paks_list
 
     def write_paks_list(self):
         profile = QDir(self._organizer.profilePath())
@@ -91,8 +101,29 @@ class PaksTabWidget(QWidget):
                                 data[3],
                             )
                             break
-                if not list(path_dir.iterdir()):
-                    path_dir.unlink()
+                    if not list(path_dir.iterdir()):
+                        path_dir.rmdir()
+
+    def _shake_paks(self, sorted_paks: dict[str, str]) -> list[str]:
+        shaken_paks: list[str] = []
+        shaken_paks_p: list[str] = []
+        paks_list = self.load_paks_list()
+        qDebug("Read paks...")
+        for pak in paks_list:
+            qDebug(pak)
+        for pak in paks_list:
+            if pak in sorted_paks.keys():
+                if pak.casefold().endswith("_p"):
+                    shaken_paks_p.append(pak)
+                else:
+                    shaken_paks.append(pak)
+                sorted_paks.pop(pak)
+        for pak in sorted_paks.keys():
+            if pak.casefold().endswith("_p"):
+                shaken_paks_p.append(pak)
+            else:
+                shaken_paks.append(pak)
+        return shaken_paks + shaken_paks_p
 
     def _parse_pak_files(self):
         from ...game_oblivion_remaster import OblivionRemasteredGame
@@ -155,7 +186,7 @@ class PaksTabWidget(QWidget):
                     QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
                 ):
                     if entry.isDir():
-                        if entry.baseName().casefold() == "magicloader":
+                        if entry.completeBaseName().casefold() == "magicloader":
                             continue
                         for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(
                             QDir.Filter.Files
@@ -164,42 +195,40 @@ class PaksTabWidget(QWidget):
                                 sub_entry.isFile()
                                 and sub_entry.suffix().casefold() == "pak"
                             ):
-                                paks[sub_entry.baseName()] = entry.baseName()
-                                pak_paths[sub_entry.baseName()] = (
+                                paks[sub_entry.completeBaseName()] = (
+                                    entry.completeBaseName()
+                                )
+                                pak_paths[sub_entry.completeBaseName()] = (
                                     sub_entry.absolutePath(),
                                     pak_mods.absolutePath(),
                                 )
-                                pak_source[sub_entry.baseName()] = "Game Directory"
+                                pak_source[sub_entry.completeBaseName()] = (
+                                    "Game Directory"
+                                )
                     else:
                         if entry.suffix().casefold() == "pak":
                             paks[
                                 entry.completeBaseName()[: -1 - len(entry.suffix())]
                             ] = ""
-                            pak_paths[entry.baseName()] = (
+                            pak_paths[entry.completeBaseName()] = (
                                 entry.absolutePath(),
                                 pak_mods.absolutePath(),
                             )
-                            pak_source[entry.baseName()] = "Game Directory"
+                            pak_source[entry.completeBaseName()] = "Game Directory"
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
-        qDebug("Sorted Paks:")
-        for pak, directory in sorted_paks.items():
-            item = directory if directory else pak
-            qDebug(item)
+        shaken_paks: list[str] = self._shake_paks(sorted_paks)
+        qDebug("Shaken paks:")
+        for pak in shaken_paks:
+            qDebug(pak)
         final_paks: dict[str, tuple[str, str, str]] = {}
         pak_index = 9999
-        for pak in sorted_paks.keys():
-            match = re.match(r"^(\d{4}_)?(.*)$", pak)
-            if not match:
-                continue
-            name = match.group(2) if match.group(2) else match.group(1)
+        for pak in shaken_paks:
             target_dir = pak_paths[pak][1] + "/" + str(pak_index).zfill(4)
-            final_paks[name] = (pak_source[pak], pak_paths[pak][0], target_dir)
+            final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)
             pak_index -= 1
-        new_data_paks: dict[int, tuple[str, str, str, str]] = {}
+        new_data_paks: dict[int, _PakInfo] = {}
         i = 0
-        qDebug("Final Paks:")
         for pak, data in final_paks.items():
-            qDebug(pak)
             source, current_path, target_path = data
             new_data_paks[i] = (pak, source, current_path, target_path)
             i += 1

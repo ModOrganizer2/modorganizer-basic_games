@@ -59,7 +59,7 @@ class OblivionRemasteredGame(
     Name = PLUGIN_NAME
     Author = "Silarn"
     Version = "0.1.0-b.1"
-    Description = "TES IV: Oblivion Remastered; an unholy hybrid of Gamebryo and Unreal"
+    Description = "TES IV: Oblivion Remastered; an unholy hybrid of Bethesda and Unreal"
 
     GameName = "Oblivion Remastered"
     GameShortName = "oblivionremastered"
