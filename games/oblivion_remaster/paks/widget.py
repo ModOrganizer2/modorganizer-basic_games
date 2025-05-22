@@ -147,12 +147,11 @@ class PaksTabWidget(QWidget):
                                 sub_entry.isFile()
                                 and sub_entry.suffix().casefold() == "pak"
                             ):
-                                paks[
-                                    sub_entry.name()[: -1 - len(sub_entry.suffix())]
-                                ] = entry.name()
-                                pak_paths[
-                                    sub_entry.name()[: -1 - len(sub_entry.suffix())]
-                                ] = (
+                                pak_name = sub_entry.name()[
+                                    : -1 - len(sub_entry.suffix())
+                                ]
+                                paks[pak_name] = entry.name()
+                                pak_paths[pak_name] = (
                                     mod_item.absolutePath()
                                     + "/"
                                     + cast(mobase.IFileTree, sub_entry.parent()).path(
@@ -160,21 +159,18 @@ class PaksTabWidget(QWidget):
                                     ),
                                     mod_item.absolutePath() + "/" + pak_mods.path("/"),
                                 )
-                                pak_source[
-                                    sub_entry.name()[: -1 - len(sub_entry.suffix())]
-                                ] = mod_item.name()
+                                pak_source[pak_name] = mod_item.name()
                     else:
                         if entry.suffix().casefold() == "pak":
-                            paks[entry.name()[: -1 - len(entry.suffix())]] = ""
-                            pak_paths[entry.name()[: -1 - len(entry.suffix())]] = (
+                            pak_name = entry.name()[: -1 - len(entry.suffix())]
+                            paks[pak_name] = ""
+                            pak_paths[pak_name] = (
                                 mod_item.absolutePath()
                                 + "/"
                                 + cast(mobase.IFileTree, entry.parent()).path("/"),
                                 mod_item.absolutePath() + "/" + pak_mods.path("/"),
                             )
-                            pak_source[entry.name()[: -1 - len(entry.suffix())]] = (
-                                mod_item.name()
-                            )
+                            pak_source[pak_name] = mod_item.name()
         game = self._organizer.managedGame()
         if isinstance(game, OblivionRemasteredGame):
             pak_mods = QFileInfo(game.paksDirectory().absoluteFilePath("~mods"))
@@ -192,26 +188,21 @@ class PaksTabWidget(QWidget):
                                 sub_entry.isFile()
                                 and sub_entry.suffix().casefold() == "pak"
                             ):
-                                paks[sub_entry.completeBaseName()] = (
-                                    entry.completeBaseName()
-                                )
-                                pak_paths[sub_entry.completeBaseName()] = (
+                                pak_name = sub_entry.completeBaseName()
+                                paks[pak_name] = entry.completeBaseName()
+                                pak_paths[pak_name] = (
                                     sub_entry.absolutePath(),
                                     pak_mods.absolutePath(),
                                 )
-                                pak_source[sub_entry.completeBaseName()] = (
-                                    "Game Directory"
-                                )
+                                pak_source[pak_name] = "Game Directory"
                     else:
                         if entry.suffix().casefold() == "pak":
-                            paks[
-                                entry.completeBaseName()[: -1 - len(entry.suffix())]
-                            ] = ""
-                            pak_paths[entry.completeBaseName()] = (
-                                entry.absolutePath(),
-                                pak_mods.absolutePath(),
+                            pak_name = entry.completeBaseName()
+                            paks[pak_name] = ""
+                            pak_paths[pak_name] = (
+                                entry.absolutePath(), pak_mods.absolutePath(),
                             )
-                            pak_source[entry.completeBaseName()] = "Game Directory"
+                            pak_source[pak_name] = "Game Directory"
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
         shaken_paks: list[str] = self._shake_paks(sorted_paks)
         final_paks: dict[str, tuple[str, str, str]] = {}
