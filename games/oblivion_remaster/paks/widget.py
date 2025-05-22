@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QGridLayout, QWidget
 import mobase
 
 from ....basic_features.utils import is_directory
-from .model import PaksModel, _PakInfo
+from .model import PaksModel
 from .view import PaksView
 
 
@@ -226,7 +226,7 @@ class PaksTabWidget(QWidget):
             target_dir = pak_paths[pak][1] + "/" + str(pak_index).zfill(4)
             final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)
             pak_index -= 1
-        new_data_paks: dict[int, _PakInfo] = {}
+        new_data_paks: dict[int, tuple[str, str, str, str]] = {}
         i = 0
         for pak, data in final_paks.items():
             source, current_path, target_path = data
