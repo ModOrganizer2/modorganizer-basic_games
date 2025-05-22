@@ -200,7 +200,8 @@ class PaksTabWidget(QWidget):
                             pak_name = entry.completeBaseName()
                             paks[pak_name] = ""
                             pak_paths[pak_name] = (
-                                entry.absolutePath(), pak_mods.absolutePath(),
+                                entry.absolutePath(),
+                                pak_mods.absolutePath(),
                             )
                             pak_source[pak_name] = "Game Directory"
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
