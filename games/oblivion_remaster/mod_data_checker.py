@@ -198,7 +198,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             ]:
                 filetree = self.parse_directory(filetree, directory)
         for entry in filetree:
-            if entry is not None:
+            if isinstance(entry, mobase.FileTreeEntry):
                 if entry.isFile():
                     name = entry.name().casefold()
                     if name.endswith(".pak"):
