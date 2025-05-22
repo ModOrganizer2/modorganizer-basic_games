@@ -12,6 +12,7 @@ class Content(IntEnum):
     MOVIE = auto()
     UE4SS = auto()
     MAGIC_LOADER = auto()
+    GAME_SETTINGS = auto()
 
 
 class OblivionRemasteredDataContent(mobase.ModDataContent):
@@ -24,6 +25,7 @@ class OblivionRemasteredDataContent(mobase.ModDataContent):
         (Content.MOVIE, "Movies", ":/MO/gui/content/media"),
         (Content.UE4SS, "UE4SS Mods", ":/MO/gui/content/script"),
         (Content.MAGIC_LOADER, "Magic Loader Mod", ":/MO/gui/content/inifile"),
+        (Content.GAME_SETTINGS, "Game Settings", ":/MO/gui/content/menu"),
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
@@ -59,9 +61,22 @@ class OblivionRemasteredDataContent(mobase.ModDataContent):
                         plugins_dir = entry.find("Plugins")
                         if isinstance(plugins_dir, mobase.IFileTree):
                             for plugin_entry in plugins_dir:
-                                if plugin_entry.suffix().casefold() == "dll":
+                                if (
+                                    plugin_entry.isFile()
+                                    and plugin_entry.suffix().casefold() == "dll"
+                                ):
                                     contents.add(Content.OBSE)
-                                    break
+                                if (
+                                    isinstance(plugin_entry, mobase.IFileTree)
+                                    and plugins_dir.name().casefold() == "gamesettings"
+                                ):
+                                    for settings_file in plugin_entry:
+                                        if (
+                                            settings_file.isFile()
+                                            and settings_file.suffix().casefold()
+                                            == "ini"
+                                        ):
+                                            contents.add(Content.GAME_SETTINGS)
                     case "paks":
                         contents.add(Content.PAK)
                         for paks_entry in entry:
@@ -75,6 +90,13 @@ class OblivionRemasteredDataContent(mobase.ModDataContent):
                         contents.add(Content.MOVIE)
                     case "ue4ss":
                         contents.add(Content.UE4SS)
+                    case "gamesettings":
+                        for settings_file in entry:
+                            if (
+                                settings_file.isFile()
+                                and settings_file.suffix().casefold() == "ini"
+                            ):
+                                contents.add(Content.GAME_SETTINGS)
                     case _:
                         pass
 

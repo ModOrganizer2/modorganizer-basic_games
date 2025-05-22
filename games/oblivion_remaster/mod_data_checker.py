@@ -13,12 +13,11 @@ def _parent(entry: mobase.FileTreeEntry):
 
 
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
-    _dirs = ["Data", "Paks", "OBSE", "Movies", "UE4SS", "Root"]
+    _dirs = ["Data", "Paks", "OBSE", "Movies", "UE4SS", "GameSettings", "Root"]
     _data_dirs = [
         "meshes",
         "textures",
         "music",
-        # "scripts",
         "fonts",
         "interface",
         "shaders",
@@ -57,7 +56,11 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                                         if sub_entry.find("scripts/main.lua"):
                                             status = mobase.ModDataChecker.FIXABLE
                                             break
-                                        if sub_entry.name().casefold() == "shared":
+                                        if sub_entry.name().casefold() in [
+                                            "shared",
+                                            "npcappearancemanager",
+                                            "naturalbodymorph",
+                                        ]:
                                             status = mobase.ModDataChecker.FIXABLE
                                             break
                             else:
@@ -66,7 +69,11 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                                         if sub_entry.find("scripts/main.lua"):
                                             status = mobase.ModDataChecker.VALID
                                             break
-                                        if sub_entry.name().casefold() == "shared":
+                                        if sub_entry.name().casefold() in [
+                                            "shared",
+                                            "npcappearancemanager",
+                                            "naturalbodymorph",
+                                        ]:
                                             status = mobase.ModDataChecker.VALID
                                             break
                         else:
@@ -137,11 +144,16 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 )
         exe_dir = filetree.find(r"OblivionRemastered\Binaries\Win64")
         if isinstance(exe_dir, mobase.IFileTree):
+            gamesettings_dir = exe_dir.find("GameSettings")
+            if isinstance(gamesettings_dir, mobase.IFileTree):
+                gamesettings_main = self.get_dir(filetree, "GameSettings")
+                gamesettings_main.merge(gamesettings_dir, True)
+                self.detach_parents(gamesettings_dir)
             obse_dir = exe_dir.find("OBSE")
             if isinstance(obse_dir, mobase.IFileTree):
                 obse_main = self.get_dir(filetree, "OBSE")
                 obse_main.merge(obse_dir, True)
-                obse_dir.detach()
+                self.detach_parents(obse_dir)
             ue4ss_mod_dir = exe_dir.find("ue4ss/Mods")
             if isinstance(ue4ss_mod_dir, mobase.IFileTree):
                 if self._organizer.pluginSetting(PLUGIN_NAME, "ue4ss_use_root_builder"):
@@ -151,14 +163,15 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 else:
                     ue4ss_main = self.get_dir(filetree, "UE4SS")
                 ue4ss_main.merge(ue4ss_mod_dir, True)
-                ue4ss_mod_dir.detach()
+                self.detach_parents(ue4ss_mod_dir)
             if len(exe_dir):
                 root_exe_dir = self.get_dir(
                     filetree, "Root/OblivionRemastered/Binaries"
                 )
-                parent = _parent(exe_dir)
+                parent = exe_dir.parent()
                 exe_dir.moveTo(root_exe_dir)
-                self.detach_parents(parent)
+                if parent:
+                    self.detach_parents(parent)
             else:
                 self.detach_parents(exe_dir)
         directories: list[mobase.IFileTree] = []
@@ -350,8 +363,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             assert parent is not None
             parent.detach()
         else:
-            if len(directory) == 1:
-                directory.detach()
+            directory.detach()
 
     def get_dir(self, filetree: mobase.IFileTree, directory: str) -> mobase.IFileTree:
         tree_dir = filetree.find(directory)

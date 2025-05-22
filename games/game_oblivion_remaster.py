@@ -123,7 +123,7 @@ class OblivionRemasteredGame(
 
         self._paks_tab = PaksTabWidget(main_window, self._organizer)
 
-        tab_index = tab_widget.count()
+        tab_index += 1
         tab_widget.insertTab(tab_index, self._paks_tab, "Paks")
 
     def settings(self) -> list[mobase.PluginSetting]:
@@ -153,12 +153,17 @@ class OblivionRemasteredGame(
             execs.append(
                 mobase.ExecutableInfo("OBSE64", QFileInfo(extender.loaderPath()))  # type: ignore
             )
-
         if lootPath := getLootPath():
             execs.append(
                 mobase.ExecutableInfo("LOOT", QFileInfo(str(lootPath))).withArgument(
                     '--game="Oblivion Remastered"'
                 )
+            )
+        if magicLoaderPath := self.gameDirectory().absoluteFilePath(
+            "MagicLoader/MagicLoader.exe"
+        ):
+            execs.append(
+                mobase.ExecutableInfo("MagicLoader", QFileInfo(magicLoaderPath))
             )
 
         return execs
@@ -294,6 +299,7 @@ class OblivionRemasteredGame(
             "OBSE": [self.obseDirectory().absolutePath()],
             "Movies": [self.moviesDirectory().absolutePath()],
             "UE4SS": [self.ue4ssDirectory().absolutePath()],
+            "GameSettings": [self.exeDirectory().absoluteFilePath("GameSettings")],
         }
 
     def activeProblems(self) -> list[int]:
