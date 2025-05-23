@@ -2,13 +2,14 @@
 
 import configparser
 import os
+import sys
 import xml.etree.ElementTree as et
 from configparser import NoOptionError
 from pathlib import Path
 from typing import Dict
 
 
-def find_games() -> Dict[str, Path]:
+def find_games(errors: list[tuple[str, Exception]] | None = None) -> Dict[str, Path]:
     """
     Find the list of EA Desktop games installed.
 
@@ -37,7 +38,17 @@ def find_games() -> Dict[str, Path]:
         ini_content = "[mod_organizer]\n" + f.read()
 
     config = configparser.ConfigParser()
-    config.read_string(ini_content)
+    try:
+        config.read_string(ini_content)
+    except configparser.ParsingError as e:
+        error_message = (
+            f'Failed to parse EA Desktop games list file "{user_ini}",\n'
+            " Try to run the launcher to recreate it."
+        )
+        print(error_message, e, file=sys.stderr)
+        if errors is not None:
+            errors.append((error_message, e))
+        return games
 
     try:
         install_path = Path(config.get("mod_organizer", "user.downloadinplacedir"))

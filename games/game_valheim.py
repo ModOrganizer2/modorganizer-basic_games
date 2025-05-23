@@ -8,8 +8,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, TextIO
 
-import mobase
 from PyQt6.QtCore import QDir
+
+import mobase
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
@@ -29,7 +30,7 @@ class PartialMatch:
     partial_match_regex: re.Pattern[str] = re.compile(r"[A-Z]?[a-z]+")
     """Matches words, for e.g. 'Camel' and 'Case' in 'CamelCase'."""
 
-    exclude: set[str] = field(default_factory=set)
+    exclude: set[str] = field(default_factory=set[str])
     min_length: int = 3
 
     def partial_match(self, str_with_parts: str, search_string: str) -> Collection[str]:

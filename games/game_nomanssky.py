@@ -1,5 +1,6 @@
-import mobase
 from PyQt6.QtCore import QFileInfo
+
+import mobase
 
 from ..basic_game import BasicGame
 
@@ -16,7 +17,7 @@ class NoMansSkyGame(BasicGame):
     GameSteamId = 275850
     GameGogId = 1446213994
     GameBinary = "Binaries/NMS.exe"
-    GameDataPath = "GAMEDATA/PCBANKS/MODS"
+    GameDataPath = "GAMEDATA/MODS"
     GameSupportURL = (
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
         "Game:-No-Man's-Sky"

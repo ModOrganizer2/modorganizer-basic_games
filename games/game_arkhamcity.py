@@ -1,5 +1,6 @@
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo
+
+import mobase
 
 from ..basic_features import BasicLocalSavegames
 from ..basic_game import BasicGame

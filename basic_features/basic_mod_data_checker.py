@@ -78,7 +78,7 @@ class GlobPatterns:
     unfold: list[str] | None = None
     valid: list[str] | None = None
     delete: list[str] | None = None
-    move: dict[str, str] = field(default_factory=dict)
+    move: dict[str, str] = field(default_factory=dict[str, str])
 
     def merge(
         self, other: GlobPatterns, mode: Literal["merge", "replace"] = "replace"
