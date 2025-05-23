@@ -37,7 +37,11 @@ class FinalFantasy7RebirthFileManager:
     _file_extensions = [".dll"]
 
     def __init__(
-        self, mod_path: Path, file_path: Path, organizer: mobase.IOrganizer, load_enabled: mobase.MoVariant
+        self,
+        mod_path: Path,
+        file_path: Path,
+        organizer: mobase.IOrganizer,
+        load_enabled: mobase.MoVariant,
     ) -> None:
         self._mod_path = mod_path
         self._file_path = file_path
@@ -58,7 +62,11 @@ class FinalFantasy7RebirthFileManager:
             yield mobase.Mapping(str(child), str(dest_mod_path), child.is_dir(), True)
 
         if child.suffix.lower() in self._mods_extensions:
-            child_name = child.with_stem(mod_prefix + child.stem).name if self._load_enabled else child.name
+            child_name = (
+                child.with_stem(mod_prefix + child.stem).name
+                if self._load_enabled
+                else child.name
+            )
             dest_mod_path = self._mod_path / child_name
             yield mobase.Mapping(str(child), str(dest_mod_path), child.is_dir(), True)
 
@@ -108,7 +116,7 @@ class FinalFantasy7RebirthGame(BasicGame, mobase.IPluginFileMapper):
                 True,
             )
         ]
-    
+
     def executables(self) -> list[mobase.ExecutableInfo]:
         game_name = self.gameName()
         game_dir = self.gameDirectory()
@@ -139,14 +147,11 @@ class FinalFantasy7RebirthGame(BasicGame, mobase.IPluginFileMapper):
             mod_path, file_path, self._organizer, load_enabled
         )
 
-        return (
-            [
-                mobase.Mapping(
-                    self._organizer.overwritePath(),
-                    str(mod_path),
-                    True,
-                    True,
-                )
-            ]
-            + list(file_manager.mod_mapping())
-        )
+        return [
+            mobase.Mapping(
+                self._organizer.overwritePath(),
+                str(mod_path),
+                True,
+                True,
+            )
+        ] + list(file_manager.mod_mapping())
