@@ -13,7 +13,10 @@ def _parent(entry: mobase.FileTreeEntry):
 
 
 class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
+    # These directories are generally considered valid, but may require additional checks.
+    # These represent top level directories in the mod.
     _dirs = ["Data", "Paks", "OBSE", "Movies", "UE4SS", "GameSettings", "Root"]
+    # Directories considered valid for 'Data' though many of these may be obsolete.
     _data_dirs = [
         "meshes",
         "textures",
@@ -24,6 +27,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         "strings",
         "materials",
     ]
+    # Data file extensions considered valid. Unclear if BSAs are actually used.
     _data_extensions = [".esm", ".esp", ".bsa"]
 
     def __init__(self, organizer: mobase.IOrganizer):
@@ -34,6 +38,8 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
         status = mobase.ModDataChecker.INVALID
+        # These represent common mod structures that include UE4SS base files.
+        # These should generally be pruned or moved into a Root Builder path.
         if filetree.find("ue4ss/UE4SS.dll") is not None:
             return mobase.ModDataChecker.FIXABLE
         elif (
@@ -41,16 +47,29 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             is not None
         ):
             return mobase.ModDataChecker.FIXABLE
+
+        # Crawl the directory tree to check mod structure.
         for entry in filetree:
             name = entry.name().casefold()
             parent = entry.parent()
             assert parent is not None
+            # These are top-level file entries.
             if parent.parent() is None:
                 if isinstance(entry, mobase.IFileTree):
+                    # Look for valid top level directories.
                     if name in [dirname.lower() for dirname in self._dirs]:
                         if name == "ue4ss":
+                            """
+                            The UE4SS mod directory should contain either mod directories with
+                            a 'scripts/main.lua' file, or 'shared' library files. Certain common
+                            'preset settings' files are also acceptable.
+                            """
                             mods = entry.find("Mods")
                             if isinstance(mods, mobase.IFileTree):
+                                """
+                                UE4SS intrinsically maps to the 'Mods' directory, so if this directory
+                                is present, it should be relocated.
+                                """
                                 for sub_entry in mods:
                                     if isinstance(sub_entry, mobase.IFileTree):
                                         if sub_entry.find("scripts/main.lua"):
@@ -66,6 +85,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                             else:
                                 for sub_entry in entry:
                                     if isinstance(sub_entry, mobase.IFileTree):
+                                        # Files are present in the correct directory. Mark valid.
                                         if sub_entry.find("scripts/main.lua"):
                                             status = mobase.ModDataChecker.VALID
                                             break
@@ -77,24 +97,33 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                                             status = mobase.ModDataChecker.VALID
                                             break
                         else:
+                            # All other base directories are considered valid
                             status = mobase.ModDataChecker.VALID
+                        # No need to continue checks if the directory looks valid
                         if status == mobase.ModDataChecker.VALID:
                             break
                     elif name in [dirname.lower() for dirname in self._data_dirs]:
+                        # Found a 'Data' subdirectory. Should be moved into 'Data'.
                         status = mobase.ModDataChecker.FIXABLE
                     else:
+                        # Parse other directories for potential mod files.
                         for sub_entry in entry:
                             if sub_entry.isFile():
                                 sub_name = sub_entry.name().casefold()
                                 if sub_name.endswith(".exe"):
+                                    # Trying to handle EXE files is problematic, let the user figure it out
                                     return mobase.ModDataChecker.INVALID
                                 if sub_name.endswith((".pak", ".bk2")):
+                                    # Found Pak files or movie files, should be fixable
                                     status = mobase.ModDataChecker.FIXABLE
                                 elif sub_name.endswith(tuple(self._data_extensions)):
+                                    # Found plugins or BSA files, should be fixable
                                     status = mobase.ModDataChecker.FIXABLE
                             else:
                                 if name == "Paks":
+                                    # Found Paks directory as subdirectory, should be fixable
                                     status = mobase.ModDataChecker.FIXABLE
+                        # Iterate into subdirectories so we can check the entire archive
                         new_status = self.dataLooksValid(entry)
                         if new_status != mobase.ModDataChecker.INVALID:
                             status = new_status
@@ -106,6 +135,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     if name.endswith(tuple(self._data_extensions + [".pak", ".bk2"])):
                         status = mobase.ModDataChecker.FIXABLE
             else:
+                # Section is for parsing subdirectories
                 if isinstance(entry, mobase.IFileTree):
                     if name in [dir_name.lower() for dir_name in self._dirs]:
                         status = mobase.ModDataChecker.FIXABLE
@@ -127,6 +157,12 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         return status
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+        """
+        Main fixer function. Iterates files, using 'parse_directory' for subdirectory search and fixing.
+        """
+
+        # UE4SS is packaged with many mods (or standalone) and should be processed into Root if found.
+        # This can avoid a lot of unnecessary iterations.
         ue4ss_dll = filetree.find("ue4ss/UE4SS.dll")
         if ue4ss_dll is None:
             ue4ss_dll = filetree.find(
@@ -142,6 +178,9 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     "Root/OblivionRemastered/Binaries/Win64/",
                     mobase.IFileTree.MERGE,
                 )
+
+        # Similar to the above, many mods pack files relative to the root game directory. Some common paths can be
+        # automatically moved into the appropriate directory structures to avoid needless iteration.
         exe_dir = filetree.find(r"OblivionRemastered\Binaries\Win64")
         if isinstance(exe_dir, mobase.IFileTree):
             gamesettings_dir = exe_dir.find("GameSettings")
@@ -174,6 +213,8 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     self.detach_parents(parent)
             else:
                 self.detach_parents(exe_dir)
+
+        # Start the main directory iteration code
         directories: list[mobase.IFileTree] = []
         for entry in filetree:
             if isinstance(entry, mobase.IFileTree):
@@ -182,9 +223,12 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             if directory.name().casefold() in [
                 dirname.lower() for dirname in self._data_dirs
             ]:
+                # Move detected 'Data' directories into 'Data'
                 data_dir = self.get_dir(filetree, "Data")
                 directory.moveTo(data_dir)
             elif directory.name().casefold() == "ue4ss":
+                # Validate and correct UE4SS mod files into 'UE4SS'
+                # Alternately, can use Root Builder path per user request
                 mods = directory.find("Mods")
                 if isinstance(mods, mobase.IFileTree):
                     for sub_entry in mods:
@@ -209,14 +253,18 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             elif directory.name().casefold() not in [
                 dirname.lower() for dirname in self._dirs
             ]:
+                # For non-valid directories, iterate into the directory
                 filetree = self.parse_directory(filetree, directory)
+        # Parsing top-level files
         entries: list[mobase.FileTreeEntry] = []
+        # As we are changing the filetree, cache the current directory list and iterate on that
         for entry in filetree:
             entries.append(entry)
         for entry in entries:
             if entry.parent() == filetree and entry.isFile():
                 name = entry.name().casefold()
                 if name.endswith(".pak"):
+                    # Move all pak|ucas|utoc files into "Paks\~mods"
                     paks_dir = self.get_dir(filetree, "Paks/~mods")
                     pak_files: list[mobase.FileTreeEntry] = []
                     for file in _parent(entry):
@@ -230,6 +278,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     for pak_file in pak_files:
                         pak_file.moveTo(paks_dir)
                 elif name.endswith(".bk2"):
+                    # Top-level bk2 files should be moved to "Movies\Modern"
                     movies_dir = self.get_dir(filetree, "Movies/Modern")
                     movie_files: list[mobase.FileTreeEntry] = []
                     for file in _parent(entry):
@@ -239,6 +288,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                     for movie_file in movie_files:
                         movie_file.moveTo(movies_dir)
                 elif name.endswith(tuple(self._data_extensions)):
+                    # Files matching Data file extensions should be moved to "Data"
                     data_dir = self.get_dir(filetree, "Data")
                     data_files: list[mobase.FileTreeEntry] = []
                     for file in _parent(entry):
@@ -250,6 +300,13 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
     def parse_directory(
         self, main_filetree: mobase.IFileTree, next_dir: mobase.IFileTree
     ) -> mobase.IFileTree:
+        """
+        Subdirectory iterator for fix(). Allows parsing all subdirectory files.
+
+        :param main_filetree: The main mod filetree that should be returned.
+        :param next_dir: The currently processed subdirectory of main_filetree.
+        :returns: The updated main_filetree.
+        """
         directories: list[mobase.IFileTree] = []
         for entry in next_dir:
             if isinstance(entry, mobase.IFileTree):
@@ -261,6 +318,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                 if name == dir_name.lower():
                     main_dir = self.get_dir(main_filetree, dir_name)
                     if name == "ue4ss":
+                        # UE4SS directories should presumably map to 'UE4SS' but check for a 'Mods' directory and move that instead.
                         if self._organizer.pluginSetting(
                             PLUGIN_NAME, "ue4ss_use_root_builder"
                         ):
@@ -283,10 +341,12 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             if stop:
                 continue
             if name in ["~mods", "logicmods"]:
+                # These directories should represent Paks mods and should be moved into that directory.
                 paks_dir = self.get_dir(main_filetree, "Paks")
                 directory.moveTo(paks_dir)
                 continue
             elif name in [dirname.lower() for dirname in self._data_dirs]:
+                # These directories are typically associated with Data and should be moved into that directory.
                 data_dir = self.get_dir(main_filetree, "Data")
                 data_dir.merge(directory)
                 self.detach_parents(directory)
@@ -296,10 +356,12 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             if entry.isFile():
                 name = entry.name().casefold()
                 if name.endswith(tuple(self._data_extensions)):
+                    # Files matching Data extensions should be moved into 'Data'
                     data_dir = self.get_dir(main_filetree, "Data")
                     data_dir.merge(next_dir)
                     self.detach_parents(next_dir)
                 elif name.endswith(".pak"):
+                    # Loose pak files most likely should be installed to 'Paks\~mods' but check the parent directory
                     paks_dir = self.get_dir(main_filetree, "Paks")
                     if next_dir.name().casefold() == "paks":
                         paks_dir.merge(next_dir)
@@ -317,6 +379,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
                         self.detach_parents(parent)
                         return main_filetree
                 elif name.endswith(".lua"):
+                    # LUA files are generally associated with UE4SS mods. Most will probably be found before this point.
                     if next_dir.parent() and next_dir.parent() != main_filetree:
                         parent = _parent(next_dir).parent()
                         if self._organizer.pluginSetting(
@@ -346,6 +409,14 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         return main_filetree
 
     def detach_parents(self, directory: mobase.IFileTree) -> None:
+        """
+        Attempts to clean up empty archive directories after files have been moved.
+        Find the top-most directory of an empty file tree where only the child directory is contained.
+        Remove that filetree.
+
+        :param directory: The directory tree to be pruned (starting with the lowest element).
+        """
+
         if (
             directory.parent() is not None
             and (parent := directory.parent()) is not None
@@ -366,6 +437,14 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
             directory.detach()
 
     def get_dir(self, filetree: mobase.IFileTree, directory: str) -> mobase.IFileTree:
+        """
+        Simple helper function that finds or creates a directory within a given filetree.
+
+        :param filetree: The filetree in which to file or create the given directory
+        :param directory: The directory name to return
+        :return: The filetree of the created or found directory.
+        """
+
         tree_dir = filetree.find(directory)
         if not isinstance(tree_dir, mobase.IFileTree):
             tree_dir = filetree.addDirectory(directory)

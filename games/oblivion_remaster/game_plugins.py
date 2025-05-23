@@ -17,11 +17,17 @@ import mobase
 
 
 class OblivionRemasteredGamePlugins(mobase.GamePlugins):
+    """
+    Reimplementation of GameGamebryo "GamePlugins" code, in the Skyrim style.
+
+    Should properly account for disabled plugins and the loadorder.txt profile file.
+    """
+
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self._last_read = QDateTime().currentDateTime()
         self._organizer = organizer
-        # What are these for?
+        # Not currently used. These plugins exist in the base game but are not enabled by default.
         self._plugin_blacklist = ["TamrielLevelledRegion.esp", "AltarGymNavigation.esp"]
 
     def writePluginLists(self, plugin_list: mobase.IPluginList) -> None:

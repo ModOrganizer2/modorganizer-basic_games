@@ -21,6 +21,10 @@ DEFAULT_UE4SS_MODS = ["BPML_GenericFunctions", "BPModLoaderMod"]
 
 
 def getLootPath() -> Path | None:
+    """
+    Parse the LOOT path using either the modern InnoSetup registry entries (local vs. global installs) or the
+    old registry path.
+    """
     paths = [
         (
             winreg.HKEY_CURRENT_USER,
@@ -49,7 +53,13 @@ def getLootPath() -> Path | None:
 
 
 class Problems(IntEnum):
+    """
+    Enums for IPluginDiagnose.
+    """
+
+    # The 'dwmapi.dll' is present in the game EXE directory.
     UE4SS_LOADER = auto()
+    # A UE4SS mod has a space in the directory name.
     INVALID_UE4SS_MOD_NAME = auto()
 
 
@@ -71,6 +81,8 @@ class OblivionRemasteredGame(
     UserHome = QStandardPaths.writableLocation(
         QStandardPaths.StandardLocation.HomeLocation
     )
+    # Oblivion Remastered does not use the expanded Documents path but instead always uses the
+    # base user directory path, even when this disagrees with Windows.
     MyDocumentsDirectory = rf"{UserHome}\Documents\My Games\{GameName}"
     GameSavesDirectory = rf"{MyDocumentsDirectory}\Saved\SaveGames"
     GameSaveExtension = "sav"
@@ -105,6 +117,10 @@ class OblivionRemasteredGame(
         return True
 
     def init_tab(self, main_window: QMainWindow):
+        """
+        Initializes tabs unique to Oblivion Remastered.
+        The "UE4SS Mods" tab and "Paks" tab.
+        """
         if self._organizer.managedGame() != self:
             return
 
@@ -115,8 +131,11 @@ class OblivionRemasteredGame(
 
         self._ue4ss_tab = UE4SSTabWidget(main_window, self._organizer)
 
+        # Find the default "Plugins" tab
         plugin_tab = tab_widget.findChild(QWidget, "espTab")
         tab_index = tab_widget.indexOf(plugin_tab) + 1
+        # The "Bethesda Plugins Manager" plugin hides the default Plugins tab and inserts itself after.
+        # If the default tab is hidden, increment our position by one to account for it.
         if not tab_widget.isTabVisible(tab_widget.indexOf(plugin_tab)):
             tab_index += 1
         tab_widget.insertTab(tab_index, self._ue4ss_tab, "UE4SS Mods")
@@ -183,7 +202,7 @@ class OblivionRemasteredGame(
             "Knights.esp",
             "AltarESPMain.esp",
             "AltarDeluxe.esp",
-            "AltarESPLocal.esp",
+            "AltarESPLocal.esp",  # Not actually shipped with the game files but present in plugins.txt.
         ]
 
     def modDataDirectory(self) -> str:
@@ -243,7 +262,9 @@ class OblivionRemasteredGame(
                         )
                     else:
                         Path(profile_ini).touch()
+        # Initialize a default UE4SS mods.ini and mods.json with the core mods included
         self.write_default_mods(directory)
+        # Bootstrap common mod directories used by the USVFS map
         if (
             self._organizer.managedGame()
             and self._organizer.managedGame().gameName() == self.gameName()
@@ -256,6 +277,10 @@ class OblivionRemasteredGame(
                 os.makedirs(self.ue4ssDirectory().absolutePath())
 
     def write_default_mods(self, profile: QDir):
+        """
+        Writer for the default UE4SS 'mods.txt' and 'mods.json' profile files.
+        """
+
         ue4ss_mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
         ue4ss_mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
         if not ue4ss_mods_txt.exists():
@@ -305,9 +330,11 @@ class OblivionRemasteredGame(
     def activeProblems(self) -> list[int]:
         if self._organizer.managedGame() == self:
             problems: set[Problems] = set()
+            # The dwmapi.dll loader should not be used with USVFS
             ue4ss_loader = QFileInfo(self.exeDirectory().absoluteFilePath("dwmapi.dll"))
             if ue4ss_loader.exists():
                 problems.add(Problems.UE4SS_LOADER)
+            # Leverage UE4SS mod tab to find mod names with spaces
             for mod in self._ue4ss_tab.get_mod_list():
                 if " " in mod:
                     problems.add(Problems.INVALID_UE4SS_MOD_NAME)
