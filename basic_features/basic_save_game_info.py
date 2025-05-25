@@ -6,10 +6,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Self, Sequence
 
-import mobase
 from PyQt6.QtCore import QDateTime, QLocale, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QFormLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+
+import mobase
 
 
 def format_date(date_time: QDateTime | datetime | str, format_str: str | None = None):
