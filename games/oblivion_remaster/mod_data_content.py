@@ -82,8 +82,14 @@ class OblivionRemasteredDataContent(mobase.ModDataContent):
                         for paks_entry in entry:
                             if isinstance(paks_entry, mobase.IFileTree):
                                 if paks_entry.name().casefold() == "~mods":
-                                    if paks_entry.find("MagicLoader"):
-                                        contents.add(Content.MAGIC_LOADER)
+                                    for mods_entry in paks_entry:
+                                        if isinstance(mods_entry, mobase.IFileTree):
+                                            if (
+                                                "magicloader"
+                                                in mods_entry.name().casefold()
+                                            ):
+                                                contents.add(Content.MAGIC_LOADER)
+                                                break
                                 if paks_entry.name().casefold() == "logicmods":
                                     contents.add(Content.UE4SS)
                     case "movies":

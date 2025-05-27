@@ -235,7 +235,7 @@ class PaksModel(QAbstractItemModel):
             )
         )
 
-        index = 9999
+        index = 8999
         for row, pak in new_paks.items():
             current_dir = QDir(pak[2])
             parent_dir = QDir(pak[2])
