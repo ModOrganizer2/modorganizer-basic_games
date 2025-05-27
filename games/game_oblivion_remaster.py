@@ -13,9 +13,9 @@ import mobase
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_game import BasicGame
-from .oblivion_remaster.constants import DEFAULT_UE4SS_MODS, PLUGIN_NAME
+from .oblivion_remaster.constants import DEFAULT_UE4SS_MODS, PLUGIN_NAME, UE4SSModInfo
 from .oblivion_remaster.paks.widget import PaksTabWidget
-from .oblivion_remaster.ue4ss.widget import UE4SSModInfo, UE4SSTabWidget
+from .oblivion_remaster.ue4ss.widget import UE4SSTabWidget
 
 
 def getLootPath() -> Path | None:

@@ -68,7 +68,7 @@ class PaksTabWidget(QWidget):
 
     def write_pak_files(self):
         for index, pak in sorted(self._model.paks.items()):
-            name, _, current_path, target_path = pak
+            _, _, current_path, target_path = pak
             if current_path and current_path != target_path:
                 path_dir = Path(current_path)
                 target_dir = Path(target_path)
