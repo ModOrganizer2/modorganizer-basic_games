@@ -1,4 +1,5 @@
 import json
+from json import JSONDecodeError
 from typing import Any, Iterable
 
 from PyQt6.QtCore import (
@@ -13,6 +14,8 @@ from PyQt6.QtWidgets import QWidget
 
 import mobase
 
+from ..constants import DEFAULT_UE4SS_MODS
+
 
 class UE4SSListModel(QStringListModel):
     def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
@@ -26,7 +29,10 @@ class UE4SSListModel(QStringListModel):
         mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
         if mods_json.exists():
             with open(mods_json.absoluteFilePath(), "r") as json_file:
-                mod_data = json.load(json_file)
+                try:
+                    mod_data = json.load(json_file)
+                except JSONDecodeError:
+                    mod_data = DEFAULT_UE4SS_MODS
                 for mod in mod_data:
                     if mod["mod_enabled"]:
                         self._checked_items.add(mod["mod_name"])
@@ -37,7 +43,10 @@ class UE4SSListModel(QStringListModel):
         mod_list: dict[str, bool] = {}
         if mods_json.exists():
             with open(mods_json.absoluteFilePath(), "r") as json_file:
-                mod_data = json.load(json_file)
+                try:
+                    mod_data = json.load(json_file)
+                except JSONDecodeError:
+                    mod_data = DEFAULT_UE4SS_MODS
                 for mod in mod_data:
                     mod_list[mod["mod_name"]] = mod["mod_enabled"]
             for i in range(self.rowCount()):

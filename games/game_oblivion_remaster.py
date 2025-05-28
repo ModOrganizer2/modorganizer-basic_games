@@ -13,11 +13,9 @@ import mobase
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_game import BasicGame
-from .oblivion_remaster.constants import PLUGIN_NAME
+from .oblivion_remaster.constants import DEFAULT_UE4SS_MODS, PLUGIN_NAME, UE4SSModInfo
 from .oblivion_remaster.paks.widget import PaksTabWidget
-from .oblivion_remaster.ue4ss.widget import UE4SSModInfo, UE4SSTabWidget
-
-DEFAULT_UE4SS_MODS = ["BPML_GenericFunctions", "BPModLoaderMod"]
+from .oblivion_remaster.ue4ss.widget import UE4SSTabWidget
 
 
 def getLootPath() -> Path | None:
@@ -286,11 +284,11 @@ class OblivionRemasteredGame(
         if not ue4ss_mods_txt.exists():
             with open(ue4ss_mods_txt.absoluteFilePath(), "w") as mods_txt:
                 for mod in DEFAULT_UE4SS_MODS:
-                    mods_txt.write(f"{mod} : 1\n")
+                    mods_txt.write(f"{mod['mod_name']} : 1\n")
         if not ue4ss_mods_json.exists():
             mods_data: list[UE4SSModInfo] = []
             for mod in DEFAULT_UE4SS_MODS:
-                mods_data.append({"mod_name": mod, "mod_enabled": True})
+                mods_data.append({"mod_name": mod["mod_name"], "mod_enabled": True})
             with open(ue4ss_mods_json.absoluteFilePath(), "w") as mods_json:
                 mods_json.write(json.dumps(mods_data, indent=4))
 
