@@ -1,4 +1,3 @@
-import re
 from functools import cmp_to_key
 from pathlib import Path
 from typing import cast
@@ -69,7 +68,7 @@ class PaksTabWidget(QWidget):
 
     def write_pak_files(self):
         for index, pak in sorted(self._model.paks.items()):
-            name, _, current_path, target_path = pak
+            _, _, current_path, target_path = pak
             if current_path and current_path != target_path:
                 path_dir = Path(current_path)
                 target_dir = Path(target_path)
@@ -77,30 +76,23 @@ class PaksTabWidget(QWidget):
                     target_dir.mkdir(parents=True, exist_ok=True)
                 if path_dir.exists():
                     for pak_file in path_dir.glob("*.pak"):
-                        match = re.match(r"^(\d{4}_)?(.*)", pak_file.stem)
-                        if not match:
-                            continue
-                        match_name = (
-                            match.group(2) if match.group(2) else match.group(1)
+                        ucas_file = pak_file.with_suffix(".ucas")
+                        utoc_file = pak_file.with_suffix(".utoc")
+                        for file in (pak_file, ucas_file, utoc_file):
+                            if not file.exists():
+                                continue
+                            try:
+                                file.rename(target_dir.joinpath(file.name))
+                            except FileExistsError:
+                                pass
+                        data = self._model.paks[index]
+                        self._model.paks[index] = (
+                            data[0],
+                            data[1],
+                            data[3],
+                            data[3],
                         )
-                        if match_name == name:
-                            ucas_file = pak_file.with_suffix(".ucas")
-                            utoc_file = pak_file.with_suffix(".utoc")
-                            for file in (pak_file, ucas_file, utoc_file):
-                                if not file.exists():
-                                    continue
-                                try:
-                                    file.rename(target_dir.joinpath(file.name))
-                                except FileExistsError:
-                                    pass
-                            data = self._model.paks[index]
-                            self._model.paks[index] = (
-                                data[0],
-                                data[1],
-                                data[3],
-                                data[3],
-                            )
-                            break
+                        break
                     if not list(path_dir.iterdir()):
                         path_dir.rmdir()
 
@@ -140,7 +132,7 @@ class PaksTabWidget(QWidget):
             if isinstance(pak_mods, mobase.IFileTree):
                 for entry in pak_mods:
                     if is_directory(entry):
-                        if entry.name().casefold() == "magicloader":
+                        if "magicloader" in entry.name().casefold():
                             continue
                         for sub_entry in entry:
                             if (
@@ -179,7 +171,7 @@ class PaksTabWidget(QWidget):
                     QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
                 ):
                     if entry.isDir():
-                        if entry.completeBaseName().casefold() == "magicloader":
+                        if "magicloader" in entry.completeBaseName().casefold():
                             continue
                         for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(
                             QDir.Filter.Files
@@ -207,7 +199,7 @@ class PaksTabWidget(QWidget):
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
         shaken_paks: list[str] = self._shake_paks(sorted_paks)
         final_paks: dict[str, tuple[str, str, str]] = {}
-        pak_index = 9999
+        pak_index = 8999
         for pak in shaken_paks:
             target_dir = pak_paths[pak][1] + "/" + str(pak_index).zfill(4)
             final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)

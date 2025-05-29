@@ -1,20 +1,16 @@
 import json
 from functools import cmp_to_key
+from json import JSONDecodeError
 from pathlib import Path
-from typing import TypedDict
 
 from PyQt6.QtCore import QDir, QFileInfo, Qt
 from PyQt6.QtWidgets import QGridLayout, QWidget
 
 import mobase
 
+from ..constants import DEFAULT_UE4SS_MODS, UE4SSModInfo
 from .model import UE4SSListModel
 from .view import UE4SSView
-
-
-class UE4SSModInfo(TypedDict):
-    mod_name: str
-    mod_enabled: bool
 
 
 class UE4SSTabWidget(QWidget):
@@ -155,7 +151,10 @@ class UE4SSTabWidget(QWidget):
         mods_list: list[str] = []
         if mods_json.exists() and mods_json.isFile():
             with open(mods_json.absoluteFilePath(), "r") as json_file:
-                mods = json.load(json_file)
+                try:
+                    mods = json.load(json_file)
+                except JSONDecodeError:
+                    mods = DEFAULT_UE4SS_MODS
                 for mod in mods:
                     if mod["mod_enabled"]:
                         mods_list.append(mod["mod_name"])
