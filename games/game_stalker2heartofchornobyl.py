@@ -15,11 +15,7 @@ class Problems(IntEnum):
     """
     Enums for IPluginDiagnose.
     """
-<<<<<<< HEAD
-=======
 
-    # PAK files placed in incorrect locations
->>>>>>> ab91432d429d5ec75630e299423146320437832d
     MISPLACED_PAK_FILES = auto()
     MISSING_MOD_DIRECTORIES = auto()
 
@@ -56,15 +52,17 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
 
     def resolve_path(self, path: str) -> str:
         path = path.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
-        
+
         if "%GAME_DOCUMENTS%" in path:
-            game_docs = self.GameDocumentsDirectory.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
+            game_docs = self.GameDocumentsDirectory.replace(
+                "%USERPROFILE%", os.environ.get("USERPROFILE", "")
+            )
             path = path.replace("%GAME_DOCUMENTS%", game_docs)
-        
+
         if "%GAME_PATH%" in path:
-            game_path = self._gamePath if hasattr(self, '_gamePath') else ""
+            game_path = self._gamePath if hasattr(self, "_gamePath") else ""
             path = path.replace("%GAME_PATH%", game_path)
-        
+
         return path
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
@@ -73,12 +71,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         self._register_feature(
             BasicLocalSavegames(QDir(self.resolve_path(self.GameSavesDirectory)))
         )
-<<<<<<< HEAD
-        
-=======
 
-        # Create the directory more reliably
->>>>>>> ab91432d429d5ec75630e299423146320437832d
         if (
             self._organizer.managedGame()
             and self._organizer.managedGame().gameName() == self.gameName()
@@ -87,21 +80,21 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             try:
                 os.makedirs(mod_path, exist_ok=True)
                 if not os.path.exists(mod_path):
-                    self._organizer.log(mobase.LogLevel.WARNING, f"Failed to create directory: {mod_path}")
+                    self._organizer.log(
+                        mobase.LogLevel.WARNING,
+                        f"Failed to create directory: {mod_path}",
+                    )
             except OSError as e:
-                self._organizer.log(mobase.LogLevel.ERROR, f"OS error creating mod directory: {e}")
+                self._organizer.log(
+                    mobase.LogLevel.ERROR, f"OS error creating mod directory: {e}"
+                )
             except Exception as e:
-<<<<<<< HEAD
-                self._organizer.log(mobase.LogLevel.ERROR, f"Unexpected error creating mod directory: {e}")
-        
-        organizer.onUserInterfaceInitialized(self.init_tab)
-=======
-                print(f"Error creating mod directory: {e}")
+                self._organizer.log(
+                    mobase.LogLevel.ERROR,
+                    f"Unexpected error creating mod directory: {e}",
+                )
 
-        # Initialize PAK tab when UI is ready
         organizer.onUserInterfaceInitialized(self.init_tab)
-
->>>>>>> ab91432d429d5ec75630e299423146320437832d
         return True
 
     def init_tab(self, main_window: QMainWindow):
@@ -115,7 +108,9 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             self._main_window = main_window
             tab_widget: QTabWidget = main_window.findChild(QTabWidget, "tabWidget")
             if not tab_widget:
-                self._organizer.log(mobase.LogLevel.WARNING, "No main tab widget found!")
+                self._organizer.log(
+                    mobase.LogLevel.WARNING, "No main tab widget found!"
+                )
                 return
 
             from .stalker2heartofchornobyl.paks import S2HoCPaksTabWidget
@@ -125,9 +120,13 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             tab_widget.addTab(self._paks_tab, "PAK Files")
             self._organizer.log(mobase.LogLevel.INFO, "PAK Files tab added!")
         except ImportError as e:
-            self._organizer.log(mobase.LogLevel.ERROR, f"Failed to import PAK tab widget: {e}")
+            self._organizer.log(
+                mobase.LogLevel.ERROR, f"Failed to import PAK tab widget: {e}"
+            )
         except Exception as e:
-            self._organizer.log(mobase.LogLevel.ERROR, f"Error initializing PAK tab: {e}")
+            self._organizer.log(
+                mobase.LogLevel.ERROR, f"Error initializing PAK tab: {e}"
+            )
             import traceback
 
             traceback.print_exc()
@@ -135,61 +134,61 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     def mappings(self) -> List[mobase.Mapping]:
         pak_extensions = ["*.pak", "*.utoc", "*.ucas"]
         target_dir = "Content/Paks/~mods/"
-        
+
         mappings = []
-        
+
         for ext in pak_extensions:
             mappings.append(mobase.Mapping(ext, target_dir, False))
-        
+
         source_dirs = ["Paks/", "~mods/", "Content/Paks/~mods/"]
         for source_dir in source_dirs:
             for ext in pak_extensions:
                 mappings.append(mobase.Mapping(f"{source_dir}{ext}", target_dir, False))
-        
+
         return mappings
 
     def gameDirectory(self) -> QDir:
         return QDir(self._gamePath)
 
     def paksDirectory(self) -> QDir:
-<<<<<<< HEAD
-        path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks")
+        path = os.path.join(
+            self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks"
+        )
         return QDir(path)
-    
+
     def paksModsDirectory(self) -> QDir:
         try:
             path = os.path.join(self.paksDirectory().absolutePath(), "~mods")
             return QDir(path)
-        except Exception as e:
-            fallback = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks", "~mods")
+        except Exception:
+            fallback = os.path.join(
+                self.gameDirectory().absolutePath(),
+                self.GameDataPath,
+                "Content",
+                "Paks",
+                "~mods",
+            )
             return QDir(fallback)
-    
-    def logicModsDirectory(self) -> QDir:
-        path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks", "LogicMods")
-        return QDir(path)
-    
-    def binariesDirectory(self) -> QDir:
-        path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Binaries", "Win64")
-        return QDir(path)
-    
-=======
-        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks")
-
-    def paksModsDirectory(self) -> QDir:
-        # Use os.path.join for more reliable path construction
-        path = os.path.join(self.paksDirectory().absolutePath(), "~mods")
-        return QDir(path)
 
     def logicModsDirectory(self) -> QDir:
-        # Update path to place LogicMods under Paks
-        return QDir(
-            self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks/LogicMods"
+        path = os.path.join(
+            self.gameDirectory().absolutePath(),
+            self.GameDataPath,
+            "Content",
+            "Paks",
+            "LogicMods",
         )
+        return QDir(path)
 
     def binariesDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Binaries/Win64")
+        path = os.path.join(
+            self.gameDirectory().absolutePath(),
+            self.GameDataPath,
+            "Binaries",
+            "Win64",
+        )
+        return QDir(path)
 
->>>>>>> ab91432d429d5ec75630e299423146320437832d
     def getModMappings(self) -> dict[str, list[str]]:
         return {
             "Content/Paks/~mods": [self.paksModsDirectory().absolutePath()],
@@ -198,31 +197,17 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     def activeProblems(self) -> list[int]:
         problems = set()
         if self._organizer.managedGame() == self:
-<<<<<<< HEAD
-            
             mod_path = self.paksModsDirectory().absolutePath()
             if not os.path.isdir(mod_path):
                 problems.add(Problems.MISSING_MOD_DIRECTORIES)
-                self._organizer.log(mobase.LogLevel.DEBUG, f"Missing mod directory: {mod_path}")
-            
-            for mod in self._organizer.modList().allMods():
-                mod_info = self._organizer.modList().getMod(mod)
-                filetree = mod_info.fileTree()
-                
-=======
-            # More reliable directory check using os.path
-            mod_path = self.paksModsDirectory().absolutePath()
-            if not os.path.isdir(mod_path):
-                problems.add(Problems.MISSING_MOD_DIRECTORIES)
-                print(f"Missing mod directory: {mod_path}")
+                self._organizer.log(
+                    mobase.LogLevel.DEBUG, f"Missing mod directory: {mod_path}"
+                )
 
-            # Check for misplaced PAK files
             for mod in self._organizer.modList().allMods():
                 mod_info = self._organizer.modList().getMod(mod)
                 filetree = mod_info.fileTree()
 
-                # Check for PAK files at the root level (remove LogicMods paths)
->>>>>>> ab91432d429d5ec75630e299423146320437832d
                 for entry in filetree:
                     if entry.name().endswith((".pak", ".utoc", ".ucas")) and not any(
                         entry.path().startswith(p)
@@ -275,9 +260,13 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             case Problems.MISSING_MOD_DIRECTORIES:
                 try:
                     os.makedirs(self.paksModsDirectory().absolutePath(), exist_ok=True)
-                    self._organizer.log(mobase.LogLevel.INFO, "Created missing mod directories")
+                    self._organizer.log(
+                        mobase.LogLevel.INFO, "Created missing mod directories"
+                    )
                 except Exception as e:
-                    self._organizer.log(mobase.LogLevel.ERROR, f"Failed to create mod directories: {e}")
+                    self._organizer.log(
+                        mobase.LogLevel.ERROR, f"Failed to create mod directories: {e}"
+                    )
             case _:
                 pass
 
