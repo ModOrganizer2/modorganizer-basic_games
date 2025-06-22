@@ -1,6 +1,5 @@
 import os
 from enum import IntEnum, auto
-from typing import List
 
 from PyQt6.QtCore import QDir
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
@@ -117,7 +116,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
 
             traceback.print_exc()
 
-    def mappings(self) -> List[mobase.Mapping]:
+    def mappings(self) -> list[mobase.Mapping]:
         pak_extensions = ["*.pak", "*.utoc", "*.ucas"]
         target_dir = "Content/Paks/~mods/"
 
