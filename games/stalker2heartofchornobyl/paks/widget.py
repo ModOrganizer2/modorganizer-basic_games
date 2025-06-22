@@ -1,7 +1,6 @@
-import os
 from functools import cmp_to_key
 from pathlib import Path
-from typing import List, Tuple, cast
+from typing import cast
 
 from PyQt6.QtCore import QDir, QFileInfo
 from PyQt6.QtWidgets import QGridLayout, QWidget
@@ -124,26 +123,32 @@ class S2HoCPaksTabWidget(QWidget):
         pak_paths: dict[str, tuple[str, str]] = {}
         pak_source: dict[str, str] = {}
         existing_folders: set[int] = set()
-        
+
         print(f"[PAK Debug] Starting scan of {len(mods)} mods")
-        print(f"[PAK Debug] ONLY scanning ~mods directories, EXCLUDING LogicMods")
-        
+        print("[PAK Debug] ONLY scanning ~mods directories, EXCLUDING LogicMods")
+
         # First, scan what numbered folders already exist to avoid double-assignment
         game = self._organizer.managedGame()
         if isinstance(game, S2HoCGame):
             pak_mods_dir = QFileInfo(game.paksModsDirectory().absolutePath())
             if pak_mods_dir.exists() and pak_mods_dir.isDir():
-                print(f"[PAK Debug] Scanning existing folders in: {pak_mods_dir.absoluteFilePath()}")
+                print(
+                    f"[PAK Debug] Scanning existing folders in: {pak_mods_dir.absoluteFilePath()}"
+                )
                 for entry in QDir(pak_mods_dir.absoluteFilePath()).entryInfoList(
                     QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
                 ):
                     try:
                         folder_num = int(entry.completeBaseName())
                         existing_folders.add(folder_num)
-                        print(f"[PAK Debug] Found existing numbered folder: {folder_num}")
+                        print(
+                            f"[PAK Debug] Found existing numbered folder: {folder_num}"
+                        )
                     except ValueError:
-                        print(f"[PAK Debug] Skipping non-numbered folder: {entry.completeBaseName()}")
-        
+                        print(
+                            f"[PAK Debug] Skipping non-numbered folder: {entry.completeBaseName()}"
+                        )
+
         # Scan mods for PAK files ONLY in Content/Paks/~mods structure (exclude LogicMods)
         for mod in mods:
             mod_item = self._organizer.modList().getMod(mod)
@@ -152,11 +157,13 @@ class S2HoCPaksTabWidget(QWidget):
             filetree = mod_item.fileTree()
 
             # If this mod contains a LogicMods directory, skip it entirely for the PAK tab
-            has_logicmods = (
-                filetree.find("Content/Paks/LogicMods") or filetree.find("Paks/LogicMods")
+            has_logicmods = filetree.find("Content/Paks/LogicMods") or filetree.find(
+                "Paks/LogicMods"
             )
             if isinstance(has_logicmods, mobase.IFileTree):
-                print(f"[PAK Debug] Skipping mod '{mod_item.name()}' because it contains a LogicMods directory.")
+                print(
+                    f"[PAK Debug] Skipping mod '{mod_item.name()}' because it contains a LogicMods directory."
+                )
                 continue
 
             # ONLY look for ~mods directories
@@ -172,16 +179,22 @@ class S2HoCPaksTabWidget(QWidget):
                                 sub_entry.isFile()
                                 and sub_entry.suffix().casefold() == "pak"
                             ):
-                                pak_name = sub_entry.name()[: -1 - len(sub_entry.suffix())]
+                                pak_name = sub_entry.name()[
+                                    : -1 - len(sub_entry.suffix())
+                                ]
                                 paks[pak_name] = entry.name()
                                 pak_paths[pak_name] = (
                                     mod_item.absolutePath()
                                     + "/"
-                                    + cast(mobase.IFileTree, sub_entry.parent()).path("/"),
-                                    mod_item.absolutePath() + "/" + pak_mods.path("/")
+                                    + cast(mobase.IFileTree, sub_entry.parent()).path(
+                                        "/"
+                                    ),
+                                    mod_item.absolutePath() + "/" + pak_mods.path("/"),
                                 )
                                 pak_source[pak_name] = mod_item.name()
-                                print(f"[PAK Debug]   ✅ Added PAK from ~mods numbered folder: {pak_name} in {entry.name()}")
+                                print(
+                                    f"[PAK Debug]   ✅ Added PAK from ~mods numbered folder: {pak_name} in {entry.name()}"
+                                )
                     else:
                         if entry.suffix().casefold() == "pak":
                             pak_name = entry.name()[: -1 - len(entry.suffix())]
@@ -190,36 +203,40 @@ class S2HoCPaksTabWidget(QWidget):
                                 mod_item.absolutePath()
                                 + "/"
                                 + cast(mobase.IFileTree, entry.parent()).path("/"),
-                                mod_item.absolutePath() + "/" + pak_mods.path("/")
+                                mod_item.absolutePath() + "/" + pak_mods.path("/"),
                             )
                             pak_source[pak_name] = mod_item.name()
-                            print(f"[PAK Debug]   ✅ Added loose PAK from ~mods: {pak_name}")
+                            print(
+                                f"[PAK Debug]   ✅ Added loose PAK from ~mods: {pak_name}"
+                            )
             else:
                 # Check if this mod has LogicMods (for debugging purposes)
                 logic_mods = filetree.find("Content/Paks/LogicMods")
                 if not logic_mods:
                     logic_mods = filetree.find("Paks/LogicMods")
                 if isinstance(logic_mods, mobase.IFileTree):
-                    print(f"[PAK Debug]   Mod {mod_item.name()} has LogicMods (not included in PAK tab)")
+                    print(
+                        f"[PAK Debug]   Mod {mod_item.name()} has LogicMods (not included in PAK tab)"
+                    )
 
         # NOTE: Removed game directory scanning to prevent LogicMods PAKs from appearing
         # We only want PAKs from mod files, not from game directory
-        print(f"[PAK Debug] Skipping game directory scan to prevent LogicMods inclusion")
+        print("[PAK Debug] Skipping game directory scan to prevent LogicMods inclusion")
 
         # Sort PAKs and shake them (preserve order from paks.txt if it exists)
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
         shaken_paks: list[str] = self._shake_paks(sorted_paks)
-        
+
         # Assign target directories with numbered folders (like Oblivion Remastered)
         # Skip numbers that already exist, use next available number starting from 8999
         final_paks: dict[str, tuple[str, str, str]] = {}
         pak_index = 8999
-        
+
         for pak in shaken_paks:
             # Find next available number (skip existing folders)
             while pak_index in existing_folders:
                 pak_index -= 1
-            
+
             # If PAK is already in a numbered folder, keep its current assignment
             current_folder = paks[pak]
             if current_folder.isdigit():
@@ -232,9 +249,9 @@ class S2HoCPaksTabWidget(QWidget):
                 existing_folders.add(pak_index)
                 print(f"[PAK Debug] Assigning {pak} to new folder {pak_index}")
                 pak_index -= 1
-            
+
             final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)
-        
+
         # Convert to model format (4-tuple matching Oblivion Remastered)
         new_data_paks: dict[int, tuple[str, str, str, str]] = {}
         i = 0
@@ -242,6 +259,6 @@ class S2HoCPaksTabWidget(QWidget):
             source, current_path, target_path = data
             new_data_paks[i] = (pak, source, current_path, target_path)
             i += 1
-        
+
         print(f"[PAK Debug] Final PAK count: {len(new_data_paks)}")
         self._model.set_paks(new_data_paks)
