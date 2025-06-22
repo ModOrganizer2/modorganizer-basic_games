@@ -143,7 +143,9 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         source_dirs = ["Paks/", "~mods/", "Content/Paks/~mods/"]
         for source_dir in source_dirs:
             for ext in pak_extensions:
-                mappings.append(mobase.Mapping(f"{source_dir}{ext}", target_dir, False))
+                mappings.append(
+                    mobase.Mapping(f"{source_dir}{ext}", target_dir, False)
+                )
 
         return mappings
 
@@ -209,7 +211,9 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
                 filetree = mod_info.fileTree()
 
                 for entry in filetree:
-                    if entry.name().endswith((".pak", ".utoc", ".ucas")) and not any(
+                    if entry.name().endswith(
+                        (".pak", ".utoc", ".ucas")
+                    ) and not any(
                         entry.path().startswith(p)
                         for p in ["Content/Paks/~mods", "Paks", "~mods"]
                     ):
@@ -222,14 +226,15 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         match key:
             case Problems.MISPLACED_PAK_FILES:
                 return (
-                    "Some mod packages contain PAK files that are not placed in the "
-                    "correct directory structure.\n\n"
-                    "PAK files should be placed in one of the following locations "
-                    "within the mod:\n"
+                    "Some mod packages contain PAK files that are not placed in "
+                    "the correct directory structure.\n\n"
+                    "PAK files should be placed in one of the following "
+                    "locations within the mod:\n"
                     "- Content/Paks/~mods/\n"
                     "- Paks/\n"
                     "- ~mods/\n\n"
-                    "Please restructure your mods to follow this directory layout."
+                    "Please restructure your mods to follow this directory "
+                    "layout."
                 )
             case Problems.MISSING_MOD_DIRECTORIES:
                 return (
