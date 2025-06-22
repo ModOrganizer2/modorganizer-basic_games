@@ -123,7 +123,7 @@ class S2HoCPaksTabWidget(QWidget):
         pak_source: dict[str, str] = {}
         existing_folders: set[int] = set()
 <<<<<<< HEAD
-        
+
 =======
 
         print(f"[PAK Debug] Starting scan of {len(mods)} mods")
@@ -150,7 +150,7 @@ class S2HoCPaksTabWidget(QWidget):
 <<<<<<< HEAD
                     except ValueError:
                         pass
-        
+
 =======
                         print(
                             f"[PAK Debug] Found existing numbered folder: {folder_num}"
@@ -230,7 +230,7 @@ class S2HoCPaksTabWidget(QWidget):
 
         sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
         shaken_paks: list[str] = self._shake_paks(sorted_paks)
-        
+
 =======
                             print(
                                 f"[PAK Debug]   ✅ Added loose PAK from ~mods: {pak_name}"
@@ -263,7 +263,7 @@ class S2HoCPaksTabWidget(QWidget):
             while pak_index in existing_folders:
                 pak_index -= 1
 <<<<<<< HEAD
-            
+
 =======
 
             # If PAK is already in a numbered folder, keep its current assignment
@@ -279,7 +279,7 @@ class S2HoCPaksTabWidget(QWidget):
 
             final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)
 <<<<<<< HEAD
-        
+
 =======
 
         # Convert to model format (4-tuple matching Oblivion Remastered)
@@ -291,7 +291,7 @@ class S2HoCPaksTabWidget(QWidget):
             new_data_paks[i] = (pak, source, current_path, target_path)
             i += 1
 <<<<<<< HEAD
-        
+
 =======
 
         print(f"[PAK Debug] Final PAK count: {len(new_data_paks)}")

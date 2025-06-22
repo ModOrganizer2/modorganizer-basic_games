@@ -53,15 +53,18 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     def resolve_path(self, path: str) -> str:
         path = path.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
 
+
         if "%GAME_DOCUMENTS%" in path:
             game_docs = self.GameDocumentsDirectory.replace(
                 "%USERPROFILE%", os.environ.get("USERPROFILE", "")
             )
             path = path.replace("%GAME_DOCUMENTS%", game_docs)
 
+
         if "%GAME_PATH%" in path:
             game_path = self._gamePath if hasattr(self, "_gamePath") else ""
             path = path.replace("%GAME_PATH%", game_path)
+
 
         return path
 
@@ -135,15 +138,19 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         pak_extensions = ["*.pak", "*.utoc", "*.ucas"]
         target_dir = "Content/Paks/~mods/"
 
+
         mappings = []
+
 
         for ext in pak_extensions:
             mappings.append(mobase.Mapping(ext, target_dir, False))
+
 
         source_dirs = ["Paks/", "~mods/", "Content/Paks/~mods/"]
         for source_dir in source_dirs:
             for ext in pak_extensions:
                 mappings.append(mobase.Mapping(f"{source_dir}{ext}", target_dir, False))
+
 
         return mappings
 
@@ -155,6 +162,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks"
         )
         return QDir(path)
+
 
     def paksModsDirectory(self) -> QDir:
         try:
@@ -170,6 +178,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             )
             return QDir(fallback)
 
+
     def logicModsDirectory(self) -> QDir:
         path = os.path.join(
             self.gameDirectory().absolutePath(),
@@ -179,6 +188,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             "LogicMods",
         )
         return QDir(path)
+
 
     def binariesDirectory(self) -> QDir:
         path = os.path.join(
