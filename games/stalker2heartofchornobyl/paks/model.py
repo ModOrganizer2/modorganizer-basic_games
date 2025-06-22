@@ -257,4 +257,8 @@ class S2HoCPaksModel(QAbstractItemModel):
                 index -= 1
 
         self.set_paks(new_paks)
+<<<<<<< HEAD
         return True
+=======
+        return False
+>>>>>>> ab91432d429d5ec75630e299423146320437832d

@@ -1,18 +1,25 @@
-from typing import List
-from enum import IntEnum, auto
-from pathlib import Path
-from PyQt6.QtCore import QDir, QFileInfo
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
-import mobase
 import os
+from enum import IntEnum, auto
+from typing import List
+
+from PyQt6.QtCore import QDir
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
+
+import mobase
+
+from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_game import BasicGame
-from ..basic_features import BasicModDataChecker, GlobPatterns, BasicLocalSavegames
 
 
 class Problems(IntEnum):
     """
     Enums for IPluginDiagnose.
     """
+<<<<<<< HEAD
+=======
+
+    # PAK files placed in incorrect locations
+>>>>>>> ab91432d429d5ec75630e299423146320437832d
     MISPLACED_PAK_FILES = auto()
     MISSING_MOD_DIRECTORIES = auto()
 
@@ -36,7 +43,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     GameIniFiles = [
         "%GAME_DOCUMENTS%/Saved/Config/Windows/Game.ini",
         "%GAME_DOCUMENTS%/Saved/Config/Windows/GameUserSettings.ini",
-        "%GAME_DOCUMENTS%/Saved/Config/Windows/Engine.ini"
+        "%GAME_DOCUMENTS%/Saved/Config/Windows/Engine.ini",
     ]
 
     _main_window: QMainWindow
@@ -66,7 +73,12 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         self._register_feature(
             BasicLocalSavegames(QDir(self.resolve_path(self.GameSavesDirectory)))
         )
+<<<<<<< HEAD
         
+=======
+
+        # Create the directory more reliably
+>>>>>>> ab91432d429d5ec75630e299423146320437832d
         if (
             self._organizer.managedGame()
             and self._organizer.managedGame().gameName() == self.gameName()
@@ -79,9 +91,17 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             except OSError as e:
                 self._organizer.log(mobase.LogLevel.ERROR, f"OS error creating mod directory: {e}")
             except Exception as e:
+<<<<<<< HEAD
                 self._organizer.log(mobase.LogLevel.ERROR, f"Unexpected error creating mod directory: {e}")
         
         organizer.onUserInterfaceInitialized(self.init_tab)
+=======
+                print(f"Error creating mod directory: {e}")
+
+        # Initialize PAK tab when UI is ready
+        organizer.onUserInterfaceInitialized(self.init_tab)
+
+>>>>>>> ab91432d429d5ec75630e299423146320437832d
         return True
 
     def init_tab(self, main_window: QMainWindow):
@@ -99,6 +119,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
                 return
 
             from .stalker2heartofchornobyl.paks import S2HoCPaksTabWidget
+
             self._paks_tab = S2HoCPaksTabWidget(main_window, self._organizer)
 
             tab_widget.addTab(self._paks_tab, "PAK Files")
@@ -108,6 +129,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         except Exception as e:
             self._organizer.log(mobase.LogLevel.ERROR, f"Error initializing PAK tab: {e}")
             import traceback
+
             traceback.print_exc()
 
     def mappings(self) -> List[mobase.Mapping]:
@@ -128,8 +150,9 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
 
     def gameDirectory(self) -> QDir:
         return QDir(self._gamePath)
-    
+
     def paksDirectory(self) -> QDir:
+<<<<<<< HEAD
         path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks")
         return QDir(path)
     
@@ -149,14 +172,33 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Binaries", "Win64")
         return QDir(path)
     
+=======
+        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks")
+
+    def paksModsDirectory(self) -> QDir:
+        # Use os.path.join for more reliable path construction
+        path = os.path.join(self.paksDirectory().absolutePath(), "~mods")
+        return QDir(path)
+
+    def logicModsDirectory(self) -> QDir:
+        # Update path to place LogicMods under Paks
+        return QDir(
+            self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks/LogicMods"
+        )
+
+    def binariesDirectory(self) -> QDir:
+        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Binaries/Win64")
+
+>>>>>>> ab91432d429d5ec75630e299423146320437832d
     def getModMappings(self) -> dict[str, list[str]]:
         return {
             "Content/Paks/~mods": [self.paksModsDirectory().absolutePath()],
         }
-    
+
     def activeProblems(self) -> list[int]:
         problems = set()
         if self._organizer.managedGame() == self:
+<<<<<<< HEAD
             
             mod_path = self.paksModsDirectory().absolutePath()
             if not os.path.isdir(mod_path):
@@ -167,9 +209,24 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
                 mod_info = self._organizer.modList().getMod(mod)
                 filetree = mod_info.fileTree()
                 
+=======
+            # More reliable directory check using os.path
+            mod_path = self.paksModsDirectory().absolutePath()
+            if not os.path.isdir(mod_path):
+                problems.add(Problems.MISSING_MOD_DIRECTORIES)
+                print(f"Missing mod directory: {mod_path}")
+
+            # Check for misplaced PAK files
+            for mod in self._organizer.modList().allMods():
+                mod_info = self._organizer.modList().getMod(mod)
+                filetree = mod_info.fileTree()
+
+                # Check for PAK files at the root level (remove LogicMods paths)
+>>>>>>> ab91432d429d5ec75630e299423146320437832d
                 for entry in filetree:
-                    if entry.name().endswith(('.pak', '.utoc', '.ucas')) and not any(
-                        entry.path().startswith(p) for p in ['Content/Paks/~mods', 'Paks', '~mods']
+                    if entry.name().endswith((".pak", ".utoc", ".ucas")) and not any(
+                        entry.path().startswith(p)
+                        for p in ["Content/Paks/~mods", "Paks", "~mods"]
                     ):
                         problems.add(Problems.MISPLACED_PAK_FILES)
                         break
@@ -230,7 +287,7 @@ class S2HoCModDataChecker(BasicModDataChecker):
         move_patterns = {
             "*.pak": "Content/Paks/~mods/",
             "*.utoc": "Content/Paks/~mods/",
-            "*.ucas": "Content/Paks/~mods/"
+            "*.ucas": "Content/Paks/~mods/",
         }
         valid_roots = ["Content", "Paks", "~mods"]
         base_patterns = GlobPatterns(valid=valid_roots, move=move_patterns)
