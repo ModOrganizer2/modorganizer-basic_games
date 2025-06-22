@@ -80,19 +80,11 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             try:
                 os.makedirs(mod_path, exist_ok=True)
                 if not os.path.exists(mod_path):
-                    self._organizer.log(
-                        mobase.LogLevel.WARNING,
-                        f"Failed to create directory: {mod_path}",
-                    )
+                    print(f"Failed to create directory: {mod_path}")
             except OSError as e:
-                self._organizer.log(
-                    mobase.LogLevel.ERROR, f"OS error creating mod directory: {e}"
-                )
+                print(f"OS error creating mod directory: {e}")
             except Exception as e:
-                self._organizer.log(
-                    mobase.LogLevel.ERROR,
-                    f"Unexpected error creating mod directory: {e}",
-                )
+                print(f"Unexpected error creating mod directory: {e}")
 
         organizer.onUserInterfaceInitialized(self.init_tab)
         return True
@@ -108,9 +100,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             self._main_window = main_window
             tab_widget: QTabWidget = main_window.findChild(QTabWidget, "tabWidget")
             if not tab_widget:
-                self._organizer.log(
-                    mobase.LogLevel.WARNING, "No main tab widget found!"
-                )
+                print("No main tab widget found!")
                 return
 
             from .stalker2heartofchornobyl.paks import S2HoCPaksTabWidget
@@ -118,15 +108,11 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             self._paks_tab = S2HoCPaksTabWidget(main_window, self._organizer)
 
             tab_widget.addTab(self._paks_tab, "PAK Files")
-            self._organizer.log(mobase.LogLevel.INFO, "PAK Files tab added!")
+            print("PAK Files tab added!")
         except ImportError as e:
-            self._organizer.log(
-                mobase.LogLevel.ERROR, f"Failed to import PAK tab widget: {e}"
-            )
+            print(f"Failed to import PAK tab widget: {e}")
         except Exception as e:
-            self._organizer.log(
-                mobase.LogLevel.ERROR, f"Error initializing PAK tab: {e}"
-            )
+            print(f"Error initializing PAK tab: {e}")
             import traceback
 
             traceback.print_exc()
@@ -200,9 +186,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             mod_path = self.paksModsDirectory().absolutePath()
             if not os.path.isdir(mod_path):
                 problems.add(Problems.MISSING_MOD_DIRECTORIES)
-                self._organizer.log(
-                    mobase.LogLevel.DEBUG, f"Missing mod directory: {mod_path}"
-                )
+                print(f"Missing mod directory: {mod_path}")
 
             for mod in self._organizer.modList().allMods():
                 mod_info = self._organizer.modList().getMod(mod)
@@ -264,13 +248,9 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             case Problems.MISSING_MOD_DIRECTORIES:
                 try:
                     os.makedirs(self.paksModsDirectory().absolutePath(), exist_ok=True)
-                    self._organizer.log(
-                        mobase.LogLevel.INFO, "Created missing mod directories"
-                    )
+                    print("Created missing mod directories")
                 except Exception as e:
-                    self._organizer.log(
-                        mobase.LogLevel.ERROR, f"Failed to create mod directories: {e}"
-                    )
+                    print(f"Failed to create mod directories: {e}")
             case _:
                 pass
 
