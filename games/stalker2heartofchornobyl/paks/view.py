@@ -22,9 +22,10 @@ class S2HoCPaksView(QTreeView):
         self.setRootIsDecorated(False)
 
     def dropEvent(self, e: QDropEvent | None):
-        super().dropEvent(e)
-        self.clearSelection()
-        self.data_dropped.emit()
+        if e is not None:
+            super().dropEvent(e)
+            self.clearSelection()
+            self.data_dropped.emit()
 
     def dataChanged(
         self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: Iterable[int] = ()

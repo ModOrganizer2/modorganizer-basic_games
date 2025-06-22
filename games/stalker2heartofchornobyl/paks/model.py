@@ -39,11 +39,16 @@ class S2HoCPaksModel(QAbstractItemModel):
         profile = QDir(self._organizer.profilePath())
         paks_txt = QFileInfo(profile.absoluteFilePath("stalker2_paks.txt"))
         if paks_txt.exists():
-            with open(paks_txt.absoluteFilePath(), "r") as paks_file:
-                index = 0
-                for line in paks_file:
-                    self.paks[index] = (line.strip(), "", "", "")
-                    index += 1
+            try:
+                with open(paks_txt.absoluteFilePath(), "r", encoding="utf-8") as paks_file:
+                    index = 0
+                    for line in paks_file:
+                        stripped_line = line.strip()
+                        if stripped_line:
+                            self.paks[index] = (stripped_line, "", "", "")
+                            index += 1
+            except (IOError, OSError) as e:
+                pass
 
     def set_paks(self, paks: dict[int, _PakInfo]):
         self.layoutAboutToBeChanged.emit()
@@ -66,7 +71,8 @@ class S2HoCPaksModel(QAbstractItemModel):
         return (
             super().flags(index)
             | Qt.ItemFlag.ItemIsDragEnabled
-            | Qt.ItemFlag.ItemIsDropEnabled & Qt.ItemFlag.ItemIsEditable
+            | Qt.ItemFlag.ItemIsDropEnabled
+            | Qt.ItemFlag.ItemIsEditable
         )
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -198,6 +204,7 @@ class S2HoCPaksModel(QAbstractItemModel):
         before_paks_p: list[_PakInfo] = []
         moved_paks_p: list[_PakInfo] = []
         after_paks_p: list[_PakInfo] = []
+        
         for row, paks in sorted(self.paks.items()):
             if row < new_priority:
                 if row in source_rows:
@@ -250,4 +257,4 @@ class S2HoCPaksModel(QAbstractItemModel):
                 index -= 1
 
         self.set_paks(new_paks)
-        return False
+        return True

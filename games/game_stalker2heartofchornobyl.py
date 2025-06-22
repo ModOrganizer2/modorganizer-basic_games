@@ -13,9 +13,7 @@ class Problems(IntEnum):
     """
     Enums for IPluginDiagnose.
     """
-    # PAK files placed in incorrect locations
     MISPLACED_PAK_FILES = auto()
-    # Missing mod directory structure
     MISSING_MOD_DIRECTORIES = auto()
 
 
@@ -24,7 +22,6 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     Author = "MkHaters"
     Version = "1.1.0"
 
-    # Game details for MO2, using paths common for Unreal Engine-based games.
     GameName = "Stalker 2: Heart of Chornobyl"
     GameShortName = "stalker2heartofchornobyl"
     GameNexusName = "stalker2heartofchornobyl"
@@ -35,7 +32,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     GameSteamId = 1643320
     GameGogId = 1529799785
     GameBinary = "Stalker2.exe"
-    GameDataPath = "%GAME_PATH%/Stalker2"
+    GameDataPath = "Stalker2"
     GameIniFiles = [
         "%GAME_DOCUMENTS%/Saved/Config/Windows/Game.ini",
         "%GAME_DOCUMENTS%/Saved/Config/Windows/GameUserSettings.ini",
@@ -43,19 +40,24 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     ]
 
     _main_window: QMainWindow
-    _paks_tab: QWidget  # Will be S2HoCPaksTabWidget when imported
+    _paks_tab: QWidget
 
     def __init__(self):
-        # Initialize parent classes.
         BasicGame.__init__(self)
         mobase.IPluginFileMapper.__init__(self)
         mobase.IPluginDiagnose.__init__(self)
 
     def resolve_path(self, path: str) -> str:
-        # Replace MO2 variables with actual paths
         path = path.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
-        path = path.replace("%GAME_DOCUMENTS%", self.GameDocumentsDirectory)
-        path = path.replace("%GAME_PATH%", self.GameDataPath)
+        
+        if "%GAME_DOCUMENTS%" in path:
+            game_docs = self.GameDocumentsDirectory.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
+            path = path.replace("%GAME_DOCUMENTS%", game_docs)
+        
+        if "%GAME_PATH%" in path:
+            game_path = self._gamePath if hasattr(self, '_gamePath') else ""
+            path = path.replace("%GAME_PATH%", game_path)
+        
         return path
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
@@ -65,25 +67,21 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             BasicLocalSavegames(QDir(self.resolve_path(self.GameSavesDirectory)))
         )
         
-        # Create the directory more reliably
         if (
             self._organizer.managedGame()
             and self._organizer.managedGame().gameName() == self.gameName()
         ):
-            # Get the absolute path as a string
             mod_path = self.paksModsDirectory().absolutePath()
             try:
-                # Create the directory with parents if needed
                 os.makedirs(mod_path, exist_ok=True)
-                # Verify the directory was actually created
                 if not os.path.exists(mod_path):
-                    print(f"Warning: Failed to create directory: {mod_path}")
+                    self._organizer.log(mobase.LogLevel.WARNING, f"Failed to create directory: {mod_path}")
+            except OSError as e:
+                self._organizer.log(mobase.LogLevel.ERROR, f"OS error creating mod directory: {e}")
             except Exception as e:
-                print(f"Error creating mod directory: {e}")
+                self._organizer.log(mobase.LogLevel.ERROR, f"Unexpected error creating mod directory: {e}")
         
-        # Initialize PAK tab when UI is ready
         organizer.onUserInterfaceInitialized(self.init_tab)
-    
         return True
 
     def init_tab(self, main_window: QMainWindow):
@@ -97,54 +95,59 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             self._main_window = main_window
             tab_widget: QTabWidget = main_window.findChild(QTabWidget, "tabWidget")
             if not tab_widget:
-                print("No main tab widget found!")
+                self._organizer.log(mobase.LogLevel.WARNING, "No main tab widget found!")
                 return
 
-            # Import here to avoid circular imports
             from .stalker2heartofchornobyl.paks import S2HoCPaksTabWidget
             self._paks_tab = S2HoCPaksTabWidget(main_window, self._organizer)
 
-            # Insert after the last tab (like Oblivion Remastered)
             tab_widget.addTab(self._paks_tab, "PAK Files")
-            print("PAK Files tab added!")
+            self._organizer.log(mobase.LogLevel.INFO, "PAK Files tab added!")
+        except ImportError as e:
+            self._organizer.log(mobase.LogLevel.ERROR, f"Failed to import PAK tab widget: {e}")
         except Exception as e:
-            print(f"Error initializing PAK tab: {e}")
+            self._organizer.log(mobase.LogLevel.ERROR, f"Error initializing PAK tab: {e}")
             import traceback
             traceback.print_exc()
 
     def mappings(self) -> List[mobase.Mapping]:
-        return [
-            mobase.Mapping("*.pak", "Content/Paks/~mods/", False),
-            mobase.Mapping("*.utoc", "Content/Paks/~mods/", False),
-            mobase.Mapping("*.ucas", "Content/Paks/~mods/", False),
-            mobase.Mapping("Paks/*.pak", "Content/Paks/~mods/", False),
-            mobase.Mapping("Paks/*.utoc", "Content/Paks/~mods/", False),
-            mobase.Mapping("Paks/*.ucas", "Content/Paks/~mods/", False),
-            mobase.Mapping("~mods/*.pak", "Content/Paks/~mods/", False),
-            mobase.Mapping("~mods/*.utoc", "Content/Paks/~mods/", False),
-            mobase.Mapping("~mods/*.ucas", "Content/Paks/~mods/", False),
-            mobase.Mapping("Content/Paks/~mods/*.pak", "Content/Paks/~mods/", False),
-            mobase.Mapping("Content/Paks/~mods/*.utoc", "Content/Paks/~mods/", False),
-            mobase.Mapping("Content/Paks/~mods/*.ucas", "Content/Paks/~mods/", False),
-        ]
+        pak_extensions = ["*.pak", "*.utoc", "*.ucas"]
+        target_dir = "Content/Paks/~mods/"
+        
+        mappings = []
+        
+        for ext in pak_extensions:
+            mappings.append(mobase.Mapping(ext, target_dir, False))
+        
+        source_dirs = ["Paks/", "~mods/", "Content/Paks/~mods/"]
+        for source_dir in source_dirs:
+            for ext in pak_extensions:
+                mappings.append(mobase.Mapping(f"{source_dir}{ext}", target_dir, False))
+        
+        return mappings
 
     def gameDirectory(self) -> QDir:
         return QDir(self._gamePath)
     
     def paksDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks")
-    
-    def paksModsDirectory(self) -> QDir:
-        # Use os.path.join for more reliable path construction
-        path = os.path.join(self.paksDirectory().absolutePath(), "~mods")
+        path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks")
         return QDir(path)
     
+    def paksModsDirectory(self) -> QDir:
+        try:
+            path = os.path.join(self.paksDirectory().absolutePath(), "~mods")
+            return QDir(path)
+        except Exception as e:
+            fallback = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks", "~mods")
+            return QDir(fallback)
+    
     def logicModsDirectory(self) -> QDir:
-        # Update path to place LogicMods under Paks
-        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks/LogicMods")
+        path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks", "LogicMods")
+        return QDir(path)
     
     def binariesDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Binaries/Win64")
+        path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Binaries", "Win64")
+        return QDir(path)
     
     def getModMappings(self) -> dict[str, list[str]]:
         return {
@@ -155,18 +158,15 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         problems = set()
         if self._organizer.managedGame() == self:
             
-            # More reliable directory check using os.path
             mod_path = self.paksModsDirectory().absolutePath()
             if not os.path.isdir(mod_path):
                 problems.add(Problems.MISSING_MOD_DIRECTORIES)
-                print(f"Missing mod directory: {mod_path}")
+                self._organizer.log(mobase.LogLevel.DEBUG, f"Missing mod directory: {mod_path}")
             
-            # Check for misplaced PAK files
             for mod in self._organizer.modList().allMods():
                 mod_info = self._organizer.modList().getMod(mod)
                 filetree = mod_info.fileTree()
                 
-                # Check for PAK files at the root level (remove LogicMods paths)
                 for entry in filetree:
                     if entry.name().endswith(('.pak', '.utoc', '.ucas')) and not any(
                         entry.path().startswith(p) for p in ['Content/Paks/~mods', 'Paks', '~mods']
@@ -216,21 +216,22 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     def startGuidedFix(self, key: int) -> None:
         match key:
             case Problems.MISSING_MOD_DIRECTORIES:
-                # Create only the ~mods directory
-                os.makedirs(self.paksModsDirectory().absolutePath(), exist_ok=True)
+                try:
+                    os.makedirs(self.paksModsDirectory().absolutePath(), exist_ok=True)
+                    self._organizer.log(mobase.LogLevel.INFO, "Created missing mod directories")
+                except Exception as e:
+                    self._organizer.log(mobase.LogLevel.ERROR, f"Failed to create mod directories: {e}")
             case _:
                 pass
 
 
 class S2HoCModDataChecker(BasicModDataChecker):
     def __init__(self, patterns: GlobPatterns = GlobPatterns()):
-        # Define valid mod directories and the file movement rules.
         move_patterns = {
             "*.pak": "Content/Paks/~mods/",
             "*.utoc": "Content/Paks/~mods/",
             "*.ucas": "Content/Paks/~mods/"
         }
-        # Define valid mod roots - remove LogicMods
         valid_roots = ["Content", "Paks", "~mods"]
         base_patterns = GlobPatterns(valid=valid_roots, move=move_patterns)
         merged_patterns = base_patterns.merge(patterns)
