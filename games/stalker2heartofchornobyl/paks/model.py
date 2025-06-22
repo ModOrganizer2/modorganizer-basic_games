@@ -40,14 +40,16 @@ class S2HoCPaksModel(QAbstractItemModel):
         paks_txt = QFileInfo(profile.absoluteFilePath("stalker2_paks.txt"))
         if paks_txt.exists():
             try:
-                with open(paks_txt.absoluteFilePath(), "r", encoding="utf-8") as paks_file:
+                with open(
+                    paks_txt.absoluteFilePath(), "r", encoding="utf-8"
+                ) as paks_file:
                     index = 0
                     for line in paks_file:
                         stripped_line = line.strip()
                         if stripped_line:
                             self.paks[index] = (stripped_line, "", "", "")
                             index += 1
-            except (IOError, OSError) as e:
+            except (IOError, OSError):
                 pass
 
     def set_paks(self, paks: dict[int, _PakInfo]):

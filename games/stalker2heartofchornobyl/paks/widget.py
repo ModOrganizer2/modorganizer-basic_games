@@ -1,4 +1,3 @@
-import os
 from functools import cmp_to_key
 from pathlib import Path
 from typing import cast
@@ -50,7 +49,9 @@ class S2HoCPaksTabWidget(QWidget):
         paks_list: list[str] = []
         if paks_txt.exists():
             try:
-                with open(paks_txt.absoluteFilePath(), "r", encoding="utf-8") as paks_file:
+                with open(
+                    paks_txt.absoluteFilePath(), "r", encoding="utf-8"
+                ) as paks_file:
                     for line in paks_file:
                         stripped_line = line.strip()
                         if stripped_line:
@@ -151,9 +152,8 @@ class S2HoCPaksTabWidget(QWidget):
                 continue
             filetree = mod_item.fileTree()
 
-            has_logicmods = (
-                filetree.find("Content/Paks/LogicMods")
-                or filetree.find("Paks/LogicMods")
+            has_logicmods = filetree.find("Content/Paks/LogicMods") or filetree.find(
+                "Paks/LogicMods"
             )
             if isinstance(has_logicmods, mobase.IFileTree):
                 continue
@@ -176,9 +176,9 @@ class S2HoCPaksTabWidget(QWidget):
                                 pak_paths[pak_name] = (
                                     mod_item.absolutePath()
                                     + "/"
-                                    + cast(
-                                        mobase.IFileTree, sub_entry.parent()
-                                    ).path("/"),
+                                    + cast(mobase.IFileTree, sub_entry.parent()).path(
+                                        "/"
+                                    ),
                                     mod_item.absolutePath() + "/" + pak_mods.path("/"),
                                 )
                                 pak_source[pak_name] = mod_item.name()
