@@ -1,3 +1,4 @@
+import os
 from enum import IntEnum, auto
 
 from PyQt6.QtCore import QDir
