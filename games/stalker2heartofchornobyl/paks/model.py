@@ -204,7 +204,7 @@ class S2HoCPaksModel(QAbstractItemModel):
         before_paks_p: list[_PakInfo] = []
         moved_paks_p: list[_PakInfo] = []
         after_paks_p: list[_PakInfo] = []
-        
+
         for row, paks in sorted(self.paks.items()):
             if row < new_priority:
                 if row in source_rows:

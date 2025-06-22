@@ -56,15 +56,15 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
 
     def resolve_path(self, path: str) -> str:
         path = path.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
-        
+
         if "%GAME_DOCUMENTS%" in path:
             game_docs = self.GameDocumentsDirectory.replace("%USERPROFILE%", os.environ.get("USERPROFILE", ""))
             path = path.replace("%GAME_DOCUMENTS%", game_docs)
-        
+
         if "%GAME_PATH%" in path:
             game_path = self._gamePath if hasattr(self, '_gamePath') else ""
             path = path.replace("%GAME_PATH%", game_path)
-        
+
         return path
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
@@ -74,7 +74,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             BasicLocalSavegames(QDir(self.resolve_path(self.GameSavesDirectory)))
         )
 <<<<<<< HEAD
-        
+
 =======
 
         # Create the directory more reliably
@@ -93,7 +93,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
             except Exception as e:
 <<<<<<< HEAD
                 self._organizer.log(mobase.LogLevel.ERROR, f"Unexpected error creating mod directory: {e}")
-        
+
         organizer.onUserInterfaceInitialized(self.init_tab)
 =======
                 print(f"Error creating mod directory: {e}")
@@ -135,17 +135,17 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
     def mappings(self) -> List[mobase.Mapping]:
         pak_extensions = ["*.pak", "*.utoc", "*.ucas"]
         target_dir = "Content/Paks/~mods/"
-        
+
         mappings = []
-        
+
         for ext in pak_extensions:
             mappings.append(mobase.Mapping(ext, target_dir, False))
-        
+
         source_dirs = ["Paks/", "~mods/", "Content/Paks/~mods/"]
         for source_dir in source_dirs:
             for ext in pak_extensions:
                 mappings.append(mobase.Mapping(f"{source_dir}{ext}", target_dir, False))
-        
+
         return mappings
 
     def gameDirectory(self) -> QDir:
@@ -155,7 +155,7 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
 <<<<<<< HEAD
         path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks")
         return QDir(path)
-    
+
     def paksModsDirectory(self) -> QDir:
         try:
             path = os.path.join(self.paksDirectory().absolutePath(), "~mods")
@@ -163,15 +163,15 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         except Exception as e:
             fallback = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks", "~mods")
             return QDir(fallback)
-    
+
     def logicModsDirectory(self) -> QDir:
         path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Content", "Paks", "LogicMods")
         return QDir(path)
-    
+
     def binariesDirectory(self) -> QDir:
         path = os.path.join(self.gameDirectory().absolutePath(), self.GameDataPath, "Binaries", "Win64")
         return QDir(path)
-    
+
 =======
         return QDir(self.gameDirectory().absolutePath() + "/Stalker2/Content/Paks")
 
@@ -199,16 +199,16 @@ class S2HoCGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiagnose):
         problems = set()
         if self._organizer.managedGame() == self:
 <<<<<<< HEAD
-            
+
             mod_path = self.paksModsDirectory().absolutePath()
             if not os.path.isdir(mod_path):
                 problems.add(Problems.MISSING_MOD_DIRECTORIES)
                 self._organizer.log(mobase.LogLevel.DEBUG, f"Missing mod directory: {mod_path}")
-            
+
             for mod in self._organizer.modList().allMods():
                 mod_info = self._organizer.modList().getMod(mod)
                 filetree = mod_info.fileTree()
-                
+
 =======
             # More reliable directory check using os.path
             mod_path = self.paksModsDirectory().absolutePath()
