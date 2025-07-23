@@ -59,7 +59,7 @@ class FantasyLifeI(BasicGame,
     def executables(self):
         return [
             mobase.ExecutableInfo(
-               "Fantasy Life i", self.GameBinary
+               "Fantasy Life I", self.GameBinary
             ),
         ]
 
@@ -120,19 +120,14 @@ class FantasyLifeI(BasicGame,
         return False
 
     def install(self, name: mobase.GuessedString, tree: mobase.IFileTree, version: str, nexus_id: int) -> mobase.InstallResult:
-
+        paks_dir = QDir(".").filePath("Paks/~mods/")
+        mods_dir = QDir(".").filePath(f"Mods/{name.__str__()}/")
+        
         for entry in list(tree):
             if entry.name().lower().endswith(self._PAK_EXTENSIONS):
-                paks_dir = QDir(".").filePath("Paks")
-                target_dir = QDir(paks_dir).filePath("~mods/")
-                QDir().mkpath(target_dir)
-                tree.move(entry, target_dir)
+                tree.move(entry, paks_dir)
         
         if tree.exists("Mod.json", mobase.IFileTree.FILE):
-            mods_dir = QDir(".").filePath("Mods")
-            target_dir = QDir(mods_dir).filePath(f"{name.__str__()}/")
-            QDir().mkpath(target_dir)
-
-            for entry in list(tree): tree.move(entry, target_dir)
+            for entry in list(tree): tree.move(entry, mods_dir)
         
         return mobase.InstallResult.SUCCESS
