@@ -1,32 +1,34 @@
+from pathlib import Path
 
 from PyQt6.QtCore import QDir
+
 import mobase
 
-from pathlib import Path
-from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_features.basic_local_savegames import BasicLocalSavegames
-from ..steam_utils import find_steam_path
+from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
+from ..steam_utils import find_steam_path
+
 
 class FantasyLifeIModDataChecker(mobase.ModDataChecker):
     def __init__(self: mobase.ModDataChecker) -> None:
         super().__init__()
 
-    def dataLooksValid(self: mobase.ModDataChecker, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self: mobase.ModDataChecker, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if filetree.exists("Game", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.INVALID
-        
-        if filetree.exists("Mods", mobase.IFileTree.DIRECTORY) or filetree.exists("Paks", mobase.IFileTree.DIRECTORY):
+
+        if filetree.exists("Mods", mobase.IFileTree.DIRECTORY) or filetree.exists(
+            "Paks", mobase.IFileTree.DIRECTORY
+        ):
             return mobase.ModDataChecker.VALID
-        
+
         return mobase.ModDataChecker.INVALID
 
 
-class FantasyLifeI(BasicGame, 
-                   mobase.IPluginFileMapper, 
-                   mobase.IPluginInstallerSimple
-                  ):
-    
+class FantasyLifeI(BasicGame, mobase.IPluginFileMapper, mobase.IPluginInstallerSimple):
     Name = "Fantasy Life I Support Plugin"
     Author = "AmeliaCute"
     Version = "0.2.1"
@@ -35,11 +37,11 @@ class FantasyLifeI(BasicGame,
     GameShortName = "fantasylifei"
     GameNexusName = "fantasylifeithegirlwhostealstime"
     GameValidShortNames = ["fli"]
-    
+
     GameDataPath = "Game/Content/"
     GameBinary = "Game/Binaries/Win64/NFL1-Win64-Shipping.exe"
     GameSteamId = 2993780
-    
+
     GameSupportURL = (
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
         "Game:-Fantasy-Life-I:-The-Girl-Who-Steals-Time"
@@ -55,12 +57,10 @@ class FantasyLifeI(BasicGame,
         self._register_feature(FantasyLifeIModDataChecker())
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         return True
-    
+
     def executables(self):
         return [
-            mobase.ExecutableInfo(
-               "Fantasy Life I", self.GameBinary
-            ),
+            mobase.ExecutableInfo("Fantasy Life I", self.GameBinary),
         ]
 
     ## SAVE
@@ -71,7 +71,7 @@ class FantasyLifeI(BasicGame,
         steamPath = find_steam_path()
         if steamPath is None:
             return None
-        
+
         userData = steamPath.joinpath("userdata")
         for child in userData.iterdir():
             name = child.name
@@ -98,7 +98,8 @@ class FantasyLifeI(BasicGame,
 
     ## MAPPING
 
-    def exeDirectory(self) -> QDir: return QDir(QDir(self.gameDirectory()).filePath("Game/Binaries/Win64"))
+    def exeDirectory(self) -> QDir:
+        return QDir(QDir(self.gameDirectory()).filePath("Game/Binaries/Win64"))
 
     def mappings(self) -> list[mobase.Mapping]:
         return [
@@ -107,27 +108,36 @@ class FantasyLifeI(BasicGame,
 
     ## INSTALLER
 
-    _PAK_EXTENSIONS = ('.pak', '.ucas', '.utoc')
+    _PAK_EXTENSIONS = (".pak", ".ucas", ".utoc")
 
     def priority(self) -> int:
         return 150
 
     def isArchiveSupported(self, tree: mobase.IFileTree) -> bool:
         for entry in tree:
-            if entry.name().lower().endswith(self._PAK_EXTENSIONS): return True
-        
-        if tree.exists("Mod.json", mobase.IFileTree.FILE): return True
+            if entry.name().lower().endswith(self._PAK_EXTENSIONS):
+                return True
+
+        if tree.exists("Mod.json", mobase.IFileTree.FILE):
+            return True
         return False
 
-    def install(self, name: mobase.GuessedString, tree: mobase.IFileTree, version: str, nexus_id: int) -> mobase.InstallResult:
+    def install(
+        self,
+        name: mobase.GuessedString,
+        tree: mobase.IFileTree,
+        version: str,
+        nexus_id: int,
+    ) -> mobase.InstallResult:
         paks_dir = QDir(".").filePath("Paks/~mods/")
         mods_dir = QDir(".").filePath(f"Mods/{name.__str__()}/")
-        
+
         for entry in list(tree):
             if entry.name().lower().endswith(self._PAK_EXTENSIONS):
                 tree.move(entry, paks_dir)
-        
+
         if tree.exists("Mod.json", mobase.IFileTree.FILE):
-            for entry in list(tree): tree.move(entry, mods_dir)
-        
+            for entry in list(tree):
+                tree.move(entry, mods_dir)
+
         return mobase.InstallResult.SUCCESS
