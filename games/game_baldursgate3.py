@@ -13,11 +13,13 @@ import typing
 import urllib.request
 import zipfile
 from configparser import SectionProxy
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import Path
+from typing import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
+import mobase
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -33,9 +35,6 @@ from PyQt6.QtCore import (
     qWarning,
 )
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QProgressDialog
-
-import mobase
-from mobase import IModInterface
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
@@ -280,7 +279,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             )
             map_files(
                 f"{mod.absolutePath()}/Script Extender",
-                lambda file: os.path.relpath(file, mod.absolutePath()),
+                partial(
+                    lambda file, mod: os.path.relpath(file, mod.absolutePath()), mod=mod
+                ),
             )
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
@@ -364,7 +365,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def __tr(self, trstr):
         return QCoreApplication.translate(self.name(), trstr)
 
-    def _active_mods(self) -> list[IModInterface]:
+    def _active_mods(self) -> list[mobase.IModInterface]:
         return [
             self._organizer.modList().getMod(mod_name)
             for mod_name in filter(
@@ -374,7 +375,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             )
         ]
 
-    def _create_progress_window(self, title, max_progress, msg=""):
+    def _create_progress_window(
+        self, title: str, max_progress: int, msg: str = ""
+    ) -> QProgressDialog:
         progress = QProgressDialog(
             self.__tr(msg if msg else title),
             self.__tr("Cancel"),
@@ -454,7 +457,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         progress = self._create_progress_window(
             "Generating modsettings.xml", len(active_mods)
         )
-        metadata = {}
+        metadata: dict[str, str] = {}
         threadpool = QThreadPool.globalInstance()
         for mod in active_mods:
             threadpool.start(
@@ -633,9 +636,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             return get_module_short_desc()
 
         if force_recreate is None:
-            force_recreate = self._get_setting("force_reparse_metadata") == True
+            force_recreate = self._get_setting("force_reparse_metadata")
         if rm_extracted is None:
-            rm_extracted = self._get_setting("remove_extracted_metadata") == True
+            rm_extracted = self._get_setting("remove_extracted_metadata")
         meta_ini = Path(mod.absolutePath()) / "meta.ini"
         config = configparser.ConfigParser()
         config.read(meta_ini, encoding="utf-8")
