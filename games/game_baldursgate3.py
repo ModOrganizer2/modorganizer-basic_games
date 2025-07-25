@@ -15,11 +15,9 @@ import zipfile
 from configparser import SectionProxy
 from functools import cached_property, partial
 from pathlib import Path
-from typing import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
-import mobase
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -35,6 +33,8 @@ from PyQt6.QtCore import (
     qWarning,
 )
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QProgressDialog
+
+import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
