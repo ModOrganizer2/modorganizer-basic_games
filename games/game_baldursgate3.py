@@ -14,7 +14,7 @@ import zipfile
 from configparser import SectionProxy
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
@@ -471,7 +471,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def _construct_modsettings_xml(
         self,
         exec_path: str = "",
-        working_dir: QDir = QDir.current(),
+        working_dir: Optional[QDir] = None,
         args: str = "",
         force_reparse_metadata: bool = False,
     ) -> bool:
