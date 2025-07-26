@@ -14,7 +14,7 @@ import zipfile
 from configparser import SectionProxy
 from functools import cached_property
 from pathlib import Path
-from typing import Callable, Optional, Any
+from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
