@@ -18,6 +18,7 @@ from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
+import mobase
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -35,8 +36,6 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
-
-import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
@@ -639,8 +638,6 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             force_recreate = bool(self._get_setting("force_reparse_metadata"))
         if rm_extracted is None:
             rm_extracted = bool(self._get_setting("remove_extracted_metadata"))
-        if type(force_recreate) != bool or type(rm_extracted) != bool:
-            return ""
         meta_ini = Path(mod.absolutePath()) / "meta.ini"
         config = configparser.ConfigParser()
         config.read(meta_ini, encoding="utf-8")
