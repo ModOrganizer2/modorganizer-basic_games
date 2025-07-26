@@ -21,6 +21,7 @@ from xml.etree.ElementTree import Element
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
+    QDir,
     QEventLoop,
     QRunnable,
     Qt,
@@ -28,7 +29,6 @@ from PyQt6.QtCore import (
     qDebug,
     qInfo,
     qWarning,
-    QDir,
 )
 from PyQt6.QtWidgets import (
     QApplication,
