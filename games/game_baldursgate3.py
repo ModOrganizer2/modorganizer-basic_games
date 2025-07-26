@@ -9,13 +9,12 @@ import re
 import shutil
 import subprocess
 import traceback
-import typing
 import urllib.request
 import zipfile
 from configparser import SectionProxy
-from functools import cached_property, partial
+from functools import cached_property
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, Any
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
@@ -24,17 +23,19 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
     QEventLoop,
-    QObject,
     QRunnable,
     Qt,
     QThreadPool,
-    pyqtSignal,
-    pyqtSlot,
     qDebug,
     qInfo,
     qWarning,
 )
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QProgressDialog
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QMessageBox,
+    QProgressDialog,
+)
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
@@ -68,22 +69,22 @@ class BG3ModDataChecker(BasicModDataChecker):
         )
 
 
-class WorkerSignals(QObject):
-    result: pyqtSignal = pyqtSignal(object)
-
-
 class Worker(QRunnable):
-    def __init__(self, fn, *args, mod_name_cb=None, result_cb=None):
+    def __init__(
+        self,
+        fn: Callable[[mobase.IModInterface, bool], str],
+        mod: mobase.IModInterface,
+        auto_build_paks: bool,
+        metadata: dict[str, str],
+    ):
         super().__init__()
-        self.mod_name_cb = mod_name_cb
         self.fn = fn
-        self.args = args
-        self.signals = WorkerSignals()
-        self.signals.result.connect(result_cb)
+        self.mod = mod
+        self.autoBuildPaks = auto_build_paks
+        self.metadata = metadata
 
-    @pyqtSlot()
     def run(self):
-        self.signals.result.emit({self.mod_name_cb(): self.fn(*self.args)})
+        self.metadata.update({self.mod.name(): self.fn(self.mod, self.autoBuildPaks)})
 
 
 class BG3Game(BasicGame, mobase.IPluginFileMapper):
@@ -223,15 +224,15 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             efls = []
         if self._get_setting("force_load_dlls"):
             qInfo("detecting dlls in enabled mods")
-            libs = set()
+            libs: set[str] = set()
             tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
                 self._organizer.virtualFileTree().find("bin")
             )
-            if tree is None or type(tree) is mobase.FileTreeEntry:
+            if type(tree) is not mobase.IFileTree:
                 return efls
 
             def find_dlls(
-                _, entry: mobase.FileTreeEntry
+                _: Any, entry: mobase.FileTreeEntry
             ) -> mobase.IFileTree.WalkReturn:
                 relpath = entry.pathFrom(tree)
                 if (
@@ -254,17 +255,26 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             ]
         return efls
 
-    def mappings(self) -> typing.List[mobase.Mapping]:
+    def mappings(self) -> list[mobase.Mapping]:
         qInfo("creating custom bg3 mappings")
-        mappings = []
+        mappings: list[mobase.Mapping] = []
         docs_path = Path(self.documentsDirectory().path())
 
-        def map_files(path, dest_func, pattern="*", dest_dir=docs_path):
-            for file in list(Path(path).rglob(pattern)):
+        def map_files(
+            path: Path,
+            pattern: str = "*",
+            rel: bool = True,
+        ):
+            dest_func: Callable[[Path], str] = (
+                (lambda f: os.path.relpath(f, path))
+                if rel
+                else lambda f: f"Mods/{f.name}"
+            )
+            for file in list(path.rglob(pattern)):
                 mappings.append(
                     mobase.Mapping(
                         source=str(file),
-                        destination=str(dest_dir / dest_func(file)),
+                        destination=str(docs_path / dest_func(file)),
                         is_directory=file.is_dir(),
                         create_target=True,
                     )
@@ -274,27 +284,18 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             "Mapping files to documents folder", len(self._active_mods()) + 1
         )
         for mod in self._active_mods():
-            map_files(
-                mod.absolutePath(), lambda file: f"Mods/{file.name}", pattern="*.pak"
-            )
-            map_files(
-                f"{mod.absolutePath()}/Script Extender",
-                partial(
-                    lambda file, mod: os.path.relpath(file, mod.absolutePath()), mod=mod
-                ),
-            )
+            modpath = Path(mod.absolutePath())
+            map_files(modpath, pattern="*.pak", rel=False)
+            map_files(modpath / "Script Extender")
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
-        map_files(
-            self._organizer.overwritePath(),
-            lambda file: os.path.relpath(file, self._organizer.overwritePath()),
-        )
+        map_files(self._overwrite_path)
         progress.setValue(len(self._active_mods()) + 1)
         QApplication.processEvents()
         return mappings
 
     @cached_property
-    def _base_dlls(self):
+    def _base_dlls(self) -> set[str]:
         base_bin = Path(self.gameDirectory().absoluteFilePath("bin"))
         return {str(f.relative_to(base_bin)) for f in base_bin.glob("*.dll")}
 
@@ -304,12 +305,8 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         return Path(self._organizer.pluginDataPath(), self.name()).absolute()
 
     @cached_property
-    def _main_window(self):
-        return (
-            self._organizer.mainWindow()
-            if hasattr(self._organizer, "mainWindow")
-            else None
-        )
+    def _overwrite_path(self):
+        return Path(self._organizer.overwritePath())
 
     @cached_property
     def _log_dir(self):
@@ -321,10 +318,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
     @cached_property
     def _modsettings_path(self):
-        return (
-            Path(self._organizer.overwritePath())
-            / "PlayerProfiles/Public/modsettings.lsx"
-        )
+        return self._overwrite_path / "PlayerProfiles/Public/modsettings.lsx"
 
     @cached_property
     def _divine_command(self):
@@ -362,16 +356,16 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def _set_setting(self, key: str, value: mobase.MoVariant):
         self._organizer.setPluginSetting(self.name(), key, value)
 
-    def __tr(self, trstr):
+    def __tr(self, trstr: str) -> str:
         return QCoreApplication.translate(self.name(), trstr)
 
     def _active_mods(self) -> list[mobase.IModInterface]:
+        modlist = self._organizer.modList()
         return [
-            self._organizer.modList().getMod(mod_name)
+            modlist.getMod(mod_name)
             for mod_name in filter(
-                lambda mod: self._organizer.modList().state(mod)
-                & mobase.ModState.ACTIVE,
-                self._organizer.modList().allModsByProfilePriority(),
+                lambda mod: modlist.state(mod) & mobase.ModState.ACTIVE,
+                modlist.allModsByProfilePriority(),
             )
         ]
 
@@ -396,7 +390,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         setting: str,
         old: mobase.MoVariant,
         new: mobase.MoVariant,
-    ):
+    ) -> None:
         if self.name() != plugin_name or not new:
             return
         if setting == "check_for_lslib_updates":
@@ -411,9 +405,10 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 self._set_setting(setting, False)
 
     def _on_user_interface_initialized(self, window: QMainWindow) -> None:
+        self._main_window = window
         pass
 
-    def _on_finished_run(self, x, y):
+    def _on_finished_run(self, x: str, y: int):
         if self._get_setting("log_diff"):
             for x in difflib.unified_diff(
                 open(self._modsettings_backup).readlines(),
@@ -423,7 +418,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 lineterm="",
             ):
                 qDebug(x)
-        for path in Path(self._organizer.overwritePath()).rglob("*.log"):
+        for path in self._overwrite_path.rglob("*.log"):
             try:
                 (self._log_dir / path.name).unlink(missing_ok=True)
                 qDebug(f"moving {path} to {self._log_dir}")
@@ -431,19 +426,17 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             except PermissionError as e:
                 qDebug(str(e))
         days = self._get_setting("delete_levelcache_folders_older_than_x_days")
-        if days >= 0:
+        if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
-            for path in Path(self._organizer.overwritePath()).glob("LevelCache/*"):
+            for path in self._overwrite_path.glob("LevelCache/*"):
                 if (
                     datetime.datetime.fromtimestamp(os.path.getmtime(path))
                     < cutoff_time
                 ):
                     shutil.rmtree(path, ignore_errors=True)
         qDebug("cleaning empty dirs from overwrite directory")
-        for folder in sorted(
-            list(os.walk(self._organizer.overwritePath()))[1:], reverse=True
-        ):
+        for folder in sorted(list(os.walk(self._overwrite_path))[1:], reverse=True):
             try:
                 os.rmdir(folder[0])
             except OSError:
@@ -457,19 +450,22 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         progress = self._create_progress_window(
             "Generating modsettings.xml", len(active_mods)
         )
-        metadata: dict[str, str] = {}
         threadpool = QThreadPool.globalInstance()
-        for mod in active_mods:
+        if threadpool is None or type(autobuild_paks) is not bool:
+            return False
+        metadata: dict[str, str] = {}
+
+        def get_runnable(mod: mobase.IModInterface):
             threadpool.start(
-                Worker(
-                    self._get_metadata_for_files_in_mod,
-                    mod,
-                    autobuild_paks,
-                    mod_name_cb=mod.name,
-                    result_cb=metadata.update,
+                QRunnable.create(
+                    lambda: metadata.update(
+                        self._get_metadata_for_files_in_mod(mod, autobuild_paks)
+                    )
                 )
             )
 
+        for mod in active_mods:
+            get_runnable(mod)
         count = 0
         num_active_mods = len(active_mods)
         total_intervals_to_wait = (num_active_mods * 2) + 20
@@ -505,35 +501,41 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def _on_mod_installed(self, mod: mobase.IModInterface) -> None:
         if self._download_lslib_if_missing():
             self._get_metadata_for_files_in_mod(
-                mod, self._get_setting("autobuild_paks")
+                mod, bool(self._get_setting("autobuild_paks"))
             )
 
     def _get_metadata_for_files_in_mod(
-        self, mod: mobase.IModInterface, autobuild_paks: bool
+        self, mod: mobase.IModInterface, auto_build_paks: bool
     ):
-        return "".join(
-            [
-                self._get_metadata_for_file(mod, file)
-                for file in sorted(
-                    list(Path(mod.absolutePath()).rglob("*.pak"))
-                    + (
-                        [f for f in Path(mod.absolutePath()).glob("*") if f.is_dir()]
-                        if autobuild_paks
-                        else []
+        return {
+            mod.name(): "".join(
+                [
+                    self._get_metadata_for_file(mod, file)
+                    for file in sorted(
+                        list(Path(mod.absolutePath()).rglob("*.pak"))
+                        + (
+                            [
+                                f
+                                for f in Path(mod.absolutePath()).glob("*")
+                                if f.is_dir()
+                            ]
+                            if auto_build_paks
+                            else []
+                        )
                     )
-                )
-            ]
-        )
+                ]
+            )
+        }
 
     def _get_metadata_for_file(
         self,
         mod: mobase.IModInterface,
         file: Path,
-        force_recreate: bool | None = None,
-        rm_extracted: bool | None = None,
+        force_recreate: Optional[bool] = None,
+        rm_extracted: Optional[bool] = None,
     ) -> str:
         def run_divine(
-            action: str, source: Path | str, extra_args=""
+            action: str, source: Path | str, extra_args: str = ""
         ) -> subprocess.CompletedProcess[str]:
             command = f'{self._divine_command} -a "{action}" -s "{source}" {extra_args}'
             result = subprocess.run(
@@ -569,12 +571,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             )
 
         def get_attr_value(root: Element, attr_id: str) -> str:
+            default_val = self._types.get(attr_id) or ""
             attr = root.find(f".//attribute[@id='{attr_id}']")
-            return (
-                self._types.get(attr_id)
-                if attr is None
-                else attr.get("value", self._types.get(attr_id))
-            )
+            return default_val if attr is None else attr.get("value", default_val)
 
         def extract_data(output_file: Path) -> bool:
             if run_divine(
@@ -625,7 +624,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 section["override"] = "True"
                 section["Folder"] = folder_name
 
-        def metadata_to_ini(condition: bool, to_parse):
+        def metadata_to_ini(condition: bool, to_parse: Callable[[], Path]):
             config[file.name] = {}
             if condition:
                 parse_meta_lsx(to_parse(), config[file.name])
@@ -636,9 +635,11 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             return get_module_short_desc()
 
         if force_recreate is None:
-            force_recreate = self._get_setting("force_reparse_metadata")
+            force_recreate = bool(self._get_setting("force_reparse_metadata"))
         if rm_extracted is None:
-            rm_extracted = self._get_setting("remove_extracted_metadata")
+            rm_extracted = bool(self._get_setting("remove_extracted_metadata"))
+        if type(force_recreate) != bool or type(rm_extracted) != bool:
+            return ""
         meta_ini = Path(mod.absolutePath()) / "meta.ini"
         config = configparser.ConfigParser()
         config.read(meta_ini, encoding="utf-8")
@@ -674,9 +675,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 False,
             ):
                 qInfo(f"packable dir: {file}")
-                pak_path = (
-                    Path(self._organizer.overwritePath()) / f"Mods/{file.name}.pak"
-                )
+                pak_path = self._overwrite_path / f"Mods/{file.name}.pak"
                 pak_path.unlink(missing_ok=True)
                 if run_divine(
                     "create-package", file, extra_args=f'-d "{pak_path}"'
@@ -698,8 +697,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             return True
         try:
             self._tools_dir.mkdir(exist_ok=True, parents=True)
+            downloaded = False
 
-            def reporthook(block_num, block_size, total_size):
+            def reporthook(block_num: int, block_size: int, total_size: int) -> None:
                 if total_size > 0:
                     progress.setValue(
                         min(int(block_num * block_size * 100 / total_size), 100)
@@ -760,7 +760,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                     new_msg.setText(
                         self.__tr("Latest version of LSLib already downloaded!")
                     )
-                    downloaded = False
+
         except Exception as e:
             qDebug(f"Download failed: {e}")
             err = QMessageBox(self._main_window)
@@ -770,7 +770,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             return False
         try:
             if old_archives:
-                zip_path = sorted(old_archives)[:-1]
+                zip_path = sorted(old_archives)[-1]
             if old_archives or not downloaded:
                 dialog_message = "Ensuring all necessary LSLib files have been extracted from archive..."
                 win_title = "Verifying LSLib files"
@@ -789,7 +789,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                             ),
                             file,
                         )
-                    x_progress.setValue(progress.value() + 1)
+                    x_progress.setValue(x_progress.value() + 1)
                     QApplication.processEvents()
             shutil.rmtree(self._tools_dir / "Packed", ignore_errors=True)
         except Exception as e:
