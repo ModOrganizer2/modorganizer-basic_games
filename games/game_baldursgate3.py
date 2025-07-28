@@ -252,19 +252,18 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
         def map_files(
             path: Path,
+            dest: Path = docs_path,
             pattern: str = "*",
             rel: bool = True,
         ):
             dest_func: Callable[[Path], str] = (
-                (lambda f: os.path.relpath(f, path))
-                if rel
-                else lambda f: f"Mods/{f.name}"
+                (lambda f: os.path.relpath(f, path)) if rel else lambda f: f.name
             )
             for file in list(path.rglob(pattern)):
                 mappings.append(
                     mobase.Mapping(
                         source=str(file),
-                        destination=str(docs_path / dest_func(file)),
+                        destination=str(dest / dest_func(file)),
                         is_directory=file.is_dir(),
                         create_target=True,
                     )
@@ -273,10 +272,12 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         progress = self._create_progress_window(
             "Mapping files to documents folder", len(active_mods) + 1
         )
+        docs_path_mods = docs_path / "Mods"
+        docs_path_se = docs_path / "Script Extender"
         for mod in active_mods:
             modpath = Path(mod.absolutePath())
-            map_files(modpath, pattern="*.pak", rel=False)
-            map_files(modpath / "Script Extender")
+            map_files(modpath, docs_path_mods, pattern="*.pak", rel=False)
+            map_files(modpath / "Script Extender", docs_path_se)
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
         map_files(self._overwrite_path)
