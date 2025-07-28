@@ -11,7 +11,6 @@ import subprocess
 import traceback
 import urllib.request
 import zipfile
-from configparser import SectionProxy
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -252,19 +251,18 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
         def map_files(
             path: Path,
+            dest: Path = docs_path,
             pattern: str = "*",
             rel: bool = True,
         ):
             dest_func: Callable[[Path], str] = (
-                (lambda f: os.path.relpath(f, path))
-                if rel
-                else lambda f: f"Mods/{f.name}"
+                (lambda f: os.path.relpath(f, path)) if rel else lambda f: f.name
             )
             for file in list(path.rglob(pattern)):
                 mappings.append(
                     mobase.Mapping(
                         source=str(file),
-                        destination=str(docs_path / dest_func(file)),
+                        destination=str(dest / dest_func(file)),
                         is_directory=file.is_dir(),
                         create_target=True,
                     )
@@ -273,15 +271,18 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         progress = self._create_progress_window(
             "Mapping files to documents folder", len(active_mods) + 1
         )
+        docs_path_mods = docs_path / "Mods"
+        docs_path_se = docs_path / "Script Extender"
         for mod in active_mods:
             modpath = Path(mod.absolutePath())
-            map_files(modpath, pattern="*.pak", rel=False)
-            map_files(modpath / "Script Extender")
+            map_files(modpath, docs_path_mods, pattern="*.pak", rel=False)
+            map_files(modpath / "Script Extender", docs_path_se)
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
         map_files(self._overwrite_path)
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
+        progress.close()
         return mappings
 
     @cached_property
@@ -316,7 +317,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
     @cached_property
     def _folder_pattern(self):
-        return re.compile("Data|Script Extender|bin")
+        return re.compile("Data|Script Extender|bin|Mods")
 
     @cached_property
     def _tools_dir(self):
@@ -394,10 +395,6 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         progress.show()
         return progress
 
-    def _refresh_attr(self, setting: str):
-        if hasattr(self, setting):
-            delattr(self, setting)
-
     def _on_settings_changed(
         self,
         plugin_name: str,
@@ -425,8 +422,8 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             "remove_extracted_metadata",
             "force_load_dlls",
             "log_diff",
-        }:
-            self._refresh_attr(f"_{setting}")
+        } and hasattr(self, f"_{setting}"):
+            delattr(self, f"_{setting}")
 
     def _on_user_interface_initialized(self, window: QMainWindow) -> None:
         self._main_window = window
@@ -514,6 +511,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             QtCore.QThread.msleep(100)
         progress.setValue(num_active_mods)
         QApplication.processEvents(QEventLoop.ProcessEventsFlag.AllEvents, 100)
+        progress.close()
         qInfo(f"writing mod load order to {self._modsettings_path}")
         self._modsettings_path.write_text(
             (
@@ -638,44 +636,48 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 return False
             return True
 
-        def parse_meta_lsx(meta_file: Path, section: SectionProxy):
-            root = (
-                ElementTree.parse(meta_file).getroot().find(".//node[@id='ModuleInfo']")
-            )
-            if root is None:
-                qInfo(f"No ModuleInfo node found in meta.lsx for {mod.name()} ")
-                return
-            folder_name = get_attr_value(root, "Folder")
-            if file.is_dir():
-                self._mod_cache[file] = (
-                    len(list(file.glob(f"*/{folder_name}/**"))) > 1
-                    or len(list(file.glob("Public/Engine/Timeline/MaterialGroups/*")))
-                    > 0
-                )
-            elif file not in self._mod_cache:
-                # a mod which has a meta.lsx and is not an override mod meets at least one of three conditions:
-                # 1. it has files in Public/Engine/Timeline/MaterialGroups, or
-                # 2. it has files in Mods/<folder_name>/ other than the meta.lsx file, or
-                # 3. it has files in Public/<folder_name>
-                result = run_divine(
-                    f'list-package --use-regex -x "(/{folder_name}/(?!meta\\.lsx))|(Public/Engine/Timeline/MaterialGroups)"',
-                    file,
-                )
-                self._mod_cache[file] = (
-                    result.returncode == 0 and result.stdout.strip() != ""
-                )
-            if self._mod_cache[file]:
-                for key in self._types:
-                    section[key] = get_attr_value(root, key)
-            else:
-                qInfo(f"pak {file.name} determined to be an override mod")
-                section["override"] = "True"
-                section["Folder"] = folder_name
-
         def metadata_to_ini(condition: bool, to_parse: Callable[[], Path]):
             config[file.name] = {}
             if condition:
-                parse_meta_lsx(to_parse(), config[file.name])
+                root = (
+                    ElementTree.parse(to_parse())
+                    .getroot()
+                    .find(".//node[@id='ModuleInfo']")
+                )
+                if root is None:
+                    qInfo(f"No ModuleInfo node found in meta.lsx for {mod.name()} ")
+                else:
+                    section = config[file.name]
+                    folder_name = get_attr_value(root, "Folder")
+                    if file.is_dir():
+                        self._mod_cache[file] = (
+                            len(list(file.glob(f"*/{folder_name}/**"))) > 1
+                            or len(
+                                list(
+                                    file.glob("Public/Engine/Timeline/MaterialGroups/*")
+                                )
+                            )
+                            > 0
+                        )
+                    elif file not in self._mod_cache:
+                        # a mod which has a meta.lsx and is not an override mod meets at least one of three conditions:
+                        # 1. it has files in Public/Engine/Timeline/MaterialGroups, or
+                        # 2. it has files in Mods/<folder_name>/ other than the meta.lsx file, or
+                        # 3. it has files in Public/<folder_name>
+                        result = run_divine(
+                            f'list-package --use-regex -x "(/{folder_name}/(?!meta\\.lsx))|(Public/Engine/Timeline/MaterialGroups)"',
+                            file,
+                        )
+                        self._mod_cache[file] = (
+                            result.returncode == 0 and result.stdout.strip() != ""
+                        )
+                    if self._mod_cache[file]:
+                        for key in self._types:
+                            section[key] = get_attr_value(root, key)
+                    else:
+                        qInfo(f"pak {file.name} determined to be an override mod")
+                        section["override"] = "True"
+                        section["Folder"] = folder_name
             else:
                 config[file.name]["override"] = "True"
             with open(meta_ini, "w+", encoding="utf-8") as f:
@@ -719,7 +721,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 False,
             ):
                 qInfo(f"packable dir: {file}")
-                if (file.parent / f"{file.name}.pak").exists():
+                if (file.parent / f"{file.name}.pak").exists() or (
+                    file.parent / f"Mods/{file.name}.pak"
+                ).exists():
                     qInfo(
                         f"pak with same name as packable dir exists in mod directory. not packing dir {file}"
                     )
@@ -728,20 +732,17 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 build_pak = True
                 if pak_path.exists():
                     pak_creation_time = os.path.getmtime(pak_path)
-
-                    def changes_since_creation():
-                        for root, _, files in os.walk(file):
-                            for f in files:
-                                file_path = os.path.join(root, f)
-                                try:
-                                    if os.path.getmtime(file_path) > pak_creation_time:
-                                        return True
-                                except OSError as e:
-                                    qDebug(f"Error accessing file {file_path}: {e}")
-                                    return True
-                        return False
-
-                    build_pak = changes_since_creation()
+                    for root, _, files in os.walk(file):
+                        for f in files:
+                            file_path = os.path.join(root, f)
+                            try:
+                                if os.path.getmtime(file_path) > pak_creation_time:
+                                    break
+                            except OSError as e:
+                                qDebug(f"Error accessing file {file_path}: {e}")
+                                break
+                    else:
+                        build_pak = False
                 if build_pak:
                     pak_path.unlink(missing_ok=True)
                     if run_divine(f'create-package -d "{pak_path}"', file).returncode:
@@ -814,6 +815,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                         urllib.request.urlretrieve(
                             assets["browser_download_url"], str(zip_path), reporthook
                         )
+                        progress.close()
                         downloaded = True
                         for archive in old_archives:
                             archive.unlink()
@@ -856,6 +858,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                         )
                     x_progress.setValue(x_progress.value() + 1)
                     QApplication.processEvents()
+            x_progress.close()
             shutil.rmtree(self._tools_dir / "Packed", ignore_errors=True)
         except Exception as e:
             qDebug(f"Extraction failed: {e}")
