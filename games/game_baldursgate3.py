@@ -719,10 +719,33 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 False,
             ):
                 qInfo(f"packable dir: {file}")
-                pak_path = self._overwrite_path / f"Mods/{file.name}.pak"
-                pak_path.unlink(missing_ok=True)
-                if run_divine(f'create-package -d "{pak_path}"', file).returncode:
+                if (file.parent / f"{file.name}.pak").exists():
+                    qInfo(
+                        f"pak with same name as packable dir exists in mod directory. not packing dir {file}"
+                    )
                     return ""
+                pak_path = self._overwrite_path / f"Mods/{file.name}.pak"
+                build_pak = True
+                if pak_path.exists():
+                    pak_creation_time = os.path.getmtime(pak_path)
+
+                    def changes_since_creation():
+                        for root, _, files in os.walk(file):
+                            for f in files:
+                                file_path = os.path.join(root, f)
+                                try:
+                                    if os.path.getmtime(file_path) > pak_creation_time:
+                                        return True
+                                except OSError as e:
+                                    qDebug(f"Error accessing file {file_path}: {e}")
+                                    return True
+                        return False
+
+                    build_pak = changes_since_creation()
+                if build_pak:
+                    pak_path.unlink(missing_ok=True)
+                    if run_divine(f'create-package -d "{pak_path}"', file).returncode:
+                        return ""
                 meta_files = list(file.glob("Mods/*/meta.lsx"))
                 return metadata_to_ini(len(meta_files) > 0, lambda: meta_files[0])
             else:
