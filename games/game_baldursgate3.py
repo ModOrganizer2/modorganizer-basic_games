@@ -725,6 +725,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                     )
                     return ""
                 pak_path = self._overwrite_path / f"Mods/{file.name}.pak"
+                build_pak = True
                 if pak_path.exists():
                     pak_creation_time = os.path.getmtime(pak_path)
 
@@ -740,14 +741,13 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                                     return True
                         return False
 
-                    if changes_since_creation():
-                        pak_path.unlink(missing_ok=True)
-                        if run_divine(
-                            f'create-package -d "{pak_path}"', file
-                        ).returncode:
-                            return ""
-                    meta_files = list(file.glob("Mods/*/meta.lsx"))
-                    return metadata_to_ini(len(meta_files) > 0, lambda: meta_files[0])
+                    build_pak = changes_since_creation()
+                if build_pak:
+                    pak_path.unlink(missing_ok=True)
+                    if run_divine(f'create-package -d "{pak_path}"', file).returncode:
+                        return ""
+                meta_files = list(file.glob("Mods/*/meta.lsx"))
+                return metadata_to_ini(len(meta_files) > 0, lambda: meta_files[0])
             else:
                 # qDebug(f"non packable dir, unlikely to be used by the game: {file}")
                 return ""
