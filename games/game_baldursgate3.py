@@ -17,7 +17,6 @@ from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
-import mobase
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -36,6 +35,8 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
+
+import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
@@ -477,9 +478,8 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 qDebug(x)
         for path in self._overwrite_path.rglob("*.log"):
             try:
-                (self._log_dir / path.name).unlink(missing_ok=True)
                 qDebug(f"moving {path} to {self._log_dir}")
-                shutil.move(path, self._log_dir)
+                shutil.move(path, self._log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
         days = self._get_setting("delete_levelcache_folders_older_than_x_days")
@@ -547,6 +547,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         QApplication.processEvents(QEventLoop.ProcessEventsFlag.AllEvents, 100)
         progress.close()
         qInfo(f"writing mod load order to {self._modsettings_path}")
+        self._modsettings_path.parent.mkdir(parents=True, exist_ok=True)
         self._modsettings_path.write_text(
             (
                 self._mod_settings_xml_start
