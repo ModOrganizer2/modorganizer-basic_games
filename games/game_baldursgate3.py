@@ -17,6 +17,7 @@ from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
+import mobase
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -36,38 +37,45 @@ from PyQt6.QtWidgets import (
     QProgressDialog,
 )
 
-import mobase
-
 from ..basic_features import (
     BasicGameSaveGameInfo,
     BasicLocalSavegames,
     BasicModDataChecker,
     GlobPatterns,
+    utils,
 )
 from ..basic_game import BasicGame
 
-_loose_file_folders = ["Public", "Mods", "Generated", "Localization", "ScriptExtender"]
-
 
 class BG3ModDataChecker(BasicModDataChecker):
-    def __init__(self):
-        super().__init__(
-            GlobPatterns(
-                valid=[
-                    "*.pak",  # standard mods
-                    "bin",  # native mods / Script Extender
-                    "Script Extender",  # mods which are configured via jsons in this folder
-                    "Data",  # loose file mods
-                ],
-                move={
-                    "Root/": "",
-                    "*.dll": "bin/",
-                    "ScriptExtenderSettings.json": "bin/",
-                }  # root builder not needed
-                | {f: "Data/" for f in _loose_file_folders},
-                delete=["info.json", "*.txt"],
-            )
-        )
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        status = mobase.ModDataChecker.INVALID
+        rp = self._regex_patterns
+        for entry in filetree:
+            name = entry.name().casefold()
+            if rp.unfold.match(name):
+                if utils.is_directory(entry):
+                    status = self.dataLooksValid(entry)
+                else:
+                    status = mobase.ModDataChecker.INVALID
+                    break
+            elif rp.valid.match(name):
+                if status is mobase.ModDataChecker.INVALID:
+                    status = mobase.ModDataChecker.VALID
+            elif isinstance(entry, mobase.IFileTree):
+                status = (
+                    mobase.ModDataChecker.VALID
+                    if all(rp.valid.match(e.pathFrom(filetree)) for e in entry)
+                    else mobase.ModDataChecker.INVALID
+                )
+            elif rp.delete.match(name) or rp.move_match(name) is not None:
+                status = mobase.ModDataChecker.FIXABLE
+            else:
+                status = mobase.ModDataChecker.INVALID
+                break
+        return status
 
 
 class BG3Game(BasicGame, mobase.IPluginFileMapper):
@@ -89,7 +97,13 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     GameNexusId = 3474
     GameSteamId = 1086940
     GameGogId = 1456460669
-
+    _loose_file_folders = {
+        "Public",
+        "Mods",
+        "Generated",
+        "Localization",
+        "ScriptExtender",
+    }
     _mod_cache: dict[Path, bool] = {}
     _types = {
         "Folder": "",
@@ -129,7 +143,27 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._register_feature(BG3ModDataChecker())
+        self._register_feature(
+            BG3ModDataChecker(
+                GlobPatterns(
+                    valid=[
+                        "*.pak",
+                        str(Path("Mods") / "*.pak"),  # standard mods
+                        "bin",  # native mods / Script Extender
+                        "Script Extender",  # mods which are configured via jsons in this folder
+                        "Data",  # loose file mods
+                    ]
+                    + [str(Path("*") / f) for f in self._loose_file_folders],
+                    move={
+                        "Root/": "",
+                        "*.dll": "bin/",
+                        "ScriptExtenderSettings.json": "bin/",
+                    }  # root builder not needed
+                    | {f: "Data/" for f in self._loose_file_folders},
+                    delete=["info.json", "*.txt"],
+                )
+            )
+        )
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         organizer.onAboutToRun(self._construct_modsettings_xml)
@@ -716,7 +750,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 return ""
             elif next(
                 itertools.chain(
-                    file.glob(f"{folder}/*") for folder in _loose_file_folders
+                    file.glob(f"{folder}/*") for folder in self._loose_file_folders
                 ),
                 False,
             ):
