@@ -17,7 +17,6 @@ from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
-import mobase
 import yaml
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
@@ -37,6 +36,8 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
+
+import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
