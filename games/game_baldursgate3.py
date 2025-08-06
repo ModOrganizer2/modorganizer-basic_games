@@ -314,6 +314,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             map_files(modpath / "Script Extender", docs_path_se)
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
+            if progress.wasCanceled():
+                qWarning("mapping canceled by user")
+                return mappings
         map_files(self._overwrite_path)
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
@@ -416,11 +419,11 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         ]
 
     def _create_progress_window(
-        self, title: str, max_progress: int, msg: str = ""
+        self, title: str, max_progress: int, msg: str = "", cancelable: bool = True
     ) -> QProgressDialog:
         progress = QProgressDialog(
             self.__tr(msg if msg else title),
-            self.__tr("Cancel"),
+            self.__tr("Cancel") if cancelable else None,
             0,
             max_progress,
             self._main_window,
@@ -506,9 +509,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         args: str = "",
         force_reparse_metadata: bool = False,
     ) -> bool:
-        if "bin/bg3" not in exec_path:
-            return True
-        if not self._download_lslib_if_missing():
+        if "bin/bg3" not in exec_path or not self._download_lslib_if_missing():
             return True
         active_mods = self._active_mods()
         progress = self._create_progress_window(
@@ -519,17 +520,16 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             return False
         metadata: dict[str, str] = {}
 
-        def get_runnable(mod: mobase.IModInterface):
-            threadpool.start(
-                QRunnable.create(
-                    lambda: metadata.update(
-                        self._get_metadata_for_files_in_mod(mod, force_reparse_metadata)
-                    )
-                )
+        def retrieve_mod_metadata_in_new_thread(mod: mobase.IModInterface):
+            return lambda: metadata.update(
+                self._get_metadata_for_files_in_mod(mod, force_reparse_metadata)
             )
 
         for mod in active_mods:
-            get_runnable(mod)
+            if progress.wasCanceled():
+                qWarning("processing canceled by user")
+                return False
+            threadpool.start(QRunnable.create(retrieve_mod_metadata_in_new_thread(mod)))
         count = 0
         num_active_mods = len(active_mods)
         total_intervals_to_wait = (num_active_mods * 2) + 20
@@ -537,10 +537,10 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             progress.setValue(len(metadata.keys()))
             QApplication.processEvents(QEventLoop.ProcessEventsFlag.AllEvents, 100)
             count += 1
-            if count == total_intervals_to_wait:
+            if count == total_intervals_to_wait or progress.wasCanceled():
                 remaining_mods = {mod.name() for mod in active_mods} - metadata.keys()
                 qWarning(f"processing did not finish in time for: {remaining_mods}")
-                progress.cancel()
+                progress.close()
                 break
             QtCore.QThread.msleep(100)
         progress.setValue(num_active_mods)
@@ -845,7 +845,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                             return False
                     else:
                         progress = self._create_progress_window(
-                            "Downloading LSLib", 100
+                            "Downloading LSLib", 100, cancelable=False
                         )
                         urllib.request.urlretrieve(
                             assets["browser_download_url"], str(zip_path), reporthook
@@ -893,6 +893,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                         )
                     x_progress.setValue(x_progress.value() + 1)
                     QApplication.processEvents()
+                    if x_progress.wasCanceled():
+                        qWarning("processing canceled by user")
+                        return False
             x_progress.close()
             shutil.rmtree(self._tools_dir / "Packed", ignore_errors=True)
         except Exception as e:
