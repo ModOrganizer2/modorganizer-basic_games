@@ -229,6 +229,11 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
                 False,
             ),
+            mobase.PluginSetting(
+                "convert_yamls_to_json",
+                "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
+                False,
+            ),
         ]
         for setting in custom_settings:
             setting.description = self.__tr(setting.description)
@@ -305,14 +310,17 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 (lambda f: os.path.relpath(f, path)) if rel else lambda f: f.name
             )
             found_jsons: set[Path] = set()
-            add_mapping: Callable[[Path], None] = lambda file: mappings.append(
-                mobase.Mapping(
-                    source=str(file),
-                    destination=str(dest / dest_func(file)),
-                    is_directory=file.is_dir(),
-                    create_target=True,
+
+            def add_mapping(file: Path):
+                mappings.append(
+                    mobase.Mapping(
+                        source=str(file),
+                        destination=str(dest / dest_func(file)),
+                        is_directory=file.is_dir(),
+                        create_target=True,
+                    )
                 )
-            )
+
             for file in list(path.rglob(pattern)):
                 if self._convert_yamls_to_json and (
                     file.name.endswith(".yaml") or file.name.endswith(".yml")
