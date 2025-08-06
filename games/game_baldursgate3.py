@@ -315,7 +315,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
             if progress.wasCanceled():
-                qWarning(f"mapping canceled by user")
+                qWarning("mapping canceled by user")
                 return mappings
         map_files(self._overwrite_path)
         progress.setValue(len(active_mods) + 1)
@@ -527,7 +527,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
         for mod in active_mods:
             if progress.wasCanceled():
-                qWarning(f"processing canceled by user")
+                qWarning("processing canceled by user")
                 return False
             threadpool.start(QRunnable.create(retrieve_mod_metadata_in_new_thread(mod)))
         count = 0
@@ -894,7 +894,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                     x_progress.setValue(x_progress.value() + 1)
                     QApplication.processEvents()
                     if x_progress.wasCanceled():
-                        qWarning(f"processing canceled by user")
+                        qWarning("processing canceled by user")
                         return False
             x_progress.close()
             shutil.rmtree(self._tools_dir / "Packed", ignore_errors=True)
