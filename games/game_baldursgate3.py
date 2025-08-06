@@ -17,6 +17,8 @@ from typing import Any, Callable, Optional
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
+import mobase
+import yaml
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -35,8 +37,6 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressDialog,
 )
-
-import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
@@ -209,6 +209,11 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 False,
             ),
             mobase.PluginSetting(
+                "convert_jsons_to_yaml",
+                "Convert all jsons in active mods to yaml immediately.",
+                False,
+            ),
+            mobase.PluginSetting(
                 "check_for_lslib_updates",
                 "Check to see if there has been a new release of LSLib and create download dialog if so.",
                 False,
@@ -216,6 +221,11 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             mobase.PluginSetting(
                 "extract_full_package",
                 "Extract the full pak when parsing metadata, instead of just meta.lsx.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "convert_yamls_to_json",
+                "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
                 False,
             ),
         ]
@@ -293,15 +303,41 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             dest_func: Callable[[Path], str] = (
                 (lambda f: os.path.relpath(f, path)) if rel else lambda f: f.name
             )
-            for file in list(path.rglob(pattern)):
-                mappings.append(
-                    mobase.Mapping(
-                        source=str(file),
-                        destination=str(dest / dest_func(file)),
-                        is_directory=file.is_dir(),
-                        create_target=True,
-                    )
+            found_jsons: set[Path] = set()
+            add_mapping: Callable[[Path], None] = lambda file: mappings.append(
+                mobase.Mapping(
+                    source=str(file),
+                    destination=str(dest / dest_func(file)),
+                    is_directory=file.is_dir(),
+                    create_target=True,
                 )
+            )
+            for file in list(path.rglob(pattern)):
+                if self._convert_yamls_to_json and (
+                    file.name.endswith(".yaml") or file.name.endswith(".yml")
+                ):
+                    converted_path = file.parent / file.name.replace(
+                        ".yaml", ".json"
+                    ).replace(".yml", ".json")
+                    try:
+                        if not converted_path.exists() or os.path.getmtime(
+                            file
+                        ) > os.path.getmtime(converted_path):
+                            with open(file, "r") as yaml_file:
+                                with open(converted_path, "w") as json_file:
+                                    json.dump(
+                                        yaml.safe_load(yaml_file), json_file, indent=2
+                                    )
+                            qDebug(f"Converted {file} to JSON")
+                        found_jsons.add(converted_path)
+                    except OSError as e:
+                        qWarning(f"Error accessing file {converted_path}: {e}")
+                elif file.name.endswith(".json"):
+                    found_jsons.add(file)
+                else:
+                    add_mapping(file)
+            for file in found_jsons:
+                add_mapping(file)
 
         progress = self._create_progress_window(
             "Mapping files to documents folder", len(active_mods) + 1
@@ -322,6 +358,39 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         QApplication.processEvents()
         progress.close()
         return mappings
+
+    def _convert_jsons_to_yaml(self):
+        qInfo("converting all json files to yaml")
+        active_mods = self._active_mods()
+
+        def map_files(path: Path):
+            for file in list(path.rglob("*.json")):
+                converted_path = file.parent / file.name.replace(".json", ".yaml")
+                try:
+                    if not converted_path.exists() or os.path.getmtime(
+                        file
+                    ) > os.path.getmtime(converted_path):
+                        with open(file, "r") as json_file:
+                            with open(converted_path, "w") as yaml_file:
+                                yaml.dump(json.load(json_file), yaml_file, indent=2)
+                        qInfo(f"Converted {file} to YAML")
+                except OSError as e:
+                    qWarning(f"Error accessing file {converted_path}: {e}")
+
+        progress = self._create_progress_window(
+            "Converting all json files to yaml", len(active_mods) + 1
+        )
+        for mod in active_mods:
+            map_files(Path(mod.absolutePath()))
+            progress.setValue(progress.value() + 1)
+            QApplication.processEvents()
+            if progress.wasCanceled():
+                qWarning("conversion canceled by user")
+                return
+        map_files(self._overwrite_path)
+        progress.setValue(len(active_mods) + 1)
+        QApplication.processEvents()
+        progress.close()
 
     @cached_property
     def _base_dlls(self) -> set[str]:
@@ -380,6 +449,10 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     @cached_property
     def _log_diff(self):
         return bool(self._get_setting("log_diff"))
+
+    @cached_property
+    def _convert_yamls_to_json(self):
+        return bool(self._get_setting("convert_yamls_to_json"))
 
     @cached_property
     def _needed_lslib_files(self):
@@ -454,12 +527,18 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 )
             finally:
                 self._set_setting(setting, False)
+        elif new and setting == "convert_jsons_to_yaml":
+            try:
+                self._convert_jsons_to_yaml()
+            finally:
+                self._set_setting(setting, False)
         elif setting in {
             "extract_full_package",
             "autobuild_paks",
             "remove_extracted_metadata",
             "force_load_dlls",
             "log_diff",
+            "convert_yamls_to_json",
         } and hasattr(self, f"_{setting}"):
             delattr(self, f"_{setting}")
 
