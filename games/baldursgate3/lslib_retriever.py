@@ -6,7 +6,7 @@ import zipfile
 from functools import cached_property
 
 from PyQt6.QtCore import qDebug, qWarning
-from PyQt6.QtWidgets import QMessageBox, QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from games.baldursgate3 import bg3_utils
 

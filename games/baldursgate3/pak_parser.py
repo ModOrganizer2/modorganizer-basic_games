@@ -1,9 +1,9 @@
 import configparser
 import hashlib
+import itertools
 import os
 import re
 import shutil
-import itertools
 import subprocess
 import traceback
 from functools import cached_property
@@ -12,13 +12,13 @@ from typing import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
-import mobase
 from PyQt6.QtCore import (
     qDebug,
     qInfo,
     qWarning,
 )
 
+import mobase
 from games.baldursgate3 import bg3_utils
 
 

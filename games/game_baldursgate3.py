@@ -7,7 +7,6 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable
 
-import mobase
 import yaml
 from PyQt6.QtCore import (
     qDebug,
@@ -17,6 +16,8 @@ from PyQt6.QtCore import (
 from PyQt6.QtWidgets import (
     QApplication,
 )
+
+import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,

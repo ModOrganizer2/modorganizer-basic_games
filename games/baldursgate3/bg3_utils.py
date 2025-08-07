@@ -1,26 +1,26 @@
+import functools
 import json
 import os
 import shutil
-import functools
-from pathlib import Path
 import typing
+from pathlib import Path
 
-import mobase
 import yaml
 from PyQt6.QtCore import (
     QCoreApplication,
-    Qt,
-    qInfo,
-    qWarning,
+    QDir,
     QEventLoop,
     QRunnable,
-    QDir,
-    QThreadPool,
+    Qt,
     QThread,
+    QThreadPool,
+    qInfo,
+    qWarning,
 )
-from PyQt6.QtWidgets import QProgressDialog, QMainWindow, QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow, QProgressDialog
 
-from games.baldursgate3 import pak_parser, lslib_retriever
+import mobase
+from games.baldursgate3 import lslib_retriever, pak_parser
 
 
 class BG3Utils:
