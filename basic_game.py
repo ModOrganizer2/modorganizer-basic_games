@@ -640,7 +640,7 @@ class BasicGame(mobase.IPluginGame):
                 self._mappings.steamAPPId.set_value(steamid)
         for gogid, gogpath in BasicGame.gog_games.items():
             if gogpath == path:
-                self._mappings.steamAPPId.set_value(gogid)
+                self._mappings.gogAPPId.set_value(gogid)
         for originid, originpath in BasicGame.origin_games.items():
             if originpath == path:
                 self._mappings.originManifestIds.set_value(originid)
