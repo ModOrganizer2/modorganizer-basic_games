@@ -9,8 +9,6 @@ import re
 import shutil
 import subprocess
 import traceback
-import urllib.request
-import zipfile
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -21,11 +19,9 @@ import mobase
 import yaml
 from PyQt6 import QtCore
 from PyQt6.QtCore import (
-    QCoreApplication,
     QDir,
     QEventLoop,
     QRunnable,
-    Qt,
     QThreadPool,
     qDebug,
     qInfo,
@@ -33,9 +29,6 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QMessageBox,
-    QProgressDialog,
 )
 
 from ..basic_features import (
@@ -108,10 +101,12 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def __init__(self):
         BasicGame.__init__(self)
         mobase.IPluginFileMapper.__init__(self)
+        self._utils = None
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        from baldursgate3 import bg3_data_checker
+        from baldursgate3 import bg3_data_checker, bg3_utils
+        self._utils = bg3_utils.BG3Utils(organizer, self.name())
         self._register_feature(
             bg3_data_checker.BG3ModDataChecker(
                 GlobPatterns(
@@ -137,7 +132,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         organizer.onAboutToRun(self._construct_modsettings_xml)
         organizer.onFinishedRun(self._on_finished_run)
-        organizer.onUserInterfaceInitialized(self._on_user_interface_initialized)
+        organizer.onUserInterfaceInitialized(self._utils.on_user_interface_initialized)
         organizer.modList().onModInstalled(self._on_mod_installed)
         organizer.onPluginSettingChanged(self._on_settings_changed)
         return True
@@ -203,7 +198,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             ),
         ]
         for setting in custom_settings:
-            setting.description = self.__tr(setting.description)
+            setting.description = self._utils.tr(setting.description)
             base_settings.append(setting)
         return base_settings
 
@@ -315,7 +310,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             for file in found_jsons:
                 add_mapping(file)
 
-        progress = self._create_progress_window(
+        progress = self._utils.create_progress_window(
             "Mapping files to documents folder", len(active_mods) + 1
         )
         docs_path_mods = docs_path / "Mods"
@@ -353,7 +348,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 except OSError as e:
                     qWarning(f"Error accessing file {converted_path}: {e}")
 
-        progress = self._create_progress_window(
+        progress = self._utils.create_progress_window(
             "Converting all json files to yaml", len(active_mods) + 1
         )
         for mod in active_mods:
@@ -396,66 +391,38 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
     @cached_property
     def _divine_command(self):
-        return f"{self._tools_dir / 'Divine.exe'} -g bg3 -l info"
+        return f"{self._utils.tools_dir / 'Divine.exe'} -g bg3 -l info"
 
     @cached_property
     def _folder_pattern(self):
         return re.compile("Data|Script Extender|bin|Mods")
 
     @cached_property
-    def _tools_dir(self):
-        return self._plugin_data_path / "tools"
-
-    @cached_property
     def _autobuild_paks(self):
-        return bool(self._get_setting("autobuild_paks"))
+        return bool(self._utils.get_setting("autobuild_paks"))
 
     @cached_property
     def _extract_full_package(self):
-        return bool(self._get_setting("extract_full_package"))
+        return bool(self._utils.get_setting("extract_full_package"))
 
     @cached_property
     def _remove_extracted_metadata(self):
-        return bool(self._get_setting("remove_extracted_metadata"))
+        return bool(self._utils.get_setting("remove_extracted_metadata"))
 
     @cached_property
     def _force_load_dlls(self):
-        return bool(self._get_setting("force_load_dlls"))
+        return bool(self._utils.get_setting("force_load_dlls"))
 
     @cached_property
     def _log_diff(self):
-        return bool(self._get_setting("log_diff"))
+        return bool(self._utils.get_setting("log_diff"))
 
     @cached_property
     def _convert_yamls_to_json(self):
-        return bool(self._get_setting("convert_yamls_to_json"))
-
-    @cached_property
-    def _needed_lslib_files(self):
-        return {
-            self._tools_dir / x
-            for x in {
-                "CommandLineArgumentsParser.dll",
-                "Divine.dll",
-                "Divine.dll.config",
-                "Divine.exe",
-                "Divine.runtimeconfig.json",
-                "LSLib.dll",
-                "LSLibNative.dll",
-                "LZ4.dll",
-                "System.IO.Hashing.dll",
-                "ZstdSharp.dll",
-            }
-        }
-
-    def _get_setting(self, key: str) -> mobase.MoVariant:
-        return self._organizer.pluginSetting(self.name(), key)
+        return bool(self._utils.get_setting("convert_yamls_to_json"))
 
     def _set_setting(self, key: str, value: mobase.MoVariant):
         self._organizer.setPluginSetting(self.name(), key, value)
-
-    def __tr(self, trstr: str) -> str:
-        return QCoreApplication.translate(self.name(), trstr)
 
     def _active_mods(self) -> list[mobase.IModInterface]:
         modlist = self._organizer.modList()
@@ -466,21 +433,6 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 modlist.allModsByProfilePriority(),
             )
         ]
-
-    def _create_progress_window(
-        self, title: str, max_progress: int, msg: str = "", cancelable: bool = True
-    ) -> QProgressDialog:
-        progress = QProgressDialog(
-            self.__tr(msg if msg else title),
-            self.__tr("Cancel") if cancelable else None,
-            0,
-            max_progress,
-            self._main_window,
-        )
-        progress.setWindowTitle(self.__tr(f"BG3 Plugin: {title}"))
-        progress.setWindowModality(Qt.WindowModality.ApplicationModal)
-        progress.show()
-        return progress
 
     def _on_settings_changed(
         self,
@@ -493,7 +445,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             return
         if new and setting == "check_for_lslib_updates":
             try:
-                self._download_lslib_if_missing()
+                self._utils.lslib_retriever.download_lslib_if_missing()
             finally:
                 self._set_setting(setting, False)
         elif new and setting == "force_reparse_metadata":
@@ -518,10 +470,6 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         } and hasattr(self, f"_{setting}"):
             delattr(self, f"_{setting}")
 
-    def _on_user_interface_initialized(self, window: QMainWindow) -> None:
-        self._main_window = window
-        pass
-
     def _on_finished_run(self, exec_path: str, exit_code: int):
         if "bin/bg3" not in exec_path:
             return
@@ -540,7 +488,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 shutil.move(path, self._log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
-        days = self._get_setting("delete_levelcache_folders_older_than_x_days")
+        days = self._utils.get_setting("delete_levelcache_folders_older_than_x_days")
         if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
@@ -564,10 +512,10 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         args: str = "",
         force_reparse_metadata: bool = False,
     ) -> bool:
-        if "bin/bg3" not in exec_path or not self._download_lslib_if_missing():
+        if "bin/bg3" not in exec_path or not self._utils.lslib_retriever.download_lslib_if_missing():
             return True
         active_mods = self._active_mods()
-        progress = self._create_progress_window(
+        progress = self._utils.create_progress_window(
             "Generating modsettings.xml", len(active_mods)
         )
         threadpool = QThreadPool.globalInstance()
@@ -622,7 +570,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         return True
 
     def _on_mod_installed(self, mod: mobase.IModInterface) -> None:
-        if self._download_lslib_if_missing():
+        if self._utils.lslib_retriever.download_lslib_if_missing():
             self._get_metadata_for_files_in_mod(mod, True)
 
     def _get_metadata_for_files_in_mod(
@@ -845,119 +793,3 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         except Exception:
             qWarning(traceback.format_exc())
             return ""
-
-    def _download_lslib_if_missing(self):
-        if not self._get_setting("check_for_lslib_updates") and all(
-            x.exists() for x in self._needed_lslib_files
-        ):
-            return True
-        try:
-            self._tools_dir.mkdir(exist_ok=True, parents=True)
-            downloaded = False
-
-            def reporthook(block_num: int, block_size: int, total_size: int) -> None:
-                if total_size > 0:
-                    progress.setValue(
-                        min(int(block_num * block_size * 100 / total_size), 100)
-                    )
-                    QApplication.processEvents()
-
-            with urllib.request.urlopen(
-                "https://api.github.com/repos/Norbyte/lslib/releases/latest"
-            ) as response:
-                assets = json.loads(response.read().decode("utf-8"))["assets"][0]
-                zip_path = self._tools_dir / assets["name"]
-                if not zip_path.exists():
-                    old_archives = list(self._tools_dir.glob("*.zip"))
-                    msg_box = QMessageBox(self._main_window)
-                    msg_box.setWindowTitle(
-                        self.__tr("Baldur's Gate 3 Plugin - Missing dependencies")
-                    )
-                    if old_archives:
-                        msg_box.setText(self.__tr("LSLib update available."))
-                    else:
-                        msg_box.setText(
-                            self.__tr(
-                                "LSLib tools are missing.\nThese are necessary for the plugin to create the load order file for BG3."
-                            )
-                        )
-                    msg_box.addButton(
-                        self.__tr("Download"), QMessageBox.ButtonRole.DestructiveRole
-                    )
-                    exit_btn = msg_box.addButton(
-                        self.__tr("Exit"), QMessageBox.ButtonRole.ActionRole
-                    )
-                    msg_box.setIcon(QMessageBox.Icon.Warning)
-                    msg_box.exec()
-
-                    if msg_box.clickedButton() == exit_btn:
-                        if not old_archives:
-                            err = QMessageBox(self._main_window)
-                            err.setIcon(QMessageBox.Icon.Critical)
-                            err.setText(
-                                "LSLib tools are required for the proper generation of the modsettings.xml file, file will not be generated"
-                            )
-                            return False
-                    else:
-                        progress = self._create_progress_window(
-                            "Downloading LSLib", 100, cancelable=False
-                        )
-                        urllib.request.urlretrieve(
-                            assets["browser_download_url"], str(zip_path), reporthook
-                        )
-                        progress.close()
-                        downloaded = True
-                        for archive in old_archives:
-                            archive.unlink()
-                        old_archives = []
-                else:
-                    old_archives = []
-                    new_msg = QMessageBox(self._main_window)
-                    new_msg.setIcon(QMessageBox.Icon.Information)
-                    new_msg.setText(
-                        self.__tr("Latest version of LSLib already downloaded!")
-                    )
-
-        except Exception as e:
-            qDebug(f"Download failed: {e}")
-            err = QMessageBox(self._main_window)
-            err.setIcon(QMessageBox.Icon.Critical)
-            err.setText(f"Failed to download LSLib tools:\n{traceback.format_exc()}")
-            err.exec()
-            return False
-        try:
-            if old_archives:
-                zip_path = sorted(old_archives)[-1]
-            if old_archives or not downloaded:
-                dialog_message = "Ensuring all necessary LSLib files have been extracted from archive..."
-                win_title = "Verifying LSLib files"
-            else:
-                dialog_message = "Extracting/Updating LSLib files..."
-                win_title = "Extracting LSLib"
-            x_progress = self._create_progress_window(
-                win_title, len(self._needed_lslib_files), msg=dialog_message
-            )
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                for file in self._needed_lslib_files:
-                    if downloaded or not file.exists():
-                        shutil.move(
-                            zip_ref.extract(
-                                f"Packed/Tools/{file.name}", self._tools_dir
-                            ),
-                            file,
-                        )
-                    x_progress.setValue(x_progress.value() + 1)
-                    QApplication.processEvents()
-                    if x_progress.wasCanceled():
-                        qWarning("processing canceled by user")
-                        return False
-            x_progress.close()
-            shutil.rmtree(self._tools_dir / "Packed", ignore_errors=True)
-        except Exception as e:
-            qDebug(f"Extraction failed: {e}")
-            err = QMessageBox(self._main_window)
-            err.setIcon(QMessageBox.Icon.Critical)
-            err.setText(f"Failed to extract LSLib tools:\n{traceback.format_exc()}")
-            err.exec()
-            return False
-        return True
