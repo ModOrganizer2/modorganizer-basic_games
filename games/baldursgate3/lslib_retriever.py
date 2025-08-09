@@ -6,14 +6,15 @@ import zipfile
 from functools import cached_property
 
 from PyQt6.QtCore import qDebug, qWarning
-from PyQt6.QtWidgets import QMessageBox, QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
-from games.baldursgate3 import bg3_utils
+from . import bg3_utils
 
 
 class LSLibRetriever:
     def __init__(self, utils: bg3_utils.BG3Utils):
         self._utils = utils
+
     @cached_property
     def _needed_lslib_files(self):
         return {
@@ -31,6 +32,7 @@ class LSLibRetriever:
                 "ZstdSharp.dll",
             }
         }
+
     def download_lslib_if_missing(self):
         if not self._utils.get_setting("check_for_lslib_updates") and all(
             x.exists() for x in self._needed_lslib_files
@@ -67,7 +69,8 @@ class LSLibRetriever:
                             )
                         )
                     msg_box.addButton(
-                        self._utils.tr("Download"), QMessageBox.ButtonRole.DestructiveRole
+                        self._utils.tr("Download"),
+                        QMessageBox.ButtonRole.DestructiveRole,
                     )
                     exit_btn = msg_box.addButton(
                         self._utils.tr("Exit"), QMessageBox.ButtonRole.ActionRole

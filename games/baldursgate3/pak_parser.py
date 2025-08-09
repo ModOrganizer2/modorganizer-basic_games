@@ -1,0 +1,288 @@
+import configparser
+import hashlib
+import itertools
+import os
+import re
+import shutil
+import subprocess
+import traceback
+from functools import cached_property
+from pathlib import Path
+from typing import Callable
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
+
+import mobase
+from PyQt6.QtCore import (
+    qDebug,
+    qInfo,
+    qWarning,
+)
+
+from . import bg3_utils
+
+
+class BG3PakParser:
+    def __init__(self, utils: bg3_utils.BG3Utils):
+        self._utils = utils
+
+    _mod_cache: dict[Path, bool] = {}
+    _types = {
+        "Folder": "",
+        "MD5": "",
+        "Name": "",
+        "PublishHandle": "0",
+        "UUID": "",
+        "Version64": "0",
+    }
+
+    @cached_property
+    def _divine_command(self):
+        return f"{self._utils.tools_dir / 'Divine.exe'} -g bg3 -l info"
+
+    @cached_property
+    def _folder_pattern(self):
+        return re.compile("Data|Script Extender|bin|Mods")
+
+    def get_metadata_for_files_in_mod(
+        self, mod: mobase.IModInterface, force_reparse_metadata: bool
+    ):
+        return {
+            mod.name(): "".join(
+                [
+                    self._get_metadata_for_file(mod, file, force_reparse_metadata)
+                    for file in sorted(
+                        list(Path(mod.absolutePath()).rglob("*.pak"))
+                        + (
+                            [
+                                f
+                                for f in Path(mod.absolutePath()).glob("*")
+                                if f.is_dir()
+                            ]
+                            if self._utils.autobuild_paks
+                            else []
+                        )
+                    )
+                ]
+            )
+        }
+
+    def _get_metadata_for_file(
+        self,
+        mod: mobase.IModInterface,
+        file: Path,
+        force_reparse_metadata: bool,
+    ) -> str:
+        meta_ini = Path(mod.absolutePath()) / "meta.ini"
+        config = configparser.ConfigParser()
+        config.read(meta_ini, encoding="utf-8")
+        try:
+            if file.name.endswith("pak"):
+                meta_file = (
+                    self._utils.plugin_data_path
+                    / f"temp/extracted_metadata/{file.name[: int(len(file.name) / 2)]}-{hashlib.md5(str(file).encode(), usedforsecurity=False).hexdigest()[:5]}.lsx"
+                )
+                try:
+                    if (
+                        not force_reparse_metadata
+                        and config.has_section(file.name)
+                        and (
+                            "override" in config[file.name].keys()
+                            or "Folder" in config[file.name].keys()
+                        )
+                    ):
+                        return get_module_short_desc(config, file)
+                    meta_file.parent.mkdir(parents=True, exist_ok=True)
+                    meta_file.unlink(missing_ok=True)
+                    out_dir = (
+                        str(meta_file)[:-4] if self._utils.extract_full_package else ""
+                    )
+                    can_continue = True
+                    if self.run_divine(
+                        f'{"extract-package" if self._utils.extract_full_package else "extract-single-file -f meta.lsx"} -d "{meta_file if not self._utils.extract_full_package else out_dir}"',
+                        file,
+                    ).returncode:
+                        can_continue = False
+                    if can_continue and self._utils.extract_full_package:
+                        qDebug(f"archive {file} extracted to {out_dir}")
+                        if self.run_divine(
+                            f'convert-resources -d "{out_dir}" -i lsf -o lsx -x "*.lsf"',
+                            out_dir,
+                        ).returncode:
+                            qDebug(
+                                f"failed to convert lsf files in {out_dir} to readable lsx"
+                            )
+                        extracted_meta_files = list(Path(out_dir).rglob("meta.lsx"))
+                        if len(extracted_meta_files) == 0:
+                            qInfo(
+                                f"No meta.lsx files found in {file.name}, {file.name} determined to be an override mod"
+                            )
+                            can_continue = False
+                        else:
+                            shutil.copyfile(
+                                extracted_meta_files[0],
+                                meta_file,
+                            )
+                    elif can_continue and not meta_file.exists():
+                        qInfo(
+                            f"No meta.lsx files found in {file.name}, {file.name} determined to be an override mod"
+                        )
+                        can_continue = False
+                    return self.metadata_to_ini(
+                        config, file, mod, meta_ini, can_continue, lambda: meta_file
+                    )
+                finally:
+                    if self._utils.remove_extracted_metadata:
+                        meta_file.unlink(missing_ok=True)
+                        if self._utils.extract_full_package:
+                            Path(str(meta_file)[:-4]).unlink(missing_ok=True)
+            elif file.is_dir() and self._folder_pattern.search(file.name):
+                # qDebug(f"directory is not packable: {file}")
+                return ""
+            elif next(
+                itertools.chain(
+                    file.glob(f"{folder}/*")
+                    for folder in self._utils.loose_file_folders
+                ),
+                False,
+            ):
+                qInfo(f"packable dir: {file}")
+                if (file.parent / f"{file.name}.pak").exists() or (
+                    file.parent / f"Mods/{file.name}.pak"
+                ).exists():
+                    qInfo(
+                        f"pak with same name as packable dir exists in mod directory. not packing dir {file}"
+                    )
+                    return ""
+                pak_path = self._utils.overwrite_path / f"Mods/{file.name}.pak"
+                build_pak = True
+                if pak_path.exists():
+                    pak_creation_time = os.path.getmtime(pak_path)
+                    for root, _, files in os.walk(file):
+                        for f in files:
+                            file_path = os.path.join(root, f)
+                            try:
+                                if os.path.getmtime(file_path) > pak_creation_time:
+                                    break
+                            except OSError as e:
+                                qDebug(f"Error accessing file {file_path}: {e}")
+                                break
+                    else:
+                        build_pak = False
+                if build_pak:
+                    pak_path.unlink(missing_ok=True)
+                    if self.run_divine(
+                        f'create-package -d "{pak_path}"', file
+                    ).returncode:
+                        return ""
+                meta_files = list(file.glob("Mods/*/meta.lsx"))
+                return self.metadata_to_ini(
+                    config,
+                    file,
+                    mod,
+                    meta_ini,
+                    len(meta_files) > 0,
+                    lambda: meta_files[0],
+                )
+            else:
+                # qDebug(f"non packable dir, unlikely to be used by the game: {file}")
+                return ""
+        except Exception:
+            qWarning(traceback.format_exc())
+            return ""
+
+    def run_divine(
+        self, action: str, source: Path | str
+    ) -> subprocess.CompletedProcess[str]:
+        command = f'{self._divine_command} -a {action} -s "{source}"'
+        result = subprocess.run(
+            command,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if result.returncode:
+            qWarning(
+                f"{command.replace(str(Path.home()), '~', 1).replace(str(Path.home()), '$HOME')}"
+                f" returned stdout: {result.stdout}, stderr: {result.stderr}, code {result.returncode}"
+            )
+        return result
+
+    def get_attr_value(self, root: Element, attr_id: str) -> str:
+        default_val = self._types.get(attr_id) or ""
+        attr = root.find(f".//attribute[@id='{attr_id}']")
+        return default_val if attr is None else attr.get("value", default_val)
+
+    def metadata_to_ini(
+        self,
+        config: configparser.ConfigParser,
+        file: Path,
+        mod: mobase.IModInterface,
+        meta_ini: Path,
+        condition: bool,
+        to_parse: Callable[[], Path],
+    ):
+        config[file.name] = {}
+        if condition:
+            root = (
+                ElementTree.parse(to_parse())
+                .getroot()
+                .find(".//node[@id='ModuleInfo']")
+            )
+            if root is None:
+                qInfo(f"No ModuleInfo node found in meta.lsx for {mod.name()} ")
+            else:
+                section = config[file.name]
+                folder_name = self.get_attr_value(root, "Folder")
+                if file.is_dir():
+                    self._mod_cache[file] = (
+                        len(list(file.glob(f"*/{folder_name}/**"))) > 1
+                        or len(
+                            list(file.glob("Public/Engine/Timeline/MaterialGroups/*"))
+                        )
+                        > 0
+                    )
+                elif file not in self._mod_cache:
+                    # a mod which has a meta.lsx and is not an override mod meets at least one of three conditions:
+                    # 1. it has files in Public/Engine/Timeline/MaterialGroups, or
+                    # 2. it has files in Mods/<folder_name>/ other than the meta.lsx file, or
+                    # 3. it has files in Public/<folder_name>
+                    result = self.run_divine(
+                        f'list-package --use-regex -x "(/{folder_name}/(?!meta\\.lsx))|(Public/Engine/Timeline/MaterialGroups)"',
+                        file,
+                    )
+                    self._mod_cache[file] = (
+                        result.returncode == 0 and result.stdout.strip() != ""
+                    )
+                if self._mod_cache[file]:
+                    for key in self._types:
+                        section[key] = self.get_attr_value(root, key)
+                else:
+                    qInfo(f"pak {file.name} determined to be an override mod")
+                    section["override"] = "True"
+                    section["Folder"] = folder_name
+        else:
+            config[file.name]["override"] = "True"
+        with open(meta_ini, "w+", encoding="utf-8") as f:
+            config.write(f)
+        return get_module_short_desc(config, file)
+
+
+def get_module_short_desc(config: configparser.ConfigParser, file: Path) -> str:
+    return (
+        ""
+        if not config.has_section(file.name)
+        or "override" in config[file.name].keys()
+        or "Name" not in config[file.name].keys()
+        else f"""
+                <node id="ModuleShortDesc">
+                    <attribute id="Folder" type="LSString" value="{config[file.name]["Folder"]}"/>
+                    <attribute id="MD5" type="LSString" value="{config[file.name]["MD5"]}"/>
+                    <attribute id="Name" type="LSString" value="{config[file.name]["Name"]}"/>
+                    <attribute id="PublishHandle" type="uint64" value="{config[file.name]["PublishHandle"]}"/>
+                    <attribute id="UUID" type="guid" value="{config[file.name]["UUID"]}"/>
+                    <attribute id="Version64" type="int64" value="{config[file.name]["Version64"]}"/>
+                </node>"""
+    )

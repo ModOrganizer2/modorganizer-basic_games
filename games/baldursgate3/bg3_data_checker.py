@@ -1,6 +1,6 @@
 import mobase
 
-from basic_features import BasicModDataChecker, utils
+from ...basic_features import BasicModDataChecker, utils
 
 
 class BG3ModDataChecker(BasicModDataChecker):
