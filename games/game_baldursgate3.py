@@ -280,6 +280,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         progress.close()
         return mappings
 
+    def loadOrderMechanism(self) -> mobase.LoadOrderMechanism:
+        return mobase.LoadOrderMechanism.PLUGINS_TXT
+
     @cached_property
     def _base_dlls(self) -> set[str]:
         base_bin = Path(self.gameDirectory().absoluteFilePath("bin"))
