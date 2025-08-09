@@ -1,0 +1,326 @@
+import datetime
+import difflib
+import json
+import os
+import shutil
+from functools import cached_property
+from pathlib import Path
+from typing import Any, Callable
+
+import yaml
+from PyQt6.QtCore import (
+    qDebug,
+    qInfo,
+    qWarning,
+)
+from PyQt6.QtWidgets import (
+    QApplication,
+)
+
+import mobase
+
+from ..basic_features import (
+    BasicGameSaveGameInfo,
+    BasicLocalSavegames,
+    GlobPatterns,
+)
+from ..basic_game import BasicGame
+
+
+class BG3Game(BasicGame, mobase.IPluginFileMapper):
+    Name = "Baldur's Gate 3 Plugin"
+    Author = "daescha"
+    Version = "0.1.0"
+    GameName = "Baldur's Gate 3"
+    GameShortName = "baldursgate3"
+    GameNexusName = "baldursgate3"
+    GameValidShortNames = ["bg3"]
+    GameLauncher = "Launcher/LariLauncher.exe"
+    GameBinary = "bin/bg3.exe"
+    GameDataPath = ""
+    GameDocumentsDirectory = (
+        "%USERPROFILE%/AppData/Local/Larian Studios/Baldur's Gate 3"
+    )
+    GameSavesDirectory = "%GAME_DOCUMENTS%/PlayerProfiles/Public/Savegames/Story"
+    GameSaveExtension = "lsv"
+    GameNexusId = 3474
+    GameSteamId = 1086940
+    GameGogId = 1456460669
+
+    def __init__(self):
+        BasicGame.__init__(self)
+        mobase.IPluginFileMapper.__init__(self)
+
+    def init(self, organizer: mobase.IOrganizer) -> bool:
+        super().init(organizer)
+        from baldursgate3 import bg3_data_checker, bg3_data_content, bg3_utils
+
+        self._utils = bg3_utils.BG3Utils(organizer, self.name())
+        self._register_feature(
+            bg3_data_checker.BG3ModDataChecker(
+                GlobPatterns(
+                    valid=[
+                        "*.pak",
+                        str(Path("Mods") / "*.pak"),  # standard mods
+                        "bin",  # native mods / Script Extender
+                        "Script Extender",  # mods which are configured via jsons in this folder
+                        "Data",  # loose file mods
+                    ]
+                    + [str(Path("*") / f) for f in self._utils.loose_file_folders],
+                    move={
+                        "Root/": "",
+                        "*.dll": "bin/",
+                        "ScriptExtenderSettings.json": "bin/",
+                    }  # root builder not needed
+                    | {f: "Data/" for f in self._utils.loose_file_folders},
+                    delete=["info.json", "*.txt"],
+                )
+            )
+        )
+        self._register_feature(bg3_data_content.BG3DataContent())
+        self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        organizer.onAboutToRun(self._utils.construct_modsettings_xml)
+        organizer.onFinishedRun(self._on_finished_run)
+        organizer.onUserInterfaceInitialized(self._utils.on_user_interface_initialized)
+        organizer.modList().onModInstalled(self._utils.on_mod_installed)
+        organizer.onPluginSettingChanged(self._utils.on_settings_changed)
+        return True
+
+    def settings(self):
+        base_settings = super().settings()
+        custom_settings = [
+            mobase.PluginSetting(
+                "force_load_dlls",
+                "Force load all dlls detected in active mods. Removes the need for 'Native Mod Loader' and similar mods.",
+                True,
+            ),
+            mobase.PluginSetting(
+                "log_diff",
+                "Log a diff of the modsettings.xml file before and after the game runs to check for differences.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "delete_levelcache_folders_older_than_x_days",
+                "Maximum number of days a file in overwrite/LevelCache is allowed to exist before being deleted "
+                "after the executable finishes. Set to negative to disable.",
+                3,
+            ),
+            mobase.PluginSetting(
+                "autobuild_paks",
+                "Autobuild folders likely to be PAK folders with every run of an executable.",
+                True,
+            ),
+            mobase.PluginSetting(
+                "remove_extracted_metadata",
+                "Remove extracted meta.lsx files when they are no longer needed.",
+                True,
+            ),
+            mobase.PluginSetting(
+                "force_reparse_metadata",
+                "Force reparsing mod metadata immediately.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "convert_jsons_to_yaml",
+                "Convert all jsons in active mods to yaml immediately.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "check_for_lslib_updates",
+                "Check to see if there has been a new release of LSLib and create download dialog if so.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "extract_full_package",
+                "Extract the full pak when parsing metadata, instead of just meta.lsx.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "convert_yamls_to_json",
+                "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
+                False,
+            ),
+            mobase.PluginSetting(
+                "convert_yamls_to_json",
+                "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
+                False,
+            ),
+        ]
+        for setting in custom_settings:
+            setting.description = self._utils.tr(setting.description)
+            base_settings.append(setting)
+        return base_settings
+
+    def executables(self) -> list[mobase.ExecutableInfo]:
+        return [
+            mobase.ExecutableInfo(
+                f"{self.gameName()}: DX11",
+                self.gameDirectory().absoluteFilePath("bin/bg3_dx11.exe"),
+            ),
+            mobase.ExecutableInfo(
+                f"{self.gameName()}: Vulkan",
+                self.gameDirectory().absoluteFilePath(self.binaryName()),
+            ),
+            mobase.ExecutableInfo(
+                "Larian Launcher",
+                self.gameDirectory().absoluteFilePath(self.getLauncherName()),
+            ),
+        ]
+
+    def executableForcedLoads(self) -> list[mobase.ExecutableForcedLoadSetting]:
+        try:
+            efls = super().executableForcedLoads()
+        except AttributeError:
+            efls = []
+        if self._utils.force_load_dlls:
+            qInfo("detecting dlls in enabled mods")
+            libs: set[str] = set()
+            tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+                self._organizer.virtualFileTree().find("bin")
+            )
+            if type(tree) is not mobase.IFileTree:
+                return efls
+
+            def find_dlls(
+                _: Any, entry: mobase.FileTreeEntry
+            ) -> mobase.IFileTree.WalkReturn:
+                relpath = entry.pathFrom(tree)
+                if (
+                    relpath
+                    and entry.hasSuffix("dll")
+                    and relpath not in self._base_dlls
+                ):
+                    libs.add(relpath)
+                return mobase.IFileTree.WalkReturn.CONTINUE
+
+            tree.walk(find_dlls)
+            exes = self.executables()
+            qDebug(f"dlls to force load: {libs}")
+            efls = efls + [
+                mobase.ExecutableForcedLoadSetting(
+                    exe.binary().fileName(), lib
+                ).withEnabled(True)
+                for lib in libs
+                for exe in exes
+            ]
+        return efls
+
+    def mappings(self) -> list[mobase.Mapping]:
+        qInfo("creating custom bg3 mappings")
+        mappings: list[mobase.Mapping] = []
+        docs_path = Path(self.documentsDirectory().path())
+        active_mods = self._utils.active_mods()
+
+        def map_files(
+            path: Path,
+            dest: Path = docs_path,
+            pattern: str = "*",
+            rel: bool = True,
+        ):
+            dest_func: Callable[[Path], str] = (
+                (lambda f: os.path.relpath(f, path)) if rel else lambda f: f.name
+            )
+            found_jsons: set[Path] = set()
+
+            def add_mapping(file: Path):
+                mappings.append(
+                    mobase.Mapping(
+                        source=str(file),
+                        destination=str(dest / dest_func(file)),
+                        is_directory=file.is_dir(),
+                        create_target=True,
+                    )
+                )
+
+            for file in list(path.rglob(pattern)):
+                if self._utils.convert_yamls_to_json and (
+                    file.name.endswith(".yaml") or file.name.endswith(".yml")
+                ):
+                    converted_path = file.parent / file.name.replace(
+                        ".yaml", ".json"
+                    ).replace(".yml", ".json")
+                    try:
+                        if not converted_path.exists() or os.path.getmtime(
+                            file
+                        ) > os.path.getmtime(converted_path):
+                            with open(file, "r") as yaml_file:
+                                with open(converted_path, "w") as json_file:
+                                    json.dump(
+                                        yaml.safe_load(yaml_file), json_file, indent=2
+                                    )
+                            qDebug(f"Converted {file} to JSON")
+                        found_jsons.add(converted_path)
+                    except OSError as e:
+                        qWarning(f"Error accessing file {converted_path}: {e}")
+                elif file.name.endswith(".json"):
+                    found_jsons.add(file)
+                else:
+                    add_mapping(file)
+            for file in found_jsons:
+                add_mapping(file)
+
+        progress = self._utils.create_progress_window(
+            "Mapping files to documents folder", len(active_mods) + 1
+        )
+        docs_path_mods = docs_path / "Mods"
+        docs_path_se = docs_path / "Script Extender"
+        for mod in active_mods:
+            modpath = Path(mod.absolutePath())
+            map_files(modpath, docs_path_mods, pattern="*.pak", rel=False)
+            map_files(modpath / "Script Extender", docs_path_se)
+            progress.setValue(progress.value() + 1)
+            QApplication.processEvents()
+            if progress.wasCanceled():
+                qWarning("mapping canceled by user")
+                return mappings
+        map_files(self._utils.overwrite_path)
+        progress.setValue(len(active_mods) + 1)
+        QApplication.processEvents()
+        progress.close()
+        return mappings
+
+    def loadOrderMechanism(self) -> mobase.LoadOrderMechanism:
+        return mobase.LoadOrderMechanism.PLUGINS_TXT
+
+    @cached_property
+    def _base_dlls(self) -> set[str]:
+        base_bin = Path(self.gameDirectory().absoluteFilePath("bin"))
+        return {str(f.relative_to(base_bin)) for f in base_bin.glob("*.dll")}
+
+    def _on_finished_run(self, exec_path: str, exit_code: int):
+        if "bin/bg3" not in exec_path:
+            return
+        if self._utils.log_diff:
+            for x in difflib.unified_diff(
+                open(self._utils.modsettings_backup).readlines(),
+                open(self._utils.modsettings_path).readlines(),
+                fromfile=str(self._utils.modsettings_backup),
+                tofile=str(self._utils.modsettings_path),
+                lineterm="",
+            ):
+                qDebug(x)
+        for path in self._utils.overwrite_path.rglob("*.log"):
+            try:
+                qDebug(f"moving {path} to {self._utils.log_dir}")
+                shutil.move(path, self._utils.log_dir / path.name)
+            except PermissionError as e:
+                qDebug(str(e))
+        days = self._utils.get_setting("delete_levelcache_folders_older_than_x_days")
+        if type(days) is int and days >= 0:
+            cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
+            qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
+            for path in self._utils.overwrite_path.glob("LevelCache/*"):
+                if (
+                    datetime.datetime.fromtimestamp(os.path.getmtime(path))
+                    < cutoff_time
+                ):
+                    shutil.rmtree(path, ignore_errors=True)
+        qDebug("cleaning empty dirs from overwrite directory")
+        for folder in sorted(
+            list(os.walk(self._utils.overwrite_path))[1:], reverse=True
+        ):
+            try:
+                os.rmdir(folder[0])
+            except OSError:
+                pass
