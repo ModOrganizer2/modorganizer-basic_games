@@ -53,7 +53,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        from baldursgate3 import bg3_data_checker, bg3_utils, bg3_data_content
+        from baldursgate3 import bg3_data_checker, bg3_data_content, bg3_utils
 
         self._utils = bg3_utils.BG3Utils(organizer, self.name())
         self._register_feature(

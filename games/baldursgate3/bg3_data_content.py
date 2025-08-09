@@ -47,7 +47,13 @@ class BG3DataContent(mobase.ModDataContent):
                     case _:
                         for e in entry:
                             match e.name().casefold():
-                                case "Mods" | "Localization" | "ScriptExtender" | "Public" | "Generated":
+                                case (
+                                    "Mods"
+                                    | "Localization"
+                                    | "ScriptExtender"
+                                    | "Public"
+                                    | "Generated"
+                                ):
                                     contents.add(Content.WORKSPACE)
                                     break
         return list(contents)

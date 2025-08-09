@@ -1,5 +1,6 @@
 import mobase
 
+
 class BG3GamePlugin(mobase.GamePlugins):
     def getLoadOrder(self):
         pass
