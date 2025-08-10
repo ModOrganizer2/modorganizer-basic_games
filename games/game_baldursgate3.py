@@ -1,23 +1,18 @@
 import datetime
 import difflib
-import json
 import os
 import shutil
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import mobase
-import yaml
 from PyQt6.QtCore import (
     qDebug,
     qInfo,
-    qWarning,
-)
-from PyQt6.QtWidgets import (
-    QApplication,
 )
 
+from .baldursgate3 import bg3_file_mapper
 from ..basic_features import (
     BasicGameSaveGameInfo,
     BasicLocalSavegames,
@@ -25,7 +20,7 @@ from ..basic_features import (
 from ..basic_game import BasicGame
 
 
-class BG3Game(BasicGame, mobase.IPluginFileMapper):
+class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
     Name = "Baldur's Gate 3 Plugin"
     Author = "daescha"
     Version = "0.1.0"
@@ -47,10 +42,12 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
 
     def __init__(self):
         BasicGame.__init__(self)
-        mobase.IPluginFileMapper.__init__(self)
         from .baldursgate3 import bg3_utils
 
         self._utils = bg3_utils.BG3Utils(self.name())
+        bg3_file_mapper.BG3FileMapper.__init__(
+            self, self._utils, self.documentsDirectory
+        )
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -191,93 +188,6 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 for exe in exes
             ]
         return efls
-
-    def mappings(self) -> list[mobase.Mapping]:
-        qInfo("creating custom bg3 mappings")
-        mappings: list[mobase.Mapping] = []
-        docs_path = Path(self.documentsDirectory().path())
-        active_mods = self._utils.active_mods()
-
-        def map_files(
-            path: Path,
-            dest: Path = docs_path,
-            pattern: str = "*",
-            rel: bool = True,
-        ):
-            dest_func: Callable[[Path], str] = (
-                (lambda f: os.path.relpath(f, path)) if rel else lambda f: f.name
-            )
-            found_jsons: set[Path] = set()
-
-            def add_mapping(file: Path):
-                mappings.append(
-                    mobase.Mapping(
-                        source=str(file),
-                        destination=str(dest / dest_func(file)),
-                        is_directory=file.is_dir(),
-                        create_target=True,
-                    )
-                )
-
-            for file in list(path.rglob(pattern)):
-                if self._utils.convert_yamls_to_json and (
-                    file.name.endswith(".yaml") or file.name.endswith(".yml")
-                ):
-                    converted_path = file.parent / file.name.replace(
-                        ".yaml", ".json"
-                    ).replace(".yml", ".json")
-                    try:
-                        if not converted_path.exists() or os.path.getmtime(
-                            file
-                        ) > os.path.getmtime(converted_path):
-                            with open(file, "r") as yaml_file:
-                                with open(converted_path, "w") as json_file:
-                                    json.dump(
-                                        yaml.safe_load(yaml_file), json_file, indent=2
-                                    )
-                            qDebug(f"Converted {file} to JSON")
-                        found_jsons.add(converted_path)
-                    except OSError as e:
-                        qWarning(f"Error accessing file {converted_path}: {e}")
-                elif file.name.endswith(".json"):
-                    found_jsons.add(file)
-                else:
-                    add_mapping(file)
-            for file in found_jsons:
-                add_mapping(file)
-
-        progress = self._utils.create_progress_window(
-            "Mapping files to documents folder", len(active_mods) + 1
-        )
-        docs_path_mods = docs_path / "Mods"
-        docs_path_se = docs_path / "Script Extender"
-        for mod in active_mods:
-            modpath = Path(mod.absolutePath())
-            map_files(modpath, docs_path_mods, pattern="*.pak", rel=False)
-            map_files(modpath / "Script Extender", docs_path_se)
-            progress.setValue(progress.value() + 1)
-            QApplication.processEvents()
-            if progress.wasCanceled():
-                qWarning("mapping canceled by user")
-                return mappings
-        map_files(self._utils.overwrite_path)
-        mappings.append(
-            mobase.Mapping(
-                source=str(self._utils.modsettings_path),
-                destination=str(
-                    docs_path
-                    / "PlayerProfiles"
-                    / "Public"
-                    / self._utils.modsettings_path.name
-                ),
-                is_directory=False,
-                create_target=True,
-            )
-        )
-        progress.setValue(len(active_mods) + 1)
-        QApplication.processEvents()
-        progress.close()
-        return mappings
 
     def loadOrderMechanism(self) -> mobase.LoadOrderMechanism:
         return mobase.LoadOrderMechanism.PLUGINS_TXT
