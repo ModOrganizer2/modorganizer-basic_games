@@ -261,6 +261,19 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 qWarning("mapping canceled by user")
                 return mappings
         map_files(self._utils.overwrite_path)
+        mappings.append(
+            mobase.Mapping(
+                source=str(self._utils.modsettings_path),
+                destination=str(
+                    docs_path
+                    / "PlayerProfiles"
+                    / "Public"
+                    / self._utils.modsettings_path.name
+                ),
+                is_directory=False,
+                create_target=True,
+            )
+        )
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
         progress.close()

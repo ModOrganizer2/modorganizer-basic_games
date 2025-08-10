@@ -91,15 +91,15 @@ class BG3Utils:
 
     @functools.cached_property
     def log_dir(self):
-        return Path(self._organizer.basePath()) / "logs/"
+        return Path(self._organizer.basePath()) / "logs"
 
     @functools.cached_property
     def modsettings_backup(self):
-        return self.plugin_data_path / "temp/modsettings.lsx"
+        return self.plugin_data_path / "temp" / "modsettings.lsx"
 
     @functools.cached_property
     def modsettings_path(self):
-        return self.overwrite_path / "PlayerProfiles/Public/modsettings.lsx"
+        return Path(self._organizer.profilePath()) / "modsettings.lsx"
 
     @functools.cached_property
     def plugin_data_path(self) -> Path:

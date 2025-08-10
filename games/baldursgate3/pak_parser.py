@@ -80,7 +80,9 @@ class BG3PakParser:
             if file.name.endswith("pak"):
                 meta_file = (
                     self._utils.plugin_data_path
-                    / f"temp/extracted_metadata/{file.name[: int(len(file.name) / 2)]}-{hashlib.md5(str(file).encode(), usedforsecurity=False).hexdigest()[:5]}.lsx"
+                    / "temp"
+                    / "extracted_metadata"
+                    / f"{file.name[: int(len(file.name) / 2)]}-{hashlib.md5(str(file).encode(), usedforsecurity=False).hexdigest()[:5]}.lsx"
                 )
                 try:
                     if (
@@ -147,7 +149,7 @@ class BG3PakParser:
             ):
                 qInfo(f"packable dir: {file}")
                 if (file.parent / f"{file.name}.pak").exists() or (
-                    file.parent / f"Mods/{file.name}.pak"
+                    file.parent / "Mods" / f"{file.name}.pak"
                 ).exists():
                     qInfo(
                         f"pak with same name as packable dir exists in mod directory. not packing dir {file}"
