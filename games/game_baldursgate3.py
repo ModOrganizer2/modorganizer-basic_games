@@ -56,7 +56,11 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._utils.init(organizer)
-        from .baldursgate3 import bg3_data_checker, bg3_data_content
+        from .baldursgate3 import (
+            bg3_data_checker,
+            bg3_data_content,
+            bg3_script_extender,
+        )
 
         self._register_feature(
             bg3_data_checker.BG3ModDataChecker(
@@ -79,6 +83,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 )
             )
         )
+        self._register_feature(bg3_script_extender.BG3ScriptExtender(self))
         self._register_feature(bg3_data_content.BG3DataContent())
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
