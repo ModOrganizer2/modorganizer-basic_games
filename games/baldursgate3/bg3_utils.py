@@ -5,7 +5,6 @@ import shutil
 import typing
 from pathlib import Path
 
-import mobase
 import yaml
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -19,6 +18,8 @@ from PyQt6.QtCore import (
     qWarning,
 )
 from PyQt6.QtWidgets import QApplication, QMainWindow, QProgressDialog
+
+import mobase
 
 loose_file_folders = {
     "Public",

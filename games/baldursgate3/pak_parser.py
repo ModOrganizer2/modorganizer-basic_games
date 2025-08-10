@@ -12,12 +12,13 @@ from typing import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
-import mobase
 from PyQt6.QtCore import (
     qDebug,
     qInfo,
     qWarning,
 )
+
+import mobase
 
 from . import bg3_utils
 
