@@ -1,9 +1,33 @@
+from pathlib import Path
+
 import mobase
 
-from ...basic_features import BasicModDataChecker, utils
+from . import bg3_utils
+from ...basic_features import BasicModDataChecker, utils, GlobPatterns
 
 
 class BG3ModDataChecker(BasicModDataChecker):
+    def __init__(self):
+        super().__init__(
+            GlobPatterns(
+                valid=[
+                    "*.pak",
+                    str(Path("Mods") / "*.pak"),  # standard mods
+                    "bin",  # native mods / Script Extender
+                    "Script Extender",  # mods which are configured via jsons in this folder
+                    "Data",  # loose file mods
+                ]
+                + [str(Path("*") / f) for f in bg3_utils.loose_file_folders],
+                move={
+                    "Root/": "",  # root builder not needed
+                    "*.dll": "bin/",
+                    "ScriptExtenderSettings.json": "bin/",
+                }
+                | {f: "Data/" for f in bg3_utils.loose_file_folders},
+                delete=["info.json", "*.txt"],
+            )
+        )
+
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:

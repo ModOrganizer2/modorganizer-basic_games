@@ -20,15 +20,16 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtWidgets import QApplication, QMainWindow, QProgressDialog
 
+loose_file_folders = {
+    "Public",
+    "Mods",
+    "Generated",
+    "Localization",
+    "ScriptExtender",
+}
+
 
 class BG3Utils:
-    loose_file_folders = {
-        "Public",
-        "Mods",
-        "Generated",
-        "Localization",
-        "ScriptExtender",
-    }
     _mod_settings_xml_start = """<?xml version="1.0" encoding="UTF-8"?>
     <save>
         <version major="4" minor="8" revision="0" build="200"/>
@@ -288,7 +289,9 @@ def _convert_jsons_in_dir_to_yaml(path: Path):
             ):
                 with open(file, "r") as json_file:
                     with open(converted_path, "w") as yaml_file:
-                        yaml.dump(json.load(json_file), yaml_file, indent=2)
+                        yaml.dump(
+                            json.load(json_file), yaml_file, indent=2, sort_keys=False
+                        )
                 qInfo(f"Converted {file} to YAML")
         except OSError as e:
             qWarning(f"Error accessing file {converted_path}: {e}")

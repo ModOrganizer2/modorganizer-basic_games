@@ -21,7 +21,6 @@ from PyQt6.QtWidgets import (
 from ..basic_features import (
     BasicGameSaveGameInfo,
     BasicLocalSavegames,
-    GlobPatterns,
 )
 from ..basic_game import BasicGame
 
@@ -62,27 +61,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
             bg3_script_extender,
         )
 
-        self._register_feature(
-            bg3_data_checker.BG3ModDataChecker(
-                GlobPatterns(
-                    valid=[
-                        "*.pak",
-                        str(Path("Mods") / "*.pak"),  # standard mods
-                        "bin",  # native mods / Script Extender
-                        "Script Extender",  # mods which are configured via jsons in this folder
-                        "Data",  # loose file mods
-                    ]
-                    + [str(Path("*") / f) for f in self._utils.loose_file_folders],
-                    move={
-                        "Root/": "",
-                        "*.dll": "bin/",
-                        "ScriptExtenderSettings.json": "bin/",
-                    }  # root builder not needed
-                    | {f: "Data/" for f in self._utils.loose_file_folders},
-                    delete=["info.json", "*.txt"],
-                )
-            )
-        )
+        self._register_feature(bg3_data_checker.BG3ModDataChecker())
         self._register_feature(bg3_script_extender.BG3ScriptExtender(self))
         self._register_feature(bg3_data_content.BG3DataContent())
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))

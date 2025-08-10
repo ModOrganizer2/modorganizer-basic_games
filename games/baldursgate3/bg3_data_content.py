@@ -2,6 +2,8 @@ from enum import IntEnum, auto
 
 import mobase
 
+from . import bg3_utils
+
 
 class Content(IntEnum):
     PAK = auto()
@@ -44,13 +46,7 @@ class BG3DataContent(mobase.ModDataContent):
                         contents.add(Content.NATIVE)
                     case _:
                         for e in entry:
-                            if e.name() in {
-                                "Mods",
-                                "Localization",
-                                "ScriptExtender",
-                                "Public",
-                                "Generated",
-                            }:
+                            if e.name() in bg3_utils.loose_file_folders:
                                 contents.add(Content.WORKSPACE)
                                 break
             elif entry.name().endswith(".pak"):

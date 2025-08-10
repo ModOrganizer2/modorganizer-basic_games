@@ -141,8 +141,7 @@ class BG3PakParser:
                 return ""
             elif next(
                 itertools.chain(
-                    file.glob(f"{folder}/*")
-                    for folder in self._utils.loose_file_folders
+                    file.glob(f"{folder}/*") for folder in bg3_utils.loose_file_folders
                 ),
                 False,
             ):
