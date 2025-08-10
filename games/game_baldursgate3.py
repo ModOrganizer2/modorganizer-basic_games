@@ -7,6 +7,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Callable
 
+import mobase
 import yaml
 from PyQt6.QtCore import (
     qDebug,
@@ -16,8 +17,6 @@ from PyQt6.QtCore import (
 from PyQt6.QtWidgets import (
     QApplication,
 )
-
-import mobase
 
 from ..basic_features import (
     BasicGameSaveGameInfo,
@@ -57,7 +56,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._utils.init(organizer)
-        from .baldursgate3 import bg3_data_checker
+        from .baldursgate3 import bg3_data_checker, bg3_data_content
 
         self._register_feature(
             bg3_data_checker.BG3ModDataChecker(
@@ -80,6 +79,7 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
                 )
             )
         )
+        self._register_feature(bg3_data_content.BG3DataContent())
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         organizer.onAboutToRun(self._utils.construct_modsettings_xml)
@@ -281,6 +281,9 @@ class BG3Game(BasicGame, mobase.IPluginFileMapper):
         QApplication.processEvents()
         progress.close()
         return mappings
+
+    def loadOrderMechanism(self) -> mobase.LoadOrderMechanism:
+        return mobase.LoadOrderMechanism.PLUGINS_TXT
 
     @cached_property
     def _base_dlls(self) -> set[str]:
