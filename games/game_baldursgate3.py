@@ -55,11 +55,9 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         from .baldursgate3 import (
             bg3_data_checker,
             bg3_data_content,
-            bg3_script_extender,
         )
 
         self._register_feature(bg3_data_checker.BG3ModDataChecker())
-        self._register_feature(bg3_script_extender.BG3ScriptExtender(self))
         self._register_feature(bg3_data_content.BG3DataContent())
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
