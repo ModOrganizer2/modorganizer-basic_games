@@ -1,12 +1,9 @@
 import functools
-import json
-import os
 import shutil
 import typing
 from pathlib import Path
 
 import mobase
-import yaml
 from PyQt6.QtCore import (
     QCoreApplication,
     QDir,
@@ -59,7 +56,7 @@ class BG3Utils:
         self._name = name
         from . import lslib_retriever, pak_parser
 
-        self._lslib_retriever = lslib_retriever.LSLibRetriever(self)
+        self.lslib_retriever = lslib_retriever.LSLibRetriever(self)
         self._pak_parser = pak_parser.BG3PakParser(self)
 
     def init(self, organizer: mobase.IOrganizer):
@@ -150,7 +147,6 @@ class BG3Utils:
 
     def on_user_interface_initialized(self, window: QMainWindow) -> None:
         self.main_window = window
-        pass
 
     def on_settings_changed(
         self,
@@ -161,24 +157,7 @@ class BG3Utils:
     ) -> None:
         if self._name != plugin_name:
             return
-        if new and setting == "check_for_lslib_updates":
-            try:
-                self._lslib_retriever.download_lslib_if_missing()
-            finally:
-                self._set_setting(setting, False)
-        elif new and setting == "force_reparse_metadata":
-            try:
-                self.construct_modsettings_xml(
-                    exec_path="bin/bg3", force_reparse_metadata=True
-                )
-            finally:
-                self._set_setting(setting, False)
-        elif new and setting == "convert_jsons_to_yaml":
-            try:
-                self._convert_jsons_to_yaml()
-            finally:
-                self._set_setting(setting, False)
-        elif setting in {
+        if setting in {
             "extract_full_package",
             "autobuild_paks",
             "remove_extracted_metadata",
@@ -197,7 +176,7 @@ class BG3Utils:
     ) -> bool:
         if (
             "bin/bg3" not in exec_path
-            or not self._lslib_retriever.download_lslib_if_missing()
+            or not self.lslib_retriever.download_lslib_if_missing()
         ):
             return True
         active_mods = self.active_mods()
@@ -257,41 +236,6 @@ class BG3Utils:
         shutil.copy(self.modsettings_path, self.modsettings_backup)
         return True
 
-    def _convert_jsons_to_yaml(self):
-        qInfo("converting all json files to yaml")
-        active_mods = self.active_mods()
-        progress = self.create_progress_window(
-            "Converting all json files to yaml", len(active_mods) + 1
-        )
-        for mod in active_mods:
-            _convert_jsons_in_dir_to_yaml(Path(mod.absolutePath()))
-            progress.setValue(progress.value() + 1)
-            QApplication.processEvents()
-            if progress.wasCanceled():
-                qWarning("conversion canceled by user")
-                return
-        _convert_jsons_in_dir_to_yaml(self.overwrite_path)
-        progress.setValue(len(active_mods) + 1)
-        QApplication.processEvents()
-        progress.close()
-
     def on_mod_installed(self, mod: mobase.IModInterface) -> None:
-        if self._lslib_retriever.download_lslib_if_missing():
+        if self.lslib_retriever.download_lslib_if_missing():
             self._pak_parser.get_metadata_for_files_in_mod(mod, True)
-
-
-def _convert_jsons_in_dir_to_yaml(path: Path):
-    for file in list(path.rglob("*.json")):
-        converted_path = file.parent / file.name.replace(".json", ".yaml")
-        try:
-            if not converted_path.exists() or os.path.getmtime(file) > os.path.getmtime(
-                converted_path
-            ):
-                with open(file, "r") as json_file:
-                    with open(converted_path, "w") as yaml_file:
-                        yaml.dump(
-                            json.load(json_file), yaml_file, indent=2, sort_keys=False
-                        )
-                qInfo(f"Converted {file} to YAML")
-        except OSError as e:
-            qWarning(f"Error accessing file {converted_path}: {e}")

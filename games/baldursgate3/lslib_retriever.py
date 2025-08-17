@@ -33,10 +33,8 @@ class LSLibRetriever:
             }
         }
 
-    def download_lslib_if_missing(self):
-        if not self._utils.get_setting("check_for_lslib_updates") and all(
-            x.exists() for x in self._needed_lslib_files
-        ):
+    def download_lslib_if_missing(self, force: bool = False) -> bool:
+        if not force and all(x.exists() for x in self._needed_lslib_files):
             return True
         try:
             self._utils.tools_dir.mkdir(exist_ok=True, parents=True)
@@ -110,7 +108,11 @@ class LSLibRetriever:
             qDebug(f"Download failed: {e}")
             err = QMessageBox(self._utils.main_window)
             err.setIcon(QMessageBox.Icon.Critical)
-            err.setText(f"Failed to download LSLib tools:\n{traceback.format_exc()}")
+            err.setText(
+                self._utils.tr(
+                    f"Failed to download LSLib tools:\n{traceback.format_exc()}"
+                )
+            )
             err.exec()
             return False
         try:
@@ -145,7 +147,11 @@ class LSLibRetriever:
             qDebug(f"Extraction failed: {e}")
             err = QMessageBox(self._utils.main_window)
             err.setIcon(QMessageBox.Icon.Critical)
-            err.setText(f"Failed to extract LSLib tools:\n{traceback.format_exc()}")
+            err.setText(
+                self._utils.tr(
+                    f"Failed to extract LSLib tools:\n{traceback.format_exc()}"
+                )
+            )
             err.exec()
             return False
         return True

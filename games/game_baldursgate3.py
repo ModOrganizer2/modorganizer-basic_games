@@ -44,14 +44,14 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         BasicGame.__init__(self)
         from .baldursgate3 import bg3_utils
 
-        self._utils = bg3_utils.BG3Utils(self.name())
+        self.utils = bg3_utils.BG3Utils(self.name())
         bg3_file_mapper.BG3FileMapper.__init__(
-            self, self._utils, self.documentsDirectory
+            self, self.utils, self.documentsDirectory
         )
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._utils.init(organizer)
+        self.utils.init(organizer)
         from .baldursgate3 import (
             bg3_data_checker,
             bg3_data_content,
@@ -61,11 +61,11 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         self._register_feature(bg3_data_content.BG3DataContent())
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
-        organizer.onAboutToRun(self._utils.construct_modsettings_xml)
+        organizer.onAboutToRun(self.utils.construct_modsettings_xml)
         organizer.onFinishedRun(self._on_finished_run)
-        organizer.onUserInterfaceInitialized(self._utils.on_user_interface_initialized)
-        organizer.modList().onModInstalled(self._utils.on_mod_installed)
-        organizer.onPluginSettingChanged(self._utils.on_settings_changed)
+        organizer.onUserInterfaceInitialized(self.utils.on_user_interface_initialized)
+        organizer.modList().onModInstalled(self.utils.on_mod_installed)
+        organizer.onPluginSettingChanged(self.utils.on_settings_changed)
         return True
 
     def settings(self):
@@ -98,21 +98,6 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 True,
             ),
             mobase.PluginSetting(
-                "force_reparse_metadata",
-                "Force reparsing mod metadata immediately.",
-                False,
-            ),
-            mobase.PluginSetting(
-                "convert_jsons_to_yaml",
-                "Convert all jsons in active mods to yaml immediately.",
-                False,
-            ),
-            mobase.PluginSetting(
-                "check_for_lslib_updates",
-                "Check to see if there has been a new release of LSLib and create download dialog if so.",
-                False,
-            ),
-            mobase.PluginSetting(
                 "extract_full_package",
                 "Extract the full pak when parsing metadata, instead of just meta.lsx.",
                 False,
@@ -122,14 +107,9 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
                 False,
             ),
-            mobase.PluginSetting(
-                "convert_yamls_to_json",
-                "Convert YAMLs to JSONs when executable runs. Allows one to configure ScriptExtender and related mods with YAML files.",
-                False,
-            ),
         ]
         for setting in custom_settings:
-            setting.description = self._utils.tr(setting.description)
+            setting.description = self.utils.tr(setting.description)
             base_settings.append(setting)
         return base_settings
 
@@ -154,7 +134,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             efls = super().executableForcedLoads()
         except AttributeError:
             efls = []
-        if self._utils.force_load_dlls:
+        if self.utils.force_load_dlls:
             qInfo("detecting dlls in enabled mods")
             libs: set[str] = set()
             tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
@@ -198,26 +178,26 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
     def _on_finished_run(self, exec_path: str, exit_code: int):
         if "bin/bg3" not in exec_path:
             return
-        if self._utils.log_diff:
+        if self.utils.log_diff:
             for x in difflib.unified_diff(
-                open(self._utils.modsettings_backup).readlines(),
-                open(self._utils.modsettings_path).readlines(),
-                fromfile=str(self._utils.modsettings_backup),
-                tofile=str(self._utils.modsettings_path),
+                open(self.utils.modsettings_backup).readlines(),
+                open(self.utils.modsettings_path).readlines(),
+                fromfile=str(self.utils.modsettings_backup),
+                tofile=str(self.utils.modsettings_path),
                 lineterm="",
             ):
                 qDebug(x)
-        for path in self._utils.overwrite_path.rglob("*.log"):
+        for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                qDebug(f"moving {path} to {self._utils.log_dir}")
-                shutil.move(path, self._utils.log_dir / path.name)
+                qDebug(f"moving {path} to {self.utils.log_dir}")
+                shutil.move(path, self.utils.log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
-        days = self._utils.get_setting("delete_levelcache_folders_older_than_x_days")
+        days = self.utils.get_setting("delete_levelcache_folders_older_than_x_days")
         if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
-            for path in self._utils.overwrite_path.glob("LevelCache/*"):
+            for path in self.utils.overwrite_path.glob("LevelCache/*"):
                 if (
                     datetime.datetime.fromtimestamp(os.path.getmtime(path))
                     < cutoff_time
@@ -225,7 +205,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                     shutil.rmtree(path, ignore_errors=True)
         qDebug("cleaning empty dirs from overwrite directory")
         for folder in sorted(
-            list(os.walk(self._utils.overwrite_path))[1:], reverse=True
+            list(os.walk(self.utils.overwrite_path))[1:], reverse=True
         ):
             try:
                 os.rmdir(folder[0])

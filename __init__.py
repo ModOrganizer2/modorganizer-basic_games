@@ -3,9 +3,13 @@
 import glob
 import importlib
 import os
+import pathlib
 import site
 import sys
 import typing
+
+from PyQt6.QtCore import qWarning
+from mobase import IPlugin
 
 from .basic_game import BasicGame
 from .basic_game_ini import BasicIniGame
@@ -18,7 +22,7 @@ BasicGame.setup()
 
 def createPlugins():
     # List of game class from python:
-    game_plugins: typing.List[BasicGame] = []
+    game_plugins: typing.List[IPlugin] = []
 
     # We are going to list all game plugins:
     curpath = os.path.abspath(os.path.dirname(__file__))
@@ -58,5 +62,25 @@ def createPlugins():
                             "Failed to instantiate {}: {}".format(name, e),
                             file=sys.stderr,
                         )
+    for path in pathlib.Path(escaped_games_path).rglob("plugins/__init__.py"):
+        module_path = "." + os.path.relpath(path.parent, curpath).replace(os.sep, ".")
+        try:
+            module = importlib.import_module(module_path, __package__)
+            if hasattr(module, "createPlugins") and callable(module.createPlugins):
+                try:
+                    plugins: typing.Any = module.createPlugins()
+                    for item in plugins:
+                        if isinstance(item, IPlugin):
+                            game_plugins.append(item)
+                except TypeError:
+                    pass
+            if hasattr(module, "createPlugin") and callable(module.createPlugin):
+                plugin = module.createPlugin()
+                if isinstance(plugin, IPlugin):
+                    game_plugins.append(plugin)
+        except ImportError as e:
+            qWarning(f"Error importing module {module_path}: {e}")
+        except Exception as e:
+            qWarning(f"Error calling function createPlugin(s) in {module_path}: {e}")
 
     return game_plugins
