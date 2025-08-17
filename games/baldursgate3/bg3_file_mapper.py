@@ -4,10 +4,11 @@ import os
 from pathlib import Path
 from typing import Callable, Optional
 
-import mobase
 import yaml
-from PyQt6.QtCore import qInfo, qDebug, qWarning, QDir
+from PyQt6.QtCore import QDir, qDebug, qInfo, qWarning
 from PyQt6.QtWidgets import QApplication
+
+import mobase
 
 from . import bg3_utils
 

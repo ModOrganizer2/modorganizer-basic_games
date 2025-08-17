@@ -1,8 +1,9 @@
 from pathlib import Path
 
-import mobase
 from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtGui import QIcon
+
+import mobase
 
 
 class BG3ToolPlugin(mobase.IPluginTool, mobase.IPlugin):

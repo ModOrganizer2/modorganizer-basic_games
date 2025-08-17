@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from PyQt6.QtCore import qWarning, qInfo
+from PyQt6.QtCore import qInfo, qWarning
 from PyQt6.QtWidgets import QApplication
 
 from .bg3_tool_plugin import BG3ToolPlugin

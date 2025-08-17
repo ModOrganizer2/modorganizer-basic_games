@@ -6,18 +6,19 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
-import mobase
 from PyQt6.QtCore import (
     qDebug,
     qInfo,
 )
 
-from .baldursgate3 import bg3_file_mapper
+import mobase
+
 from ..basic_features import (
     BasicGameSaveGameInfo,
     BasicLocalSavegames,
 )
 from ..basic_game import BasicGame
+from .baldursgate3 import bg3_file_mapper
 
 
 class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):

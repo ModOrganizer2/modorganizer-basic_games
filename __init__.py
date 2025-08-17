@@ -9,6 +9,7 @@ import sys
 import typing
 
 from PyQt6.QtCore import qWarning
+
 from mobase import IPlugin
 
 from .basic_game import BasicGame

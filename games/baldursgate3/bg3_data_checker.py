@@ -2,8 +2,8 @@ from pathlib import Path
 
 import mobase
 
+from ...basic_features import BasicModDataChecker, GlobPatterns, utils
 from . import bg3_utils
-from ...basic_features import BasicModDataChecker, utils, GlobPatterns
 
 
 class BG3ModDataChecker(BasicModDataChecker):
