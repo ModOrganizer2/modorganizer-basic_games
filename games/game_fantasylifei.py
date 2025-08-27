@@ -22,8 +22,6 @@ class FantasyLifeIModDataChecker(mobase.ModDataChecker):
 
         try:
             for mod_folder in tree.find(mods_path, mobase.IFileTree.DIRECTORY):
-                folder_name = mod_folder.name()
-
                 for subentry in mod_folder:
                     subname = subentry.name()
 
