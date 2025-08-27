@@ -9,6 +9,7 @@ from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
 
+
 class FantasyLifeIModDataChecker(mobase.ModDataChecker):
     def __init__(self: mobase.ModDataChecker) -> None:
         super().__init__()
@@ -18,15 +19,17 @@ class FantasyLifeIModDataChecker(mobase.ModDataChecker):
     def _api_mod(self, tree: mobase.IFileTree, mods_path: str) -> bool:
         if not tree.exists(mods_path, mobase.IFileTree.DIRECTORY):
             return False
-        
+
         try:
             for mod_folder in tree.find(mods_path, mobase.IFileTree.DIRECTORY):
-                folder_name = mod_folder.name();
+                folder_name = mod_folder.name()
 
                 for subentry in mod_folder:
-                    subname = subentry.name();
+                    subname = subentry.name()
 
-                    if subname.lower() == "mod.json" or subname.lower().endswith('.mod'):
+                    if subname.lower() == "mod.json" or subname.lower().endswith(
+                        ".mod"
+                    ):
                         return True
 
         except Exception:
@@ -47,7 +50,9 @@ class FantasyLifeIModDataChecker(mobase.ModDataChecker):
             return False
         return False
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if filetree.exists("Game", mobase.IFileTree.DIRECTORY):
             pass
 
@@ -60,6 +65,7 @@ class FantasyLifeIModDataChecker(mobase.ModDataChecker):
                 return mobase.ModDataChecker.VALID
 
         return mobase.ModDataChecker.INVALID
+
 
 class FantasyLifeI(BasicGame, mobase.IPluginFileMapper):
     Name = "Fantasy Life I Support Plugin"
