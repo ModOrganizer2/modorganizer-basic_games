@@ -1,6 +1,5 @@
 import configparser
 import hashlib
-import itertools
 import os
 import re
 import shutil
@@ -139,15 +138,14 @@ class BG3PakParser:
                         meta_file.unlink(missing_ok=True)
                         if self._utils.extract_full_package:
                             Path(str(meta_file)[:-4]).unlink(missing_ok=True)
-            elif file.is_dir() and self._folder_pattern.search(file.name):
-                # qDebug(f"directory is not packable: {file}")
-                return ""
-            elif next(
-                itertools.chain(
-                    file.glob(f"{folder}/*") for folder in bg3_utils.loose_file_folders
-                ),
-                False,
-            ):
+            elif file.is_dir():
+                if self._folder_pattern.search(file.name):
+                    return ""
+                for folder in bg3_utils.loose_file_folders:
+                    if next(file.glob(f"{folder}/*"), False):
+                        break
+                else:
+                    return ""
                 qInfo(f"packable dir: {file}")
                 if (file.parent / f"{file.name}.pak").exists() or (
                     file.parent / "Mods" / f"{file.name}.pak"
@@ -187,7 +185,6 @@ class BG3PakParser:
                     lambda: meta_files[0],
                 )
             else:
-                # qDebug(f"non packable dir, unlikely to be used by the game: {file}")
                 return ""
         except Exception:
             qWarning(traceback.format_exc())
