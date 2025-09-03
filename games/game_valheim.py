@@ -318,6 +318,7 @@ class ValheimGame(BasicGame):
                         "BepInEx",
                         "doorstop_libs",
                         "unstripped_corlib",
+                        ".doorstop_version",
                         "doorstop_config.ini",
                         "start_game_bepinex.sh",
                         "start_server_bepinex.sh",
