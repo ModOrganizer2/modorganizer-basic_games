@@ -4,66 +4,31 @@ from PyQt6.QtCore import QDir
 
 import mobase
 
-from ..basic_features.basic_local_savegames import BasicLocalSavegames
+from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
 
-
-class FantasyLifeIModDataChecker(mobase.ModDataChecker):
-    def __init__(self: mobase.ModDataChecker) -> None:
-        super().__init__()
-
-    _PAK_MOD_EXTENSIONS = (".pak", ".ucas", ".utoc")
-
-    def _api_mod(self, tree: mobase.IFileTree, mods_path: str) -> bool:
-        if not tree.exists(mods_path, mobase.IFileTree.DIRECTORY):
-            return False
-
-        try:
-            for mod_folder in tree.find(mods_path, mobase.IFileTree.DIRECTORY):
-                for subentry in mod_folder:
-                    subname = subentry.name()
-
-                    if subname.lower() == "mod.json" or subname.lower().endswith(
-                        ".mod"
-                    ):
-                        return True
-
-        except Exception:
-            return False
-        return False
-
-    def _pak_mod(self, tree: mobase.IFileTree, paks_path: str) -> bool:
-        if not tree.exists(paks_path, mobase.IFileTree.DIRECTORY):
-            return False
-
-        try:
-            for entry in tree.find(paks_path, mobase.IFileTree.DIRECTORY):
-                for subentry in entry:
-                    if subentry.name().lower().endswith(self._PAK_MOD_EXTENSIONS):
-                        return True
-
-        except Exception:
-            return False
-        return False
-
-    def dataLooksValid(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
-        if filetree.exists("Game", mobase.IFileTree.DIRECTORY):
-            pass
-
-        for mods_path in ["Mods"]:
-            if self._api_mod(filetree, mods_path):
-                return mobase.ModDataChecker.VALID
-
-        for paks_path in ["Paks"]:
-            if self._pak_mod(filetree, paks_path):
-                return mobase.ModDataChecker.VALID
-
-        return mobase.ModDataChecker.INVALID
-
+class FantasyLifeIModDataChecker(BasicModDataChecker):
+    def __init__(self):
+        super().__init__(
+            GlobPatterns(
+                move=
+                {
+                    "*.fliarchive": "Mods/",
+                    "*.pak":        "Paks/~mods/",
+                    "*.ucas":       "Paks/~mods/",
+                    "*.utoc":       "Paks/~mods/",
+                },
+                valid=
+                [
+                    "L10N",
+                    "sound",
+                    "Mods",
+                    "Paks"
+                ]
+            )
+        )
 
 class FantasyLifeI(BasicGame, mobase.IPluginFileMapper):
     Name = "Fantasy Life I Support Plugin"
