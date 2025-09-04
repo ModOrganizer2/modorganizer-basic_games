@@ -9,26 +9,21 @@ from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
 
+
 class FantasyLifeIModDataChecker(BasicModDataChecker):
     def __init__(self):
         super().__init__(
             GlobPatterns(
-                move=
-                {
+                move={
                     "*.fliarchive": "Mods/",
-                    "*.pak":        "Paks/~mods/",
-                    "*.ucas":       "Paks/~mods/",
-                    "*.utoc":       "Paks/~mods/",
+                    "*.pak": "Paks/~mods/",
+                    "*.ucas": "Paks/~mods/",
+                    "*.utoc": "Paks/~mods/",
                 },
-                valid=
-                [
-                    "L10N",
-                    "sound",
-                    "Mods",
-                    "Paks"
-                ]
+                valid=["L10N", "sound", "Mods", "Paks"],
             )
         )
+
 
 class FantasyLifeI(BasicGame, mobase.IPluginFileMapper):
     Name = "Fantasy Life I Support Plugin"
