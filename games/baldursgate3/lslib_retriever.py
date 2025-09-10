@@ -37,7 +37,7 @@ class LSLibRetriever:
         }
 
     def download_lslib_if_missing(self, force: bool = False) -> bool:
-        if not force and (self._utils.tools_dir / "Divine.exe").exists():
+        if not force and all(x.exists() for x in self._needed_lslib_files):
             return True
         try:
             self._utils.tools_dir.mkdir(exist_ok=True, parents=True)
