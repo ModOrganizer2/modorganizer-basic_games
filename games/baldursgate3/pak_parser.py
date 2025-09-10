@@ -154,7 +154,8 @@ class BG3PakParser:
                         f"pak with same name as packable dir exists in mod directory. not packing dir {file}"
                     )
                     return ""
-                pak_path = self._utils.overwrite_path / f"Mods/{file.name}.pak"
+                parent_mod_name = file.parent.name.replace(" ", "_")
+                pak_path = self._utils.overwrite_path / f"Mods/{parent_mod_name}_{file.name}.pak"
                 build_pak = True
                 if pak_path.exists():
                     pak_creation_time = os.path.getmtime(pak_path)
