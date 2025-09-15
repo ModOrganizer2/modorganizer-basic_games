@@ -154,7 +154,11 @@ class BG3PakParser:
                         f"pak with same name as packable dir exists in mod directory. not packing dir {file}"
                     )
                     return ""
-                pak_path = self._utils.overwrite_path / f"Mods/{file.name}.pak"
+                parent_mod_name = file.parent.name.replace(" ", "_")
+                pak_path = (
+                    self._utils.overwrite_path
+                    / f"Mods/{parent_mod_name}_{file.name}.pak"
+                )
                 build_pak = True
                 if pak_path.exists():
                     pak_creation_time = os.path.getmtime(pak_path)
@@ -249,7 +253,7 @@ class BG3PakParser:
                     # 2. it has files in Mods/<folder_name>/ other than the meta.lsx file, or
                     # 3. it has files in Public/<folder_name>
                     result = self.run_divine(
-                        f'list-package --use-regex -x "(/{folder_name}/(?!meta\\.lsx))|(Public/Engine/Timeline/MaterialGroups)"',
+                        f'list-package --use-regex -x "(/{re.escape(folder_name)}/(?!meta\\.lsx))|(Public/Engine/Timeline/MaterialGroups)"',
                         file,
                     )
                     self._mod_cache[file] = (

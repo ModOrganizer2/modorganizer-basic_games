@@ -25,9 +25,12 @@ class LSLibRetriever:
                 "Divine.dll.config",
                 "Divine.exe",
                 "Divine.runtimeconfig.json",
+                "K4os.Compression.LZ4.dll",
+                "K4os.Compression.LZ4.Streams.dll",
                 "LSLib.dll",
                 "LSLibNative.dll",
                 "LZ4.dll",
+                "Newtonsoft.Json.dll",
                 "System.IO.Hashing.dll",
                 "ZstdSharp.dll",
             }
