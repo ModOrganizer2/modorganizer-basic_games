@@ -4,6 +4,7 @@ from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
+from ..basic_features import BasicLocalSavegames
 from ..basic_game import BasicGame, BasicGameSaveGame
 
 
@@ -57,6 +58,7 @@ class MountAndBladeIIGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._register_feature(MountAndBladeIIModDataChecker())
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         return True
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
