@@ -70,7 +70,7 @@ class SilksongModDataChecker(BasicModDataChecker):
 
 class SilksongGame(BasicGame):
     Name = "Hollow Knight: Silksong Support Plugin"
-    Author = "Assistant"
+    Author = "Nikirack"
     Version = "1.0.0"
 
     GameName = "Hollow Knight: Silksong"
