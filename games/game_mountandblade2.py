@@ -1,8 +1,11 @@
-from PyQt6.QtCore import QFileInfo
+from pathlib import Path
+
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
-from ..basic_game import BasicGame
+from ..basic_features import BasicLocalSavegames
+from ..basic_game import BasicGame, BasicGameSaveGame
 
 
 class MountAndBladeIIModDataChecker(mobase.ModDataChecker):
@@ -33,7 +36,7 @@ class MountAndBladeIIModDataChecker(mobase.ModDataChecker):
 class MountAndBladeIIGame(BasicGame):
     Name = "Mount & Blade II: Bannerlord"
     Author = "Holt59"
-    Version = "0.1.0"
+    Version = "0.1.1"
     Description = "Adds support for Mount & Blade II: Bannerlord"
 
     GameName = "Mount & Blade II: Bannerlord"
@@ -47,8 +50,7 @@ class MountAndBladeIIGame(BasicGame):
     GameBinary = "bin/Win64_Shipping_Client/TaleWorlds.MountAndBlade.Launcher.exe"
 
     GameDocumentsDirectory = "%DOCUMENTS%/Mount and Blade II Bannerlord/Configs"
-    GameSaveExtension = "sav"
-    GameSavesDirectory = "%DOCUMENTS%/Mount and Blade II Bannerlord/Game Saves/Native"
+    GameSavesDirectory = "%DOCUMENTS%/Mount and Blade II Bannerlord/Game Saves"
 
     GameNexusId = 3174
     GameSteamId = 261550
@@ -56,7 +58,14 @@ class MountAndBladeIIGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
         self._register_feature(MountAndBladeIIModDataChecker())
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         return True
+
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
+        save_paths = list(Path(folder.absolutePath()).glob("*.sav")) + list(
+            Path(folder.absolutePath()).glob("*.sav.cleaner_backup_*")
+        )
+        return [BasicGameSaveGame(path) for path in save_paths]
 
     def executables(self):
         return [
