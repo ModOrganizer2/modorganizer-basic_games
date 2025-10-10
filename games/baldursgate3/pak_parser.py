@@ -74,7 +74,7 @@ class BG3PakParser:
         force_reparse_metadata: bool,
     ) -> str:
         meta_ini = Path(mod.absolutePath()) / "meta.ini"
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(interpolation=None)
         config.read(meta_ini, encoding="utf-8")
         try:
             if file.name.endswith("pak"):
