@@ -92,6 +92,7 @@ class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
     GameName = "Subnautica"
     GameShortName = "subnautica"
     GameNexusName = "subnautica"
+    GameThunderstoreName = "subnautica"
     GameSteamId = 264710
     GameEpicId = "Jaguar"
     GameBinary = "Subnautica.exe"

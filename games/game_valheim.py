@@ -294,6 +294,7 @@ class ValheimGame(BasicGame):
 
     GameName = "Valheim"
     GameShortName = "valheim"
+    GameThunderstoreName = "valheim"
     GameNexusId = 3667
     GameSteamId = [892970, 896660, 1223920]
     GameBinary = "valheim.exe"
