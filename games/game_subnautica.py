@@ -37,6 +37,7 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                     "changelog.txt",
                     "libdoorstop.dylib",
                 ],
+                ignore=["*.mohidden"],
                 delete=[
                     "*.txt",
                     "*.md",

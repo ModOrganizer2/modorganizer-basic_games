@@ -334,6 +334,9 @@ class ValheimGame(BasicGame):
                         #
                         "AdvancedBuilder",
                     ],
+                    ignore=[
+                        "*.mohidden",
+                    ],
                     delete=[
                         "*.txt",
                         "*.md",
