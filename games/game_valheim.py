@@ -290,7 +290,7 @@ class ValheimWorldSaveGame(ValheimSaveGame):
 class ValheimGame(BasicGame):
     Name = "Valheim Support Plugin"
     Author = "Zash"
-    Version = "1.2.2"
+    Version = "1.3"
 
     GameName = "Valheim"
     GameShortName = "valheim"
