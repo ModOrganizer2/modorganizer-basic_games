@@ -34,6 +34,16 @@ class CyberpunkModDataChecker(BasicModDataChecker):
     def __init__(self):
         super().__init__(
             GlobPatterns(
+                delete=[
+                    "*.gif",
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.jxl",
+                    "*.md",
+                    "*.png",
+                    "*.txt",
+                    "*.webp"
+                ],
                 move={
                     # archive and ArchiveXL
                     "*.archive": "archive/pc/mod/",
