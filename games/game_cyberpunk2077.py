@@ -34,6 +34,16 @@ class CyberpunkModDataChecker(BasicModDataChecker):
     def __init__(self):
         super().__init__(
             GlobPatterns(
+                delete=[
+                    "*.gif",
+                    "*.jpg",
+                    "*.jpeg",
+                    "*.jxl",
+                    "*.md",
+                    "*.png",
+                    "*.txt",
+                    "*.webp",
+                ],
                 move={
                     # archive and ArchiveXL
                     "*.archive": "archive/pc/mod/",
@@ -439,22 +449,22 @@ class Cyberpunk2077Game(BasicGame):
         game_dir = self.gameDirectory()
         bin_path = game_dir.absoluteFilePath(self.binaryName())
         skip_start_screen = (
-            " -skipStartScreen" if self._get_setting("skipStartScreen") else ""
+            "-skipStartScreen" if self._get_setting("skipStartScreen") else ""
         )
         return [
             # Default, runs REDmod deploy if necessary
             mobase.ExecutableInfo(
-                f"{game_name}",
+                f"{game_name} (REDmod)",
                 bin_path,
-            ).withArgument(f"--launcher-skip -modded{skip_start_screen}"),
+            ).withArgument(f"--launcher-skip -modded {skip_start_screen}"),
             # Start game without REDmod
             mobase.ExecutableInfo(
-                f"{game_name} - skip REDmod deploy",
+                f"{game_name}",
                 bin_path,
             ).withArgument(f"--launcher-skip {skip_start_screen}"),
             # Deploy REDmods only
             mobase.ExecutableInfo(
-                "Manually deploy REDmod",
+                "REDmod",
                 self._get_redmod_binary(),
             ).withArgument("deploy -reportProgress -force %modlist%"),
             # Launcher
