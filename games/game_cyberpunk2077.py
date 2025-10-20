@@ -42,7 +42,7 @@ class CyberpunkModDataChecker(BasicModDataChecker):
                     "*.md",
                     "*.png",
                     "*.txt",
-                    "*.webp"
+                    "*.webp",
                 ],
                 move={
                     # archive and ArchiveXL
