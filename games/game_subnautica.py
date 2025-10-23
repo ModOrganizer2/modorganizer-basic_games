@@ -37,6 +37,7 @@ class SubnauticaModDataChecker(BasicModDataChecker):
                     "changelog.txt",
                     "libdoorstop.dylib",
                 ],
+                ignore=["*.mohidden"],
                 delete=[
                     "*.txt",
                     "*.md",
@@ -87,11 +88,12 @@ class SubnauticaModDataChecker(BasicModDataChecker):
 class SubnauticaGame(BasicGame, mobase.IPluginFileMapper):
     Name = "Subnautica Support Plugin"
     Author = "dekart811, Zash"
-    Version = "2.2"
+    Version = "2.3"
 
     GameName = "Subnautica"
     GameShortName = "subnautica"
     GameNexusName = "subnautica"
+    GameThunderstoreName = "subnautica"
     GameSteamId = 264710
     GameEpicId = "Jaguar"
     GameBinary = "Subnautica.exe"

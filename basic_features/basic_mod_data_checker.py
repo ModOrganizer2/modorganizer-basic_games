@@ -50,6 +50,7 @@ class RegexPatterns:
         self.move = {
             key: re.compile(fnmatch.translate(key), re.I) for key in globs.move
         }
+        self.ignore = OptionalRegexPattern(globs.ignore)
 
     def move_match(self, value: str) -> str | None:
         """
@@ -79,6 +80,7 @@ class GlobPatterns:
     valid: list[str] | None = None
     delete: list[str] | None = None
     move: dict[str, str] = field(default_factory=dict[str, str])
+    ignore: list[str] | None = None
 
     def merge(
         self, other: GlobPatterns, mode: Literal["merge", "replace"] = "replace"
@@ -106,6 +108,7 @@ class GlobPatterns:
                 valid=_merge_list(self.valid, other.valid),
                 delete=_merge_list(self.delete, other.delete),
                 move=self.move | other.move,
+                ignore=_merge_list(self.ignore, other.ignore),
             )
         else:
             return GlobPatterns(
@@ -113,6 +116,7 @@ class GlobPatterns:
                 valid=other.valid or self.valid,
                 delete=other.delete or self.delete,
                 move=other.move or self.move,
+                ignore=other.ignore or self.ignore,
             )
 
 
@@ -125,6 +129,8 @@ class BasicModDataChecker(mobase.ModDataChecker):
 
     Args:
         file_patterns (optional): A GlobPatterns object, with the following attributes:
+            ignore: [ "list of files and folders to ignore." ]
+                # Check result: unchanged
             unfold: [ "list of folders to unfold" ],
                 # (remove and move contents to parent), after being checked and
                 # fixed recursively.
@@ -175,6 +181,8 @@ class BasicModDataChecker(mobase.ModDataChecker):
         for entry in filetree:
             name = entry.name().casefold()
 
+            if rp.ignore.match(name):
+                continue
             if rp.unfold.match(name):
                 if is_directory(entry):
                     status = self.dataLooksValid(entry)
@@ -196,6 +204,8 @@ class BasicModDataChecker(mobase.ModDataChecker):
         for entry in list(filetree):
             name = entry.name()
 
+            if rp.ignore.match(name):
+                continue
             # unfold first - if this match, entry is a directory (checked in
             # dataLooksValid)
             if rp.unfold.match(name):
