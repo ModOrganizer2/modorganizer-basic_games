@@ -1,7 +1,10 @@
-from ..basic_game import BasicGame
-import mobase
-from ..basic_features import BasicModDataChecker, GlobPatterns
 from typing import Tuple
+
+import mobase
+
+from ..basic_features import BasicModDataChecker, GlobPatterns
+from ..basic_game import BasicGame
+
 
 class SilentHill2RemakeModDataChecker(BasicModDataChecker):
     def __init__(self):
@@ -18,7 +21,9 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
         self.mod_path = ["SHProto", "Content", "Paks", "~mod"]
         self.mod_path_lower = [name.lower() for name in self.mod_path]
 
-    def _find_tree(self, filetree: mobase.IFileTree) -> Tuple[str | None, mobase.IFileTree | None]:
+    def _find_tree(
+        self, filetree: mobase.IFileTree
+    ) -> Tuple[str | None, mobase.IFileTree | None]:
         """
         Search the given filetree for a directory name that matches any component
         of self.mod_path (case-insensitive).
@@ -44,22 +49,23 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
         # No matches found
         return (None, None)
 
-
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         # Check for fully valid layout
-        has_entry,_ = self._find_tree(filetree)
+        has_entry, _ = self._find_tree(filetree)
         if has_entry is None:
             for entry in filetree:
                 if entry.name().lower().endswith(".pak") and entry.isFile():
                     return mobase.ModDataChecker.FIXABLE
-        elif has_entry is "":
+        elif has_entry == "":
             return mobase.ModDataChecker.VALID
         else:
             return mobase.ModDataChecker.FIXABLE
 
         # Otherwise, not recognizable
         return mobase.ModDataChecker.INVALID
-    
+
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
         filetree = super().fix(filetree)
         prefix, item = self._find_tree(filetree)
@@ -72,11 +78,12 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
                     foundAPak = True
                 filetree.move(item, f"SHProto/Content/Paks/~mod/{item.name()}")
             return filetree if foundAPak else None
-        elif prefix is "":
+        elif prefix == "":
             return filetree
         else:
             filetree.move(item, f"{prefix}{item.name()}")
             return filetree
+
 
 class SilentHill2RemakeGame(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
