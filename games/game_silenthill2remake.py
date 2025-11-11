@@ -23,7 +23,7 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
 
     def _find_tree(
         self, filetree: mobase.IFileTree
-    ) -> Tuple[str | None, mobase.IFileTree | None]:
+    ) -> Tuple[str | None, mobase.FileTreeEntry | None]:
         """
         Search the given filetree for a directory name that matches any component
         of self.mod_path (case-insensitive).
@@ -45,7 +45,6 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
                     prefix_parts = self.mod_path[:i]
                     prefix = "/".join(prefix_parts) + ("/" if prefix_parts else "")
                     return (prefix, entry)
-
         # No matches found
         return (None, None)
 
@@ -55,6 +54,7 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
         # Check for fully valid layout
         has_entry, _ = self._find_tree(filetree)
         if has_entry is None:
+            # in this case we check to make sure there's a .pak file
             for entry in filetree:
                 if entry.name().lower().endswith(".pak") and entry.isFile():
                     return mobase.ModDataChecker.FIXABLE
@@ -73,14 +73,20 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
             foundAPak = False
             # Move all top-level items to BepInEx/plugins/
             items_to_move = list(filetree)
-            for item in items_to_move:
-                if item.name().lower().endswith(".pak"):
+            for cur_item in items_to_move:
+                if cur_item.name().lower().endswith(".pak"):
                     foundAPak = True
-                filetree.move(item, f"SHProto/Content/Paks/~mod/{item.name()}")
-            return filetree if foundAPak else None
+                filetree.move(cur_item, f"SHProto/Content/Paks/~mod/{cur_item.name()}")
+            # foundAPack MUST be true because if 'prefix' returned None then 
+            # there must be a .pak file or dataLooksValid wouldn't have returned
+            # a FIXABLE. This is therefore just a sanity check
+            assert foundAPak
+            return filetree
         elif prefix == "":
             return filetree
         else:
+            # if prefix is not None then item cannot be None
+            assert item is not None
             filetree.move(item, f"{prefix}{item.name()}")
             return filetree
 
