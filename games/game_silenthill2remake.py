@@ -77,7 +77,7 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
                 if cur_item.name().lower().endswith(".pak"):
                     foundAPak = True
                 filetree.move(cur_item, f"SHProto/Content/Paks/~mod/{cur_item.name()}")
-            # foundAPack MUST be true because if 'prefix' returned None then 
+            # foundAPack MUST be true because if 'prefix' returned None then
             # there must be a .pak file or dataLooksValid wouldn't have returned
             # a FIXABLE. This is therefore just a sanity check
             assert foundAPak
