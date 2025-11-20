@@ -28,12 +28,12 @@ class DispatchModDataChecker(BasicModDataChecker):
 class Dispatch(BasicGame, mobase.IPluginFileMapper):
     Name = "Dispatch Support Plugin"
     Author = "Syer10"
-    Version = "0.2.2"
+    Version = "0.1.0"
 
     GameName = "Dispatch"
     GameShortName = "dispatch"
     GameNexusName = "dispatch"
-    GameValidShortNames = ["fli"]
+    GameValidShortNames = []
 
     GameDataPath = "Dispatch/Content/"
     GameBinary = "Dispatch/Binaries/Win64/Dispatch-Win64-Shipping.exe"
