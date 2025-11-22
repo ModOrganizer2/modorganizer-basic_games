@@ -1,11 +1,9 @@
 import functools
-import json
 import os
 from pathlib import Path
 from typing import Callable, Optional
 
-import yaml
-from PyQt6.QtCore import QDir, qDebug, qInfo, qWarning
+from PyQt6.QtCore import QDir, qDebug, qInfo, qWarning, QLoggingCategory
 from PyQt6.QtWidgets import QApplication
 
 import mobase
@@ -77,6 +75,8 @@ class BG3FileMapper(mobase.IPluginFileMapper):
                     if not converted_path.exists() or os.path.getmtime(
                         file
                     ) > os.path.getmtime(converted_path):
+                        import json
+                        import yaml
                         with open(file, "r") as yaml_file:
                             with open(converted_path, "w") as json_file:
                                 json.dump(
