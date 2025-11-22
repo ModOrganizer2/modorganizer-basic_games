@@ -189,12 +189,24 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 lineterm="",
             ):
                 qDebug(x)
+        moved = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                qDebug(f"moving {path} to {self.utils.log_dir}")
-                shutil.move(path, self.utils.log_dir / path.name)
+                moved[str(path.relative_to(Path.home()))] = str((self.utils.log_dir / path.name).relative_to(Path.home()))
+                path.replace(self.utils.log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
+        for path in self.utils.overwrite_path.rglob("*log.txt"):
+            dest = self.utils.log_dir / path.name
+            if path.name == "log.txt":
+                dest = self.utils.log_dir / f"{path.parent.name}-{path.name}"
+            try:
+                moved[str(path.relative_to(Path.home()))] = str(dest.relative_to(Path.home()))
+                path.replace(dest)
+            except PermissionError as e:
+                qDebug(str(e))
+        if QLoggingCategory.defaultCategory().isDebugEnabled() and len(moved) > 0:
+            qDebug(f"moved log files to logs dir: {moved}")
         days = self.utils.get_setting("delete_levelcache_folders_older_than_x_days")
         if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
