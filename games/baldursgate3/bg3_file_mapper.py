@@ -45,6 +45,13 @@ class BG3FileMapper(mobase.IPluginFileMapper):
             if progress.wasCanceled():
                 qWarning("mapping canceled by user")
                 return self.current_mappings
+        (self._utils.overwrite_path / 'Script Extender').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / 'Stats').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / 'Temp').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / 'LevelCache').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / 'Stats').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / 'Mods').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / 'GMCampaigns').mkdir(parents=True, exist_ok=True)
         self.map_files(self._utils.overwrite_path)
         self.create_mapping(
             self._utils.modsettings_path,
@@ -53,6 +60,8 @@ class BG3FileMapper(mobase.IPluginFileMapper):
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
         progress.close()
+        if QLoggingCategory.defaultCategory().isDebugEnabled():
+            qDebug(f"resolved mappings: { {m.source: m.destination for m in self.current_mappings} }")
         return self.current_mappings
 
     def map_files(
