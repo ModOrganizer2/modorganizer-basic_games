@@ -6,10 +6,11 @@ from PyQt6.QtCore import qInfo, qWarning
 from PyQt6.QtWidgets import QApplication
 
 from .bg3_tool_plugin import BG3ToolPlugin
+from .icons import exchange
 
 
 class BG3ToolConvertJsonsToYaml(BG3ToolPlugin):
-    icon_file = "ui-next.ico"
+    icon_bytes = exchange
     sub_name = "Convert JSONS to YAML"
     desc = "Convert all jsons in active mods to yaml immediately."
 

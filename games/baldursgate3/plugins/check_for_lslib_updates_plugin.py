@@ -1,8 +1,8 @@
 from .bg3_tool_plugin import BG3ToolPlugin
-
+from .icons import download
 
 class BG3ToolCheckForLsLibUpdates(BG3ToolPlugin):
-    icon_file = "ui-update.ico"
+    icon_bytes = download
     sub_name = "Check For LsLib Updates"
     desc = "Check to see if there has been a new release of LSLib and create download dialog if so."
 

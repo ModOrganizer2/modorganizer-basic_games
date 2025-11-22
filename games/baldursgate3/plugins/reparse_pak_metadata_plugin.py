@@ -1,8 +1,9 @@
 from .bg3_tool_plugin import BG3ToolPlugin
+from .icons import refresh
 
 
 class BG3ToolReparsePakMetadata(BG3ToolPlugin):
-    icon_file = "ui-refresh.ico"
+    icon_bytes = refresh
     sub_name = "Reparse Pak Metadata"
     desc = "Force reparsing mod metadata immediately."
 
