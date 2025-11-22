@@ -180,9 +180,10 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
     def _on_finished_run(self, exec_path: str, exit_code: int):
         if "bin/bg3" not in exec_path:
             return
+        cat = QLoggingCategory.defaultCategory()
         self.utils.log_dir.mkdir(parents=True, exist_ok=True)
         if (
-            QLoggingCategory.defaultCategory().isDebugEnabled()
+            cat is not None and cat.isDebugEnabled()
             and self.utils.log_diff
             and self.utils.modsettings_backup.exists()
             and self.utils.modsettings_path.exists()
@@ -195,7 +196,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 lineterm="",
             ):
                 qDebug(x)
-        moved = {}
+        moved: dict[str, str] = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
                 moved[str(path.relative_to(Path.home()))] = str(
@@ -215,13 +216,13 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 path.replace(dest)
             except PermissionError as e:
                 qDebug(str(e))
-        if QLoggingCategory.defaultCategory().isDebugEnabled() and len(moved) > 0:
+        if cat is not None and cat.isDebugEnabled() and len(moved) > 0:
             qDebug(f"moved log files to logs dir: {moved}")
         days = self.utils.get_setting("delete_levelcache_folders_older_than_x_days")
         if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
-            removed = set()
+            removed: set[Path] = set()
             for path in self.utils.overwrite_path.glob("LevelCache/*"):
                 if (
                     datetime.datetime.fromtimestamp(os.path.getmtime(path))
@@ -229,19 +230,19 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 ):
                     shutil.rmtree(path, ignore_errors=True)
                     removed.add(path)
-            if QLoggingCategory.defaultCategory().isDebugEnabled() and len(removed) > 0:
+            if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
                 qDebug(
                     f"cleaned the following folders due to them being older than {cutoff_time}: {removed}"
                 )
         for fdir in {self.utils.overwrite_path, self.doc_path}:
-            removed = set()
+            removed: set[Path] = set()
             for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
                 try:
                     folder[0].rmdir()
                     removed.add(folder[0].relative_to(Path.home()))
                 except OSError:
                     pass
-            if QLoggingCategory.defaultCategory().isDebugEnabled() and len(removed) > 0:
+            if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
                 qDebug(
                     f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}"
                 )

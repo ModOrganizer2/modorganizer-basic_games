@@ -65,7 +65,8 @@ class BG3FileMapper(mobase.IPluginFileMapper):
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
         progress.close()
-        if QLoggingCategory.defaultCategory().isDebugEnabled():
+        cat = QLoggingCategory.defaultCategory()
+        if cat is not None and cat.isDebugEnabled():
             qDebug(
                 f"resolved mappings: { {m.source: m.destination for m in self.current_mappings} }"
             )
