@@ -38,6 +38,8 @@ class BG3FileMapper(mobase.IPluginFileMapper):
             modpath = Path(mod.absolutePath())
             self.map_files(modpath, dest=docs_path_mods, pattern="*.pak", rel=False)
             self.map_files(modpath / "Script Extender", dest=docs_path_se)
+            if self._utils.convert_yamls_to_json:
+                self.map_files(modpath / "bin", only_convert=True)
             progress.setValue(progress.value() + 1)
             QApplication.processEvents()
             if progress.wasCanceled():
@@ -59,6 +61,7 @@ class BG3FileMapper(mobase.IPluginFileMapper):
         dest: Optional[Path] = None,
         pattern: str = "*",
         rel: bool = True,
+            only_convert: bool = False
     ):
         dest = dest if dest else self.doc_path
         dest_func: Callable[[Path], str] = (
@@ -89,8 +92,10 @@ class BG3FileMapper(mobase.IPluginFileMapper):
                     qWarning(f"Error accessing file {converted_path}: {e}")
             elif file.name.endswith(".json"):
                 found_jsons.add(file)
-            else:
+            elif not only_convert:
                 self.create_mapping(file, dest / dest_func(file))
+        if only_convert:
+            return
         for file in found_jsons:
             self.create_mapping(file, dest / dest_func(file))
 
