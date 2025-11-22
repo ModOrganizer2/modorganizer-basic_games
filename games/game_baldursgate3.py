@@ -8,7 +8,7 @@ from typing import Any
 
 from PyQt6.QtCore import (
     qDebug,
-    qInfo,
+    qInfo, QLoggingCategory,
 )
 
 import mobase
@@ -180,10 +180,10 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         if "bin/bg3" not in exec_path:
             return
         self.utils.log_dir.mkdir(parents=True, exist_ok=True)
-        if self.utils.log_diff:
+        if QLoggingCategory.defaultCategory().isDebugEnabled() and self.utils.log_diff and self.utils.modsettings_backup.exists() and self.utils.modsettings_path.exists():
             for x in difflib.unified_diff(
-                open(self.utils.modsettings_backup).readlines(),
-                open(self.utils.modsettings_path).readlines(),
+                self.utils.modsettings_backup.open().readlines(),
+                self.utils.modsettings_path.open().readlines(),
                 fromfile=str(self.utils.modsettings_backup),
                 tofile=str(self.utils.modsettings_path),
                 lineterm="",
