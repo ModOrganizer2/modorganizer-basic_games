@@ -161,17 +161,21 @@ class BG3PakParser:
                 )
                 build_pak = True
                 if pak_path.exists():
-                    pak_creation_time = os.path.getmtime(pak_path)
-                    for root, _, files in os.walk(file):
-                        for f in files:
-                            file_path = os.path.join(root, f)
-                            try:
-                                if os.path.getmtime(file_path) > pak_creation_time:
+                    try:
+                        pak_creation_time = os.path.getmtime(pak_path)
+                        for root, _, files in file.walk():
+                            for f in files:
+                                file_path = root.joinpath(f)
+                                try:
+                                    if os.path.getmtime(file_path) > pak_creation_time:
+                                        break
+                                except OSError as e:
+                                    qDebug(f"Error accessing file {file_path}: {e}")
                                     break
-                            except OSError as e:
-                                qDebug(f"Error accessing file {file_path}: {e}")
-                                break
-                    else:
+                        else:
+                            build_pak = False
+                    except OSError as e:
+                        qDebug(f"Error accessing file {pak_path}: {e}")
                         build_pak = False
                 if build_pak:
                     pak_path.unlink(missing_ok=True)
