@@ -283,10 +283,13 @@ def get_module_short_desc(config: configparser.ConfigParser, file: Path) -> str:
     section: configparser.SectionProxy = config[file.name]
     return (
         ""
-        if "override" in section.keys()
-        or "Name" not in section.keys()
-        else
-        bg3_utils.get_node_string(folder=section["Folder"], md5=section["MD5"], name=section["Name"],
-                                  publish_handle=section["PublishHandle"], uuid=section["UUID"],
-                                  version64=section["Version64"])
+        if "override" in section.keys() or "Name" not in section.keys()
+        else bg3_utils.get_node_string(
+            folder=section["Folder"],
+            md5=section["MD5"],
+            name=section["Name"],
+            publish_handle=section["PublishHandle"],
+            uuid=section["UUID"],
+            version64=section["Version64"],
+        )
     )

@@ -27,7 +27,15 @@ loose_file_folders = {
     "ScriptExtender",
 }
 
-def get_node_string(folder: str = "", md5: str = "", name: str = "", publish_handle: str = "0", uuid: str = "", version64: str = "0") -> str:
+
+def get_node_string(
+    folder: str = "",
+    md5: str = "",
+    name: str = "",
+    publish_handle: str = "0",
+    uuid: str = "",
+    version64: str = "0",
+) -> str:
     return f"""
                         <node id="ModuleShortDesc">
                             <attribute id="Folder" type="LSString" value="{folder}"/>
@@ -38,8 +46,9 @@ def get_node_string(folder: str = "", md5: str = "", name: str = "", publish_han
                             <attribute id="Version64" type="int64" value="{version64}"/>
                         </node>"""
 
+
 class BG3Utils:
-    _mod_settings_xml_start = f"""\
+    _mod_settings_xml_start = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <save>
     <version major="4" minor="8" revision="0" build="500"/>
@@ -47,7 +56,12 @@ class BG3Utils:
         <node id="root">
             <children>
                 <node id="Mods">
-                    <children>""" + get_node_string(folder="GustavX", name="GustavX", uuid="cb555efe-2d9e-131f-8195-a89329d218ea", version64="36028797018963968")
+                    <children>""" + get_node_string(
+        folder="GustavX",
+        name="GustavX",
+        uuid="cb555efe-2d9e-131f-8195-a89329d218ea",
+        version64="36028797018963968",
+    )
     _mod_settings_xml_end = """
                     </children>
                 </node>
@@ -101,12 +115,16 @@ class BG3Utils:
 
     @functools.cached_property
     def modsettings_path(self):
-        return create_dir_if_needed(Path(self._organizer.profilePath()) / "modsettings.lsx")
+        return create_dir_if_needed(
+            Path(self._organizer.profilePath()) / "modsettings.lsx"
+        )
 
     @functools.cached_property
     def plugin_data_path(self) -> Path:
         """Gets the path to the data folder for the current plugin."""
-        return create_dir_if_needed(Path(self._organizer.pluginDataPath(), self._name).absolute())
+        return create_dir_if_needed(
+            Path(self._organizer.pluginDataPath(), self._name).absolute()
+        )
 
     @functools.cached_property
     def tools_dir(self):
@@ -247,8 +265,9 @@ class BG3Utils:
         if self.lslib_retriever.download_lslib_if_missing():
             self._pak_parser.get_metadata_for_files_in_mod(mod, True)
 
+
 def create_dir_if_needed(path: Path) -> Path:
-    if '.' not in path.name[1:]:
+    if "." not in path.name[1:]:
         path.mkdir(parents=True, exist_ok=True)
     else:
         path.parent.mkdir(parents=True, exist_ok=True)

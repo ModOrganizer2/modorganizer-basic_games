@@ -1,6 +1,7 @@
 from .bg3_tool_plugin import BG3ToolPlugin
 from .icons import download
 
+
 class BG3ToolCheckForLsLibUpdates(BG3ToolPlugin):
     icon_bytes = download
     sub_name = "Check For LsLib Updates"

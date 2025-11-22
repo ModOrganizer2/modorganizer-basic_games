@@ -40,7 +40,6 @@ class BG3ToolConvertJsonsToYaml(BG3ToolPlugin):
 
 
 def _convert_jsons_in_dir_to_yaml(path: Path):
-
     for file in list(path.rglob("*.json")):
         converted_path = file.parent / file.name.replace(".json", ".yaml")
         try:
@@ -48,6 +47,7 @@ def _convert_jsons_in_dir_to_yaml(path: Path):
                 converted_path
             ):
                 import yaml
+
                 with open(file, "r") as json_file:
                     with open(converted_path, "w") as yaml_file:
                         yaml.dump(

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Callable, Optional
 
-from PyQt6.QtCore import QDir, qDebug, qInfo, qWarning, QLoggingCategory
+from PyQt6.QtCore import QDir, QLoggingCategory, qDebug, qInfo, qWarning
 from PyQt6.QtWidgets import QApplication
 
 import mobase
@@ -45,23 +45,30 @@ class BG3FileMapper(mobase.IPluginFileMapper):
             if progress.wasCanceled():
                 qWarning("mapping canceled by user")
                 return self.current_mappings
-        (self._utils.overwrite_path / 'Script Extender').mkdir(parents=True, exist_ok=True)
-        (self._utils.overwrite_path / 'Stats').mkdir(parents=True, exist_ok=True)
-        (self._utils.overwrite_path / 'Temp').mkdir(parents=True, exist_ok=True)
-        (self._utils.overwrite_path / 'LevelCache').mkdir(parents=True, exist_ok=True)
-        (self._utils.overwrite_path / 'Stats').mkdir(parents=True, exist_ok=True)
-        (self._utils.overwrite_path / 'Mods').mkdir(parents=True, exist_ok=True)
-        (self._utils.overwrite_path / 'GMCampaigns').mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / "Script Extender").mkdir(
+            parents=True, exist_ok=True
+        )
+        (self._utils.overwrite_path / "Stats").mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / "Temp").mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / "LevelCache").mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / "Stats").mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / "Mods").mkdir(parents=True, exist_ok=True)
+        (self._utils.overwrite_path / "GMCampaigns").mkdir(parents=True, exist_ok=True)
         self.map_files(self._utils.overwrite_path)
         self.create_mapping(
             self._utils.modsettings_path,
-            self.doc_path / "PlayerProfiles" / "Public" / self._utils.modsettings_path.name,
+            self.doc_path
+            / "PlayerProfiles"
+            / "Public"
+            / self._utils.modsettings_path.name,
         )
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
         progress.close()
         if QLoggingCategory.defaultCategory().isDebugEnabled():
-            qDebug(f"resolved mappings: { {m.source: m.destination for m in self.current_mappings} }")
+            qDebug(
+                f"resolved mappings: { {m.source: m.destination for m in self.current_mappings} }"
+            )
         return self.current_mappings
 
     def map_files(
@@ -70,7 +77,7 @@ class BG3FileMapper(mobase.IPluginFileMapper):
         dest: Optional[Path] = None,
         pattern: str = "*",
         rel: bool = True,
-            only_convert: bool = False
+        only_convert: bool = False,
     ):
         dest = dest if dest else self.doc_path
         dest_func: Callable[[Path], str] = (
@@ -89,7 +96,9 @@ class BG3FileMapper(mobase.IPluginFileMapper):
                         file
                     ) > os.path.getmtime(converted_path):
                         import json
+
                         import yaml
+
                         with open(file, "r") as yaml_file:
                             with open(converted_path, "w") as json_file:
                                 json.dump(

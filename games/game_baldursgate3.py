@@ -7,8 +7,9 @@ from pathlib import Path
 from typing import Any
 
 from PyQt6.QtCore import (
+    QLoggingCategory,
     qDebug,
-    qInfo, QLoggingCategory,
+    qInfo,
 )
 
 import mobase
@@ -180,7 +181,12 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         if "bin/bg3" not in exec_path:
             return
         self.utils.log_dir.mkdir(parents=True, exist_ok=True)
-        if QLoggingCategory.defaultCategory().isDebugEnabled() and self.utils.log_diff and self.utils.modsettings_backup.exists() and self.utils.modsettings_path.exists():
+        if (
+            QLoggingCategory.defaultCategory().isDebugEnabled()
+            and self.utils.log_diff
+            and self.utils.modsettings_backup.exists()
+            and self.utils.modsettings_path.exists()
+        ):
             for x in difflib.unified_diff(
                 self.utils.modsettings_backup.open().readlines(),
                 self.utils.modsettings_path.open().readlines(),
@@ -192,7 +198,9 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         moved = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                moved[str(path.relative_to(Path.home()))] = str((self.utils.log_dir / path.name).relative_to(Path.home()))
+                moved[str(path.relative_to(Path.home()))] = str(
+                    (self.utils.log_dir / path.name).relative_to(Path.home())
+                )
                 path.replace(self.utils.log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
@@ -201,7 +209,9 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             if path.name == "log.txt":
                 dest = self.utils.log_dir / f"{path.parent.name}-{path.name}"
             try:
-                moved[str(path.relative_to(Path.home()))] = str(dest.relative_to(Path.home()))
+                moved[str(path.relative_to(Path.home()))] = str(
+                    dest.relative_to(Path.home())
+                )
                 path.replace(dest)
             except PermissionError as e:
                 qDebug(str(e))
@@ -220,7 +230,9 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                     shutil.rmtree(path, ignore_errors=True)
                     removed.add(path)
             if QLoggingCategory.defaultCategory().isDebugEnabled() and len(removed) > 0:
-                qDebug(f"cleaned the following folders due to them being older than {cutoff_time}: {removed}")
+                qDebug(
+                    f"cleaned the following folders due to them being older than {cutoff_time}: {removed}"
+                )
         for fdir in {self.utils.overwrite_path, self.doc_path}:
             removed = set()
             for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
@@ -230,4 +242,6 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 except OSError:
                     pass
             if QLoggingCategory.defaultCategory().isDebugEnabled() and len(removed) > 0:
-                qDebug(f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}")
+                qDebug(
+                    f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}"
+                )

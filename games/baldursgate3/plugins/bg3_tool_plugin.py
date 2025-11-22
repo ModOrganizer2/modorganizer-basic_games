@@ -1,11 +1,13 @@
-import mobase
 from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtGui import QIcon, QPixmap
+
+import mobase
 
 
 class BG3ToolPlugin(mobase.IPluginTool, mobase.IPlugin):
     desc = sub_name = ""
     icon_bytes: bytes
+
     def __init__(self):
         mobase.IPluginTool.__init__(self)
         mobase.IPlugin.__init__(self)
