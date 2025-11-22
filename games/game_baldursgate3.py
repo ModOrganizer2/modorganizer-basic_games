@@ -211,17 +211,23 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
+            removed = set()
             for path in self.utils.overwrite_path.glob("LevelCache/*"):
                 if (
                     datetime.datetime.fromtimestamp(os.path.getmtime(path))
                     < cutoff_time
                 ):
                     shutil.rmtree(path, ignore_errors=True)
-        qDebug("cleaning empty dirs from overwrite directory")
-        for folder in sorted(
-            list(os.walk(self.utils.overwrite_path))[1:], reverse=True
-        ):
-            try:
-                os.rmdir(folder[0])
-            except OSError:
-                pass
+                    removed.add(path)
+            if QLoggingCategory.defaultCategory().isDebugEnabled() and len(removed) > 0:
+                qDebug(f"cleaned the following folders due to them being older than {cutoff_time}: {removed}")
+        for fdir in {self.utils.overwrite_path, self.doc_path}:
+            removed = set()
+            for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
+                try:
+                    folder[0].rmdir()
+                    removed.add(folder[0].relative_to(Path.home()))
+                except OSError:
+                    pass
+            if QLoggingCategory.defaultCategory().isDebugEnabled() and len(removed) > 0:
+                qDebug(f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}")
