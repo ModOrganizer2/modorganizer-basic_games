@@ -183,7 +183,8 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         cat = QLoggingCategory.defaultCategory()
         self.utils.log_dir.mkdir(parents=True, exist_ok=True)
         if (
-            cat is not None and cat.isDebugEnabled()
+            cat is not None
+            and cat.isDebugEnabled()
             and self.utils.log_diff
             and self.utils.modsettings_backup.exists()
             and self.utils.modsettings_path.exists()
