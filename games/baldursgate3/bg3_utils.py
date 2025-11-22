@@ -2,6 +2,7 @@ import functools
 import shutil
 import typing
 from pathlib import Path
+from time import sleep
 
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -239,6 +240,7 @@ class BG3Utils:
         )
         self.modsettings_backup.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(self.modsettings_path, self.modsettings_backup)
+        sleep(0.5)
         return True
 
     def on_mod_installed(self, mod: mobase.IModInterface) -> None:
