@@ -27,12 +27,13 @@ class BG3FileMapper(mobase.IPluginFileMapper):
         qInfo("creating custom bg3 mappings")
         self.current_mappings.clear()
         active_mods = self._utils.active_mods()
-        doc_dir = Path(self.doc_dir().path())
+        if not active_mods:
+            return []
         progress = self._utils.create_progress_window(
             "Mapping files to documents folder", len(active_mods) + 1
         )
-        docs_path_mods = doc_dir / "Mods"
-        docs_path_se = doc_dir / "Script Extender"
+        docs_path_mods = self.doc_path / "Mods"
+        docs_path_se = self.doc_path / "Script Extender"
         for mod in active_mods:
             modpath = Path(mod.absolutePath())
             self.map_files(modpath, dest=docs_path_mods, pattern="*.pak", rel=False)
@@ -45,7 +46,7 @@ class BG3FileMapper(mobase.IPluginFileMapper):
         self.map_files(self._utils.overwrite_path)
         self.create_mapping(
             self._utils.modsettings_path,
-            doc_dir / "PlayerProfiles" / "Public" / self._utils.modsettings_path.name,
+            self.doc_path / "PlayerProfiles" / "Public" / self._utils.modsettings_path.name,
         )
         progress.setValue(len(active_mods) + 1)
         QApplication.processEvents()
