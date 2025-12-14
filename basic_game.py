@@ -199,6 +199,7 @@ class BasicGameMappings:
     gameName: BasicGameMapping[str]
     gameShortName: BasicGameMapping[str]
     gameNexusName: BasicGameMapping[str]
+    gameThunderstoreName: BasicGameMapping[str]
     validShortNames: BasicGameMapping[list[str]]
     nexusGameId: BasicGameMapping[int]
     binaryName: BasicGameMapping[str]
@@ -264,6 +265,12 @@ class BasicGameMappings:
             "GameNexusName",
             "gameNexusName",
             default=lambda g: g.gameShortName(),
+        )
+        self.gameThunderstoreName = BasicGameMapping(
+            game,
+            "GameThunderstoreName",
+            "gameThunderstoreName",
+            default=lambda g: "",
         )
         self.validShortNames = BasicGameMapping(
             game,
@@ -528,6 +535,9 @@ class BasicGame(mobase.IPluginGame):
 
     def gameNexusName(self) -> str:
         return self._mappings.gameNexusName.get()
+
+    def gameThunderstoreName(self) -> str:
+        return self._mappings.gameThunderstoreName.get()
 
     def nexusModOrganizerID(self) -> int:
         return 0
