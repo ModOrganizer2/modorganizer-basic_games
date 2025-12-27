@@ -165,7 +165,7 @@ class DarkestDungeonGame(BasicGame):
     GameSteamId = 262060
     GameGogId = 1719198803
     GameBinary = "_windows/win64/Darkest.exe"
-    GameDataPath = ""
+    GameDataPath = "%GAMEPATH"
     GameDocumentsDirectory = "%DOCUMENTS%/Darkest"
     GameSavesDirectory = "%GAME_DOCUMENTS%"
     GameSupportURL = "https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Darkest-Dungeon"
