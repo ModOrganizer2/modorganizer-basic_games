@@ -8,6 +8,7 @@ import mobase
 from ..basic_game import BasicGame, BasicGameSaveGame
 from ..steam_utils import find_steam_path
 
+
 class DarkestDungeonModDataChecker(mobase.ModDataChecker):
     def __init__(self):
         super().__init__()
@@ -56,6 +57,7 @@ class DarkestDungeonModDataChecker(mobase.ModDataChecker):
             if entry.name().casefold() in self.validDirNames:
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.INVALID
+
 
 class DarkestDungeonSaveGame(BasicGameSaveGame):
     def __init__(self, filepath: Path):
@@ -153,6 +155,7 @@ class DarkestDungeonSaveGame(BasicGameSaveGame):
             return super().getName()
         return self.name
 
+
 class DarkestDungeonGame(BasicGame):
     Name = "DarkestDungeon"
     Author = "erri120"
@@ -180,10 +183,22 @@ class DarkestDungeonGame(BasicGame):
         game_dir = self.gameDirectory()
 
         return [
-            mobase.ExecutableInfo(f"{game_name} Steam x64", QFileInfo(game_dir, "_windows/win64/Darkest.exe")),
-            mobase.ExecutableInfo(f"{game_name} x64", QFileInfo(game_dir, "_windowsnosteam/win64/Darkest.exe")),
-            mobase.ExecutableInfo(f"{game_name} Steam x32", QFileInfo(game_dir, "_windows/win32/Darkest.exe")),
-            mobase.ExecutableInfo(f"{game_name} x32", QFileInfo(game_dir, "_windowsnosteam/win32/Darkest.exe")),
+            mobase.ExecutableInfo(
+                f"{game_name} Steam x64",
+                QFileInfo(game_dir, "_windows/win64/Darkest.exe"),
+            ),
+            mobase.ExecutableInfo(
+                f"{game_name} x64",
+                QFileInfo(game_dir, "_windowsnosteam/win64/Darkest.exe"),
+            ),
+            mobase.ExecutableInfo(
+                f"{game_name} Steam x32",
+                QFileInfo(game_dir, "_windows/win32/Darkest.exe"),
+            ),
+            mobase.ExecutableInfo(
+                f"{game_name} x32",
+                QFileInfo(game_dir, "_windowsnosteam/win32/Darkest.exe"),
+            ),
         ]
 
     @staticmethod
@@ -211,11 +226,11 @@ class DarkestDungeonGame(BasicGame):
 
         if not self.is_steam():
             return documentsSaves
-        
+
         cloudSaves = self.getCloudSaveDirectory()
         if cloudSaves is None:
             return documentsSaves
-        
+
         return QDir(cloudSaves)
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
