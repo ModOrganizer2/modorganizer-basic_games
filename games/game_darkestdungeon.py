@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths, qInfo
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
