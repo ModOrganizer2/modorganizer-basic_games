@@ -1,7 +1,9 @@
 import json
+import os
+import re
 from pathlib import Path
 
-from PyQt6.QtCore import QDir, QFileInfo
+from PyQt6.QtCore import QDir, QFileInfo, qInfo
 
 import mobase
 
@@ -186,19 +188,19 @@ class DarkestDungeonGame(BasicGame):
             mobase.ExecutableInfo(
                 f"{game_name} Steam x64",
                 QFileInfo(game_dir, "_windows/win64/Darkest.exe"),
-            ),
+            ).withWorkingDirectory(game_dir),
             mobase.ExecutableInfo(
                 f"{game_name} x64",
                 QFileInfo(game_dir, "_windowsnosteam/win64/Darkest.exe"),
-            ),
+            ).withWorkingDirectory(game_dir),
             mobase.ExecutableInfo(
                 f"{game_name} Steam x32",
                 QFileInfo(game_dir, "_windows/win32/Darkest.exe"),
-            ),
+            ).withWorkingDirectory(game_dir),
             mobase.ExecutableInfo(
                 f"{game_name} x32",
                 QFileInfo(game_dir, "_windowsnosteam/win32/Darkest.exe"),
-            ),
+            ).withWorkingDirectory(game_dir),
         ]
 
     @staticmethod
