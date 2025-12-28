@@ -6,10 +6,11 @@ from PyQt6.QtCore import qInfo, qWarning
 from PyQt6.QtWidgets import QApplication
 
 from .bg3_tool_plugin import BG3ToolPlugin
+from .icons import exchange
 
 
 class BG3ToolConvertJsonsToYaml(BG3ToolPlugin):
-    icon_file = "ui-next.ico"
+    icon_bytes = exchange
     sub_name = "Convert JSONS to YAML"
     desc = "Convert all jsons in active mods to yaml immediately."
 
@@ -39,14 +40,14 @@ class BG3ToolConvertJsonsToYaml(BG3ToolPlugin):
 
 
 def _convert_jsons_in_dir_to_yaml(path: Path):
-    import yaml
-
     for file in list(path.rglob("*.json")):
         converted_path = file.parent / file.name.replace(".json", ".yaml")
         try:
             if not converted_path.exists() or os.path.getmtime(file) > os.path.getmtime(
                 converted_path
             ):
+                import yaml
+
                 with open(file, "r") as json_file:
                     with open(converted_path, "w") as yaml_file:
                         yaml.dump(

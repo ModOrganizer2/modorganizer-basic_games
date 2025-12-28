@@ -161,17 +161,21 @@ class BG3PakParser:
                 )
                 build_pak = True
                 if pak_path.exists():
-                    pak_creation_time = os.path.getmtime(pak_path)
-                    for root, _, files in os.walk(file):
-                        for f in files:
-                            file_path = os.path.join(root, f)
-                            try:
-                                if os.path.getmtime(file_path) > pak_creation_time:
+                    try:
+                        pak_creation_time = os.path.getmtime(pak_path)
+                        for root, _, files in file.walk():
+                            for f in files:
+                                file_path = root.joinpath(f)
+                                try:
+                                    if os.path.getmtime(file_path) > pak_creation_time:
+                                        break
+                                except OSError as e:
+                                    qDebug(f"Error accessing file {file_path}: {e}")
                                     break
-                            except OSError as e:
-                                qDebug(f"Error accessing file {file_path}: {e}")
-                                break
-                    else:
+                        else:
+                            build_pak = False
+                    except OSError as e:
+                        qDebug(f"Error accessing file {pak_path}: {e}")
                         build_pak = False
                 if build_pak:
                     pak_path.unlink(missing_ok=True)
@@ -274,18 +278,18 @@ class BG3PakParser:
 
 
 def get_module_short_desc(config: configparser.ConfigParser, file: Path) -> str:
+    if not config.has_section(file.name):
+        return ""
+    section: configparser.SectionProxy = config[file.name]
     return (
         ""
-        if not config.has_section(file.name)
-        or "override" in config[file.name].keys()
-        or "Name" not in config[file.name].keys()
-        else f"""
-                <node id="ModuleShortDesc">
-                    <attribute id="Folder" type="LSString" value="{config[file.name]["Folder"]}"/>
-                    <attribute id="MD5" type="LSString" value="{config[file.name]["MD5"]}"/>
-                    <attribute id="Name" type="LSString" value="{config[file.name]["Name"]}"/>
-                    <attribute id="PublishHandle" type="uint64" value="{config[file.name]["PublishHandle"]}"/>
-                    <attribute id="UUID" type="guid" value="{config[file.name]["UUID"]}"/>
-                    <attribute id="Version64" type="int64" value="{config[file.name]["Version64"]}"/>
-                </node>"""
+        if "override" in section.keys() or "Name" not in section.keys()
+        else bg3_utils.get_node_string(
+            folder=section["Folder"],
+            md5=section["MD5"],
+            name=section["Name"],
+            publish_handle=section["PublishHandle"],
+            uuid=section["UUID"],
+            version64=section["Version64"],
+        )
     )
