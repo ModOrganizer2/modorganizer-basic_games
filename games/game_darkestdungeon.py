@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
@@ -167,27 +167,38 @@ class DarkestDungeonGame(BasicGame):
     GameNexusId = 804
     GameSteamId = 262060
     GameGogId = 1719198803
-    GameBinary = "_windowsnosteam/win64/darkest.exe"
+    GameBinary = "_windows/win64/Darkest.exe"
     GameDataPath = ""
-    GameSupportURL = (
-        r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
-        "Game:-Darkest-Dungeon"
-    )
+    GameDocumentsDirectory = "%DOCUMENTS%/Darkest"
+    GameSavesDirectory = "%GAME_DOCUMENTS%"
+    GameSupportURL = "https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/Game:-Darkest-Dungeon"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._register_feature(DarkestDungeonModDataChecker())
         return True
 
-    def executables(self):
-        if self.is_steam():
-            path = QFileInfo(self.gameDirectory(), "_windows/win64/darkest.exe")
-        else:
-            path = QFileInfo(self.gameDirectory(), "_windowsnosteam/win64/darkest.exe")
+    def executables(self) -> list[mobase.ExecutableInfo]:
+        game_name = self.gameName()
+        game_dir = self.gameDirectory()
+
         return [
-            mobase.ExecutableInfo("Darkest Dungeon", path).withWorkingDirectory(
-                self.gameDirectory()
-            ),
+            mobase.ExecutableInfo(
+                f"{game_name} Steam x64",
+                QFileInfo(game_dir, "_windows/win64/Darkest.exe"),
+            ).withWorkingDirectory(game_dir),
+            mobase.ExecutableInfo(
+                f"{game_name} x64",
+                QFileInfo(game_dir, "_windowsnosteam/win64/Darkest.exe"),
+            ).withWorkingDirectory(game_dir),
+            mobase.ExecutableInfo(
+                f"{game_name} Steam x32",
+                QFileInfo(game_dir, "_windows/win32/Darkest.exe"),
+            ).withWorkingDirectory(game_dir),
+            mobase.ExecutableInfo(
+                f"{game_name} x32",
+                QFileInfo(game_dir, "_windowsnosteam/win32/Darkest.exe"),
+            ).withWorkingDirectory(game_dir),
         ]
 
     @staticmethod
@@ -211,19 +222,16 @@ class DarkestDungeonGame(BasicGame):
         return None
 
     def savesDirectory(self) -> QDir:
-        documentsSaves = QDir(
-            "{}/Darkest".format(
-                QStandardPaths.writableLocation(
-                    QStandardPaths.StandardLocation.DocumentsLocation
-                )
-            )
-        )
-        if self.is_steam():
-            cloudSaves = self.getCloudSaveDirectory()
-            if cloudSaves is None:
-                return documentsSaves
-            return QDir(cloudSaves)
-        return documentsSaves
+        documentsSaves = self.documentsDirectory()
+
+        if not self.is_steam():
+            return documentsSaves
+
+        cloudSaves = self.getCloudSaveDirectory()
+        if cloudSaves is None:
+            return documentsSaves
+
+        return QDir(cloudSaves)
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         profiles: list[Path] = []
