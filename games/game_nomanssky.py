@@ -22,6 +22,8 @@ class NoMansSkyGame(BasicGame):
         r"https://github.com/ModOrganizer2/modorganizer-basic_games/wiki/"
         "Game:-No-Man's-Sky"
     )
+    GameSavesDirectory = "%USERPROFILE%/AppData/Roaming/HelloGames/NMS"
+    GameSaveExtension = "hg"
 
     def executables(self):
         return [
