@@ -1,12 +1,17 @@
-import mobase
+import json
+from pathlib import Path
+
 from PyQt6.QtCore import QDir
 
-from pathlib import Path
-import json
+import mobase
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
-from ..basic_features.basic_save_game_info import BasicGameSaveGame, BasicGameSaveGameInfo
+from ..basic_features.basic_save_game_info import (
+    BasicGameSaveGame,
+    BasicGameSaveGameInfo,
+)
 from ..basic_game import BasicGame
+
 
 def parse_schedule1_save_metadata(save_path: Path, save: mobase.ISaveGame):
     metadata_file = save_path / "Game.json"
@@ -23,6 +28,7 @@ def parse_schedule1_save_metadata(save_path: Path, save: mobase.ISaveGame):
     except (FileNotFoundError, json.JSONDecodeError):
         return None
 
+
 class Schedule1SaveGame(BasicGameSaveGame):
     def getName(self) -> str:
         metadata_file = self._filepath / "Game.json"
@@ -31,10 +37,13 @@ class Schedule1SaveGame(BasicGameSaveGame):
                 meta_data = json.load(file)
                 return meta_data["OrganisationName"]
         except (FileNotFoundError, json.JSONDecodeError):
-            return f"[{self.getSaveGroupIdentifier().rstrip('s')}] {self._filepath.stem}"
+            return (
+                f"[{self.getSaveGroupIdentifier().rstrip('s')}] {self._filepath.stem}"
+            )
 
     def getSaveGroupIdentifier(self) -> str:
         return self._filepath.parent.name
+
 
 class Schedule1Game(BasicGame):
     Name = "Schedule I Support Plugin"
@@ -75,7 +84,7 @@ class Schedule1Game(BasicGame):
                     delete=[
                         "*.md",
                         "icon.png",
-                        "fomod", # not sure this is needed either
+                        "fomod",  # not sure this is needed either
                     ],
                     move={
                         "*.dll": "Mods/",
@@ -90,7 +99,7 @@ class Schedule1Game(BasicGame):
         self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         self._register_feature(
             BasicGameSaveGameInfo(
-                None, # no snapshot to add to the widget
+                None,  # no snapshot to add to the widget
                 parse_schedule1_save_metadata,
             )
         )
