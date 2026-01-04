@@ -86,6 +86,7 @@ class LSLibRetriever:
                             err.setText(
                                 "LSLib tools are required for the proper generation of the modsettings.xml file, file will not be generated"
                             )
+                            err.exec()
                             return False
                     else:
                         progress = self._utils.create_progress_window(
@@ -106,6 +107,7 @@ class LSLibRetriever:
                     new_msg.setText(
                         self._utils.tr("Latest version of LSLib already downloaded!")
                     )
+                    new_msg.exec()
 
         except Exception as e:
             qDebug(f"Download failed: {e}")

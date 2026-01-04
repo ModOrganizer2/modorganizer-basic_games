@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from PyQt6.QtCore import (
+    QLoggingCategory,
     qDebug,
     qInfo,
 )
@@ -179,37 +180,70 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
     def _on_finished_run(self, exec_path: str, exit_code: int):
         if "bin/bg3" not in exec_path:
             return
+        cat = QLoggingCategory.defaultCategory()
         self.utils.log_dir.mkdir(parents=True, exist_ok=True)
-        if self.utils.log_diff:
+        if (
+            cat is not None
+            and cat.isDebugEnabled()
+            and self.utils.log_diff
+            and self.utils.modsettings_backup.exists()
+            and self.utils.modsettings_path.exists()
+        ):
             for x in difflib.unified_diff(
-                open(self.utils.modsettings_backup).readlines(),
-                open(self.utils.modsettings_path).readlines(),
+                self.utils.modsettings_backup.open().readlines(),
+                self.utils.modsettings_path.open().readlines(),
                 fromfile=str(self.utils.modsettings_backup),
                 tofile=str(self.utils.modsettings_path),
                 lineterm="",
             ):
                 qDebug(x)
+        moved: dict[str, str] = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                qDebug(f"moving {path} to {self.utils.log_dir}")
-                shutil.move(path, self.utils.log_dir / path.name)
+                moved[str(path.relative_to(Path.home()))] = str(
+                    (self.utils.log_dir / path.name).relative_to(Path.home())
+                )
+                path.replace(self.utils.log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
+        for path in self.utils.overwrite_path.rglob("*log.txt"):
+            dest = self.utils.log_dir / path.name
+            if path.name == "log.txt":
+                dest = self.utils.log_dir / f"{path.parent.name}-{path.name}"
+            try:
+                moved[str(path.relative_to(Path.home()))] = str(
+                    dest.relative_to(Path.home())
+                )
+                path.replace(dest)
+            except PermissionError as e:
+                qDebug(str(e))
+        if cat is not None and cat.isDebugEnabled() and len(moved) > 0:
+            qDebug(f"moved log files to logs dir: {moved}")
         days = self.utils.get_setting("delete_levelcache_folders_older_than_x_days")
         if type(days) is int and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
+            removed: set[Path] = set()
             for path in self.utils.overwrite_path.glob("LevelCache/*"):
                 if (
                     datetime.datetime.fromtimestamp(os.path.getmtime(path))
                     < cutoff_time
                 ):
                     shutil.rmtree(path, ignore_errors=True)
-        qDebug("cleaning empty dirs from overwrite directory")
-        for folder in sorted(
-            list(os.walk(self.utils.overwrite_path))[1:], reverse=True
-        ):
-            try:
-                os.rmdir(folder[0])
-            except OSError:
-                pass
+                    removed.add(path)
+            if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
+                qDebug(
+                    f"cleaned the following folders due to them being older than {cutoff_time}: {removed}"
+                )
+        for fdir in {self.utils.overwrite_path, self.doc_path}:
+            removed: set[Path] = set()
+            for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
+                try:
+                    folder[0].rmdir()
+                    removed.add(folder[0].relative_to(Path.home()))
+                except OSError:
+                    pass
+            if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
+                qDebug(
+                    f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}"
+                )
