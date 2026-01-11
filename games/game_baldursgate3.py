@@ -6,18 +6,11 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import (
-    QLoggingCategory,
-    qDebug,
-    qInfo,
-)
+from PyQt6.QtCore import QLoggingCategory, qDebug, qInfo
 
 import mobase
 
-from ..basic_features import (
-    BasicGameSaveGameInfo,
-    BasicLocalSavegames,
-)
+from ..basic_features import BasicGameSaveGameInfo, BasicLocalSavegames
 from ..basic_game import BasicGame
 from .baldursgate3 import bg3_file_mapper
 
@@ -54,15 +47,12 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self.utils.init(organizer)
-        from .baldursgate3 import (
-            bg3_data_checker,
-            bg3_data_content,
-        )
+        from .baldursgate3 import bg3_data_checker, bg3_data_content
 
         self._register_feature(bg3_data_checker.BG3ModDataChecker())
         self._register_feature(bg3_data_content.BG3DataContent())
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".webp")))
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(BasicLocalSavegames(self))
         organizer.onAboutToRun(self.utils.construct_modsettings_xml)
         organizer.onFinishedRun(self._on_finished_run)
         organizer.onUserInterfaceInitialized(self.utils.on_user_interface_initialized)
