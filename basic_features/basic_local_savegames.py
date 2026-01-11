@@ -4,15 +4,20 @@ import mobase
 
 
 class BasicLocalSavegames(mobase.LocalSavegames):
-    def __init__(self, game_save_dir: QDir):
+    _game: mobase.IPluginGame
+
+    def __init__(self, game: mobase.IPluginGame):
         super().__init__()
-        self._game_saves_dir = game_save_dir.absolutePath()
+        self._game = game
+
+    def game_save_dir(self) -> str:
+        return self._game.savesDirectory().absolutePath()
 
     def mappings(self, profile_save_dir: QDir):
         return [
             mobase.Mapping(
                 source=profile_save_dir.absolutePath(),
-                destination=self._game_saves_dir,
+                destination=self.game_save_dir(),
                 is_directory=True,
                 create_target=True,
             )

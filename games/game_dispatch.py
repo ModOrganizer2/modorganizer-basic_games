@@ -51,7 +51,7 @@ class Dispatch(BasicGame, mobase.IPluginFileMapper):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._register_feature(DispatchModDataChecker())
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(BasicLocalSavegames(self))
         return True
 
     def executables(self):

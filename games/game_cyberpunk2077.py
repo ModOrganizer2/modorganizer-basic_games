@@ -233,7 +233,10 @@ class Cyberpunk2077Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        print("init")
+        print(f"{self.gameDirectory().absolutePath()=}")
+        print(f"{self._gamePath=}")
+        self._register_feature(BasicLocalSavegames(self))
         self._register_feature(
             BasicGameSaveGameInfo(
                 lambda p: Path(p or "", "screenshot.png"),

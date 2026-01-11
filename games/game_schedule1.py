@@ -96,7 +96,7 @@ class Schedule1Game(BasicGame):
                 )
             )
         )
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(BasicLocalSavegames(self))
         self._register_feature(
             BasicGameSaveGameInfo(
                 None,  # no snapshot to add to the widget

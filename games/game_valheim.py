@@ -365,7 +365,7 @@ class ValheimGame(BasicGame):
                 )
             )
         )
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(BasicLocalSavegames(self))
         self._overwrite_sync = OverwriteSync(organizer=self._organizer, game=self)
         self._register_event_handler()
         return True
