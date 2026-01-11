@@ -200,7 +200,7 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "3.0.0"
+    Version = "3.0.1"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -233,9 +233,6 @@ class Cyberpunk2077Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        print("init")
-        print(f"{self.gameDirectory().absolutePath()=}")
-        print(f"{self._gamePath=}")
         self._register_feature(BasicLocalSavegames(self))
         self._register_feature(
             BasicGameSaveGameInfo(
@@ -259,6 +256,7 @@ class Cyberpunk2077Game(BasicGame):
             ),
         )
         organizer.onAboutToRun(self._onAboutToRun)
+        organizer.onFinishedRun(self._onFinishedRun)
         organizer.onPluginSettingChanged(self._on_settings_changed)
         organizer.modList().onModInstalled(self._check_disable_crashreporter)
         organizer.onUserInterfaceInitialized(self._on_user_interface_initialized)
@@ -432,6 +430,11 @@ class Cyberpunk2077Game(BasicGame):
                 True,
             ),
             mobase.PluginSetting(
+                "crash_message",
+                ("Show a crash message as replacement of disabled CrashReporter"),
+                True,
+            ),
+            mobase.PluginSetting(
                 "show_rootbuilder_conversion",
                 (
                     "Shows a dialog to convert legacy RootBuilder mods to native MO mods,"
@@ -523,6 +526,34 @@ class Cyberpunk2077Game(BasicGame):
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
         return True
+
+    def _onFinishedRun(self, path: str, exit_code: int) -> None:
+        if not self._get_setting("crash_message"):
+            return
+        if path.endswith(self.binaryName()) and exit_code > 0:
+            crash_message = QMessageBox(
+                QMessageBox.Icon.Critical,
+                "Cyberpunk Crashed",
+                textwrap.dedent(
+                    f"""
+                    Cyberpunk crashed. Tips:
+                    - disable mods (create backup of modlist or use new profile)
+                    - clear overwrite or delete at least overwrite/r6/cache (to keep mod settings)
+                    - check log files of CET/redscript/RED4ext (in overwrite)
+                    - read [FAQ & Troubleshooting]({self.GameSupportURL}#faq--troubleshooting)
+                    """
+                ),
+                QMessageBox.StandardButton.Ok,
+                self._parentWidget,
+            )
+            crash_message.setTextFormat(Qt.TextFormat.MarkdownText)
+            hide_cb = QCheckBox("&Do not show again*", crash_message)
+            hide_cb.setToolTip(f"Settings/Plugins/{self.name()}/crash_message")
+            crash_message.setCheckBox(hide_cb)
+            crash_message.open(  # type: ignore
+                lambda: hide_cb.isChecked()
+                and self._set_setting("crash_message", False)
+            )
 
     def _check_redmod_result(self, result: tuple[bool, int]) -> bool:
         if result == (True, 0):
