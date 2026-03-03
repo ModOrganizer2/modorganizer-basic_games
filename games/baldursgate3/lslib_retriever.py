@@ -122,13 +122,20 @@ class LSLibRetriever:
                 dialog_message = "Extracting/Updating LSLib files..."
                 win_title = "Extracting LSLib"
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                names = list(filter(lambda name: name.startswith("Packed/Tools"), zip_ref.namelist()))
+                names = list(
+                    filter(
+                        lambda name: name.startswith("Packed/Tools"), zip_ref.namelist()
+                    )
+                )
                 qDebug(f"found files: {','.join(names)}")
                 x_progress = self._utils.create_progress_window(
                     win_title, len(names), msg=dialog_message
                 )
                 for file in names:
-                    shutil.move(zip_ref.extract(file, self._utils.tools_dir), self._utils.tools_dir)
+                    shutil.move(
+                        zip_ref.extract(file, self._utils.tools_dir),
+                        self._utils.tools_dir,
+                    )
                     x_progress.setValue(x_progress.value() + 1)
                     QApplication.processEvents()
                     if x_progress.wasCanceled():
