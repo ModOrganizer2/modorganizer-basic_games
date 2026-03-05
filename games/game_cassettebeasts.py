@@ -1,13 +1,22 @@
+from collections.abc import Mapping
+from io import BytesIO
+import json
+import mobase
+import math
 import os
 import shutil
-import mobase
+import struct
+import sys
+import zlib
 
 from pathlib import Path
 from functools import cached_property
 
+from ..basic_features import BasicLocalSavegames
+from ..basic_features.basic_save_game_info import (BasicGameSaveGame,BasicGameSaveGameInfo)
 from ..basic_game import BasicGame
 
-from PyQt6.QtCore import QDir, QFileInfo
+from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo
 
 
 class CassetteBeastsModDataChecker(mobase.ModDataChecker):
@@ -47,6 +56,60 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
             return None
         return filetree
 
+class CassetteBlock:
+    def __init__(self):
+        compressed_size = None
+        data = None
+
+class CassetteBeastsSaveGame(BasicGameSaveGame):
+    def __init__(self, filepath: Path):
+        super().__init__(filepath)
+        self.name: str = ""
+        self.cheated: str = ""
+        self.lastsave: int = 0
+        self.elapsed: int = 0
+        info = bytearray()
+        data = bytes()
+
+        with open(filepath, 'rb') as infile:
+            magic_string = infile.read(4)
+
+            compression_mode, blocksize, raw_size = struct.unpack("III", infile.read(12))
+
+            num_blocks = math.ceil(raw_size / blocksize)
+
+            blocks = []
+
+            for bnum in range(num_blocks):
+              block = CassetteBlock()
+              block.compressed_size = struct.unpack("I", infile.read(4))[0]
+              blocks.append(block)
+
+            for block in blocks:
+              block.data = infile.read(block.compressed_size)
+
+            magic_string = infile.read(4)
+            infile.close()
+        
+        for block in blocks:
+            data = zlib.decompress(block.data, wbits=40, bufsize=blocksize)
+            info = info + data
+                
+        save_data = json.load(BytesIO(info))
+        self.name = save_data["party"]["player"]["custom"]["name"]
+        self.cheated = save_data["has_cheated"]
+
+    def getName(self) -> str:
+        return self.name
+
+    def getCheated(self) -> str:
+        return self.cheated
+
+def getMetadata(p: Path, save: mobase.ISaveGame) -> Mapping[str, str]:
+    return {
+        "Character": save.getName(),
+        "Cheated": save.getCheated()
+    }
 
 class CassetteBeastsGame(BasicGame):
     appdataenv = os.getenv("APPDATA")
@@ -60,13 +123,16 @@ class CassetteBeastsGame(BasicGame):
     GameBinary = "CassetteBeasts.exe"
     GameDataPath = appdataenv + "/CassetteBeasts/mods"
     GameDocumentsDirectory = appdataenv + "/CassetteBeasts"
-    GameSavesDirectory = '%GAME_DOCUMENTS%'
     GameSaveExtension = "gcpf"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self.dataChecker = CassetteBeastsModDataChecker(organizer)
         self._register_feature(self.dataChecker)
+        self._register_feature(BasicLocalSavegames(self))
+        self._register_feature(
+            BasicGameSaveGameInfo(None, getMetadata)
+        )
         return True
 
     def executables(self):
@@ -79,6 +145,13 @@ class CassetteBeastsGame(BasicGame):
                 "Cassette Beasts (No Mods)",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             ),
+        ]
+
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
+        ext = self._mappings.savegameExtension.get()
+        return [
+            CassetteBeastsSaveGame(path)
+            for path in Path(folder.absolutePath()).glob(f"*.{ext}")
         ]
 
     @cached_property
