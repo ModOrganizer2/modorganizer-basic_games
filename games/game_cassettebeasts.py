@@ -60,6 +60,7 @@ class CassetteBeastsGame(BasicGame):
     GameBinary = "CassetteBeasts.exe"
     GameDataPath = appdataenv + "/CassetteBeasts/mods"
     GameDocumentsDirectory = appdataenv + "/CassetteBeasts"
+    GameSavesDirectory = '%GAME_DOCUMENTS%'
     GameSaveExtension = "gcpf"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
@@ -103,7 +104,7 @@ class CassetteBeastsGame(BasicGame):
         return efls
 
     def iniFiles(self):
-        return ["settings.cfg"]
+        return ["settings.cfg", "mod_settings.cfg"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         modsPath = self.dataDirectory().absolutePath()
