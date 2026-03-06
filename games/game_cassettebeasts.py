@@ -1,23 +1,22 @@
-import json
-import math
-import os
-import shutil
-import struct
-import zlib
-import mobase
-
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from functools import cached_property
 from io import BytesIO
 from typing import Any, Optional
 from pathlib import Path
+import json
+import math
+import os
+import shutil
+import struct
+import zlib
+
+import mobase
+from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo
 
 from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import (BasicGameSaveGame,BasicGameSaveGameInfo)
 from ..basic_game import BasicGame
-
-from PyQt6.QtCore import QDateTime, QDir, QFile, QFileInfo
 
 
 def json_get_me(value: Any, path: Sequence[str | int], /, default: Any) -> Any:
@@ -66,8 +65,8 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
 
 class CassetteBlock:
     def __init__(self):
-        compressed_size = None
-        data = None
+        compressed_size: str = "(unknown)"
+        data: str = "(unknown)"
 
 class CassetteBeastsSaveGame(BasicGameSaveGame):
     def __init__(self, filepath: Path):
@@ -85,7 +84,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
             info = bytearray()
             data = bytes()
             with open(filepath, 'rb') as infile:
-                magic_string = infile.read(4)
+                infile.read(4)
 
                 compression_mode, blocksize, raw_size = struct.unpack("III", infile.read(12))
 
@@ -93,7 +92,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
 
                 blocks = []
 
-                for bnum in range(num_blocks):
+                for _bnum in range(num_blocks):
                     block = CassetteBlock()
                     block.compressed_size = struct.unpack("I", infile.read(4))[0]
                     blocks.append(block)
@@ -101,7 +100,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
                 for block in blocks:
                     block.data = infile.read(block.compressed_size)
 
-                magic_string = infile.read(4)
+                infile.read(4)
                 infile.close()
             for block in blocks:
                 data = zlib.decompress(block.data, wbits=40, bufsize=blocksize)
