@@ -65,8 +65,8 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
 
 class CassetteBlock:
     def __init__(self):
-        compressed_size: str = "(unknown)"
-        data: str = "(unknown)"
+        self.compressed_size: int = 0
+        self.data: bytes = b''
 
 class CassetteBeastsSaveGame(BasicGameSaveGame):
     def __init__(self, filepath: Path):
