@@ -177,7 +177,7 @@ class CassetteBeastsGame(BasicGame):
         super().init(organizer)
         self.dataChecker = CassetteBeastsModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(BasicLocalSavegames(QDir(self.GameDocumentsDirectory)))
+        self._register_feature(BasicLocalSavegames(self))
         self._register_feature(
             BasicGameSaveGameInfo(None, getMetadata)
         )
