@@ -171,6 +171,7 @@ class CassetteBeastsGame(BasicGame):
     GameBinary = "CassetteBeasts.exe"
     GameDataPath = os.getenv("APPDATA") + "/CassetteBeasts/mods"
     GameDocumentsDirectory = os.getenv("APPDATA") + "/CassetteBeasts"
+    GameSavesDirectory = os.getenv("APPDATA") + "/CassetteBeasts"
     GameSaveExtension = "gcpf"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
