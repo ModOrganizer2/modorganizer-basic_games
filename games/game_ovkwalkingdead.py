@@ -179,7 +179,7 @@ class OTWDGame(BasicGame):
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/OTWD/Saved/Config/WindowsClient"
+    GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/OTWD/Saved/Config/WindowsClient"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget

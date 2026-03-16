@@ -199,7 +199,7 @@ class Payday1Game(BasicGame):
     GameSteamId = 24240
     GameBinary = "payday_win32_release.exe"
     GameDataPath = "%GAME_PATH%"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/PAYDAY"
+    GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/PAYDAY"
     _forced_libraries = ["IPHLPAPI.dll", "WSOCK32.dll"]
 
     def init(self, organizer: mobase.IOrganizer) -> bool:

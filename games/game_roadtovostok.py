@@ -42,7 +42,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
 class RoadToVostokGame(BasicGame):
 
     Name = "Road to Vostok Support Plugin"
-    Author = "modworkshop"
+    Author = "modworkshop" 
     Version = "1"
     GameName = "Road to Vostok"
     GameShortName = "road-to-vostok"
@@ -50,7 +50,7 @@ class RoadToVostokGame(BasicGame):
     GameBinary = "Road_to_Vostok_Demo.exe"
     GameDataPath = "%GAME_PATH%"
     GameModsPath = "mods"
-    GameDocumentsDirectory = "%APPDATA%/Godot/app_userdata/Road to Vostok"
+    GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/Godot/app_userdata/Road to Vostok"
     GameSaveExtension = "tres"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:

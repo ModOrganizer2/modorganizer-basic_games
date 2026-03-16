@@ -102,7 +102,9 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
         ):
             path = mod.absolutePath()
             json_path = os.path.join(path, northstarModPath + "FOLDERNAME/mod.json")
-            mod_data = json.load(open(json_path, encoding="utf-8"))
+            with open(json_path, "r") as json_data:
+                mod_data = json.load(json_data)
+                json_data.close()
             modname = mod_data["name"]
             old_path = os.path.join(path, northstarModPath + "FOLDERNAME")
             new_path = os.path.join(path, northstarModPath + f"{modname}")
