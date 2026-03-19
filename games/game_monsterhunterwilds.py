@@ -1,10 +1,11 @@
-import uuid
 import re
+import uuid
 from pathlib import Path
 from typing import Iterable
 
-import mobase
 from PyQt6.QtCore import QDir
+
+import mobase
 
 from ..basic_features import BasicModDataChecker, GlobPatterns
 from ..basic_game import BasicGame
@@ -91,18 +92,14 @@ class MonsterHunterWildsGame(BasicGame):
 
         for mod_path in self._active_mod_paths():
             for pak_path in self._root_paks(mod_path):
-                target_name = (
-                    f"re_chunk_000.pak.sub_000.pak.patch_{next_patch:03d}.pak"
-                )
+                target_name = f"re_chunk_000.pak.sub_000.pak.patch_{next_patch:03d}.pak"
                 pak_files.append((pak_path, mod_path / target_name))
                 next_patch += 1
 
         overwrite_path = self._overwrite_path()
         if overwrite_path.exists():
             for pak_path in self._root_paks(overwrite_path):
-                target_name = (
-                    f"re_chunk_000.pak.sub_000.pak.patch_{next_patch:03d}.pak"
-                )
+                target_name = f"re_chunk_000.pak.sub_000.pak.patch_{next_patch:03d}.pak"
                 pak_files.append((pak_path, overwrite_path / target_name))
                 next_patch += 1
 
@@ -123,5 +120,3 @@ class MonsterHunterWildsGame(BasicGame):
         if Path(app_path_str) == self._game_root() / self.binaryName():
             self._rename_paks()
         return True
-
-
