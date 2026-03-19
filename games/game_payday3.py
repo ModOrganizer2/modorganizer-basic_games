@@ -1,18 +1,21 @@
-from enum import IntEnum, auto
-from functools import cached_property
-from pathlib import Path
 import json
 import os
 import shutil
-
 import mobase
-from PyQt6.QtCore import QDir, QFileInfo
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
-from ..basic_game import BasicGame
+from enum import IntEnum, auto
+from pathlib import Path
+from functools import cached_property
+
 from .unreal_tabs.constants import DEFAULT_UE4SS_MODS, UE4SSModInfo
 from .unreal_tabs.manage_paks.widget import PaksTabWidget
 from .unreal_tabs.manage_ue4ss.widget import UE4SSTabWidget
+
+from ..basic_game import BasicGame
+
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
+from PyQt6.QtCore import QDir, QFileInfo
+
 
 class Content(IntEnum):
     UCAS = auto()
@@ -23,7 +26,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class Payday3ModDataContent(mobase.ModDataContent):
     contents: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
@@ -35,7 +38,10 @@ class SilentHill2ModDataContent(mobase.ModDataContent):
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
-        return [mobase.ModDataContent.Content(id, name, icon, *filter_only) for id, name, icon, *filter_only in self.GAMECONTENTS]
+        return [
+            mobase.ModDataContent.Content(id, name, icon, *filter_only)
+            for id, name, icon, *filter_only in self.GAMECONTENTS
+        ]
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
@@ -62,7 +68,7 @@ class SilentHill2ModDataContent(mobase.ModDataContent):
         return list(self.contents)
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class Payday3ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -80,7 +86,9 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
             self.move_overwrite_merge(s_item, d_item)
         os.rmdir(source)
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         GameDataUE4SSMods = self.organizer.managedGame().GameDataUE4SSMods
         GameDataPakMods = self.organizer.managedGame().GameDataPakMods
         GameDataMovies = self.organizer.managedGame().GameDataMovieMods
@@ -117,10 +125,14 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         GameDataMovies = self.organizer.managedGame().GameDataMovieMods + "/"
         treefixed = 0
         if filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, os.path.dirname(os.path.dirname(GameDataUE4SSMods)) + "/")
+            treefixed = self.allMoveTo(
+                filetree, os.path.dirname(os.path.dirname(GameDataUE4SSMods)) + "/"
+            )
             if treefixed == 1:
                 return filetree
-        if filetree.exists("Scripts", mobase.IFileTree.DIRECTORY) or filetree.exists("dlls", mobase.IFileTree.DIRECTORY):
+        if filetree.exists("Scripts", mobase.IFileTree.DIRECTORY) or filetree.exists(
+            "dlls", mobase.IFileTree.DIRECTORY
+        ):
             treefixed = self.allMoveTo(filetree, GameDataUE4SSMods)
             if treefixed == 1:
                 return filetree
@@ -136,14 +148,32 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
                             if mod_name == "":
                                 mod_name = e.name()
                             mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-                            if filetree.createOrphanTree("OrphanTree") is None and os.path.exists(mod_path):
+                            if filetree.createOrphanTree(
+                                "OrphanTree"
+                            ) is None and os.path.exists(mod_path):
                                 match e.suffix().casefold():
                                     case "pak" | "utoc" | "ucas":
-                                        os.makedirs(os.path.join(mod_path, GameDataPakMods), exist_ok=True)
-                                        shutil.move(os.path.join(mod_path, e.name()), os.path.join(mod_path, GameDataPakMods, e.name()))
+                                        os.makedirs(
+                                            os.path.join(mod_path, GameDataPakMods),
+                                            exist_ok=True,
+                                        )
+                                        shutil.move(
+                                            os.path.join(mod_path, e.name()),
+                                            os.path.join(
+                                                mod_path, GameDataPakMods, e.name()
+                                            ),
+                                        )
                                     case "bk2":
-                                        os.makedirs(os.path.join(mod_path, GameDataMovies), exist_ok=True)
-                                        shutil.move(os.path.join(mod_path, e.name()), os.path.join(mod_path, GameDataMovies, e.name()))
+                                        os.makedirs(
+                                            os.path.join(mod_path, GameDataMovies),
+                                            exist_ok=True,
+                                        )
+                                        shutil.move(
+                                            os.path.join(mod_path, e.name()),
+                                            os.path.join(
+                                                mod_path, GameDataMovies, e.name()
+                                            ),
+                                        )
                                     case _:
                                         pass
                                 treefixed = 1
@@ -155,7 +185,11 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
                         case "pak" | "utoc" | "ucas":
                             filetree.move(e, GameDataPakMods, mobase.IFileTree.MERGE)
                         case "dll":
-                            filetree.move(e, os.path.dirname(GameDataUE4SSMods) + "/", mobase.IFileTree.MERGE)
+                            filetree.move(
+                                e,
+                                os.path.dirname(GameDataUE4SSMods) + "/",
+                                mobase.IFileTree.MERGE,
+                            )
                         case "bk2":
                             filetree.move(e, GameDataMovies, mobase.IFileTree.MERGE)
                         case _:
@@ -166,20 +200,19 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
-    Author = "modworkshop"
+class Payday3Game(BasicGame):
+    Name = "Payday 3 Support Plugin"
+    Author = "modworkshop, MaskPlague and Silarn"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "Payday 3"
+    GameShortName = "payday-3"
+    GameSteamId = 1272080
+    GameBinary = "PAYDAY3/Binaries/Win64/PAYDAY3-Win64-Shipping.exe"
+    GameDataPath = "PAYDAY3"
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
+    GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/PAYDAY3/Saved/Config/WindowsClient"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -187,9 +220,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = Payday3ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(Payday3ModDataContent())
         organizer.onUserInterfaceInitialized(self.init_tab)
         return True
 
@@ -213,9 +246,9 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "Payday 3",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
-            )
+            ).withArgument("-fileopenlog")
         ]
 
     @cached_property
@@ -229,7 +262,9 @@ class SilentHill2Game(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -237,7 +272,13 @@ class SilentHill2Game(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def paksDirectory(self) -> QDir:
