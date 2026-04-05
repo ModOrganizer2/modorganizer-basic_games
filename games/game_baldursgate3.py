@@ -167,6 +167,13 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         base_bin = Path(self.gameDirectory().absoluteFilePath("bin"))
         return {str(f.relative_to(base_bin)) for f in base_bin.glob("*.dll")}
 
+    @staticmethod
+    def _format_debug_path(path: Path) -> Path:
+        try:
+            return path.relative_to(Path.home())
+        except ValueError:
+            return path
+
     def _on_finished_run(self, exec_path: str, exit_code: int):
         if "bin/bg3" not in exec_path:
             return
@@ -190,8 +197,8 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         moved: dict[str, str] = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                moved[str(path.relative_to(Path.home()))] = str(
-                    (self.utils.log_dir / path.name).relative_to(Path.home())
+                moved[str(self._format_debug_path(path))] = str(
+                    self._format_debug_path(self.utils.log_dir / path.name)
                 )
                 path.replace(self.utils.log_dir / path.name)
             except PermissionError as e:
@@ -201,8 +208,8 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             if path.name == "log.txt":
                 dest = self.utils.log_dir / f"{path.parent.name}-{path.name}"
             try:
-                moved[str(path.relative_to(Path.home()))] = str(
-                    dest.relative_to(Path.home())
+                moved[str(self._format_debug_path(path))] = str(
+                    self._format_debug_path(dest)
                 )
                 path.replace(dest)
             except PermissionError as e:
@@ -230,10 +237,10 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
                 try:
                     folder[0].rmdir()
-                    removed.add(folder[0].relative_to(Path.home()))
+                    removed.add(self._format_debug_path(folder[0]))
                 except OSError:
                     pass
             if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
                 qDebug(
-                    f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}"
+                    f"cleaned empty dirs from {self._format_debug_path(fdir)} {removed}"
                 )
