@@ -551,8 +551,9 @@ class Cyberpunk2077Game(BasicGame):
             hide_cb.setToolTip(f"Settings/Plugins/{self.name()}/crash_message")
             crash_message.setCheckBox(hide_cb)
             crash_message.open(  # type: ignore
-                lambda: hide_cb.isChecked()
-                and self._set_setting("crash_message", False)
+                lambda: (
+                    hide_cb.isChecked() and self._set_setting("crash_message", False)
+                )
             )
 
     def _check_redmod_result(self, result: tuple[bool, int]) -> bool:
