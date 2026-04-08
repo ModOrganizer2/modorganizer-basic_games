@@ -47,7 +47,7 @@ class RoadToVostokGame(BasicGame):
     GameName = "Road to Vostok"
     GameShortName = "road-to-vostok"
     GameSteamId = 1963610
-    GameBinary = "Road_to_Vostok_Demo.exe"
+    GameBinary = "RTV.exe"
     GameDataPath = "%GAME_PATH%"
     GameModsPath = "mods"
     GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/Godot/app_userdata/Road to Vostok"
