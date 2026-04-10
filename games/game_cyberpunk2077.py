@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
-import mobase
 from PyQt6.QtCore import QDateTime, QDir, Qt, qCritical, qInfo, qWarning
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -19,6 +18,8 @@ from PyQt6.QtWidgets import (
     QProgressDialog,
     QWidget,
 )
+
+import mobase
 
 from ..basic_features import BasicLocalSavegames, BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import (
@@ -74,7 +75,7 @@ def parse_cyberpunk_save_metadata(save_path: Path, save: mobase.ISaveGame):
                 "Street Cred": int(meta_data["streetCred"]),
                 "Life Path": meta_data["lifePath"],
                 "Difficulty": meta_data["difficulty"],
-                "Gender": f'{meta_data["bodyGender"]} / {meta_data["brainGender"]}',
+                "Gender": f"{meta_data['bodyGender']} / {meta_data['brainGender']}",
                 "Game version": meta_data["buildPatch"],
             }
     except (FileNotFoundError, json.JSONDecodeError):
@@ -487,7 +488,7 @@ class Cyberpunk2077Game(BasicGame):
                     _,
                 ) = self._modlist_files.update_modlist("redmod")
                 modlist_param = f'-modlist="{modlist_path}"' if modlist else ""
-                args = f"{args[:m.start()]}{modlist_param}{args[m.end():]}"
+                args = f"{args[: m.start()]}{modlist_param}{args[m.end() :]}"
                 qInfo(f"Manual modlist deployment: replacing {m[0]}, new args = {args}")
                 self._check_redmod_result(
                     self._organizer.waitForApplication(
@@ -624,10 +625,8 @@ class Cyberpunk2077Game(BasicGame):
             and not (
                 # samefile is only safe after existence checks
                 game_file.samefile(mapped_file)
-
                 # file comparison only executed when both files exist
                 or filecmp.cmp(game_file, mapped_file)
-
                 or (  # different backup file
                     (
                         backup_files := self._organizer.findFiles(
@@ -643,6 +642,7 @@ class Cyberpunk2077Game(BasicGame):
                 )
             )
         )
+
     def _unmapped_cache_files(self, data_path: Path) -> Iterable[Path]:
         """Yields unmapped cache files relative to `data_path`."""
         for file in self._organizer.findFiles("r6/cache", "*"):
