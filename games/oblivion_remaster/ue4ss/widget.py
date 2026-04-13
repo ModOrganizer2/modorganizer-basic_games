@@ -108,7 +108,9 @@ class UE4SSTabWidget(QWidget):
         game = self._organizer.managedGame()
         if isinstance(game, OblivionRemasteredGame):
             if game.ue4ssDirectory().exists():
-                for dir_info in game.ue4ssDirectory().entryInfoList(QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot):  # type: ignore
+                for dir_info in game.ue4ssDirectory().entryInfoList(
+                    QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
+                ):  # type: ignore
                     if QFileInfo(
                         QDir(dir_info.absoluteFilePath()).absoluteFilePath(
                             "scripts/main.lua"
