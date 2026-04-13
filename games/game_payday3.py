@@ -27,7 +27,8 @@ class Content(IntEnum):
 
 
 class Payday3ModDataContent(mobase.ModDataContent):
-    contents: list[int] = []
+    content: list[int] = []
+
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -47,17 +48,17 @@ class Payday3ModDataContent(mobase.ModDataContent):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "utoc":
-                    self.contents.add(Content.UTOC)
+                    self.content.append(Content.UTOC)
                 case "ucas":
-                    self.contents.add(Content.UCAS)
+                    self.content.append(Content.UCAS)
                 case "pak":
-                    self.contents.add(Content.PAK)
+                    self.content.append(Content.PAK)
                 case "lua":
-                    self.contents.add(Content.UE4SS)
+                    self.content.append(Content.UE4SS)
                 case "dll":
-                    self.contents.add(Content.DLL)
+                    self.content.append(Content.DLL)
                 case "bk2":
-                    self.contents.add(Content.BK2)
+                    self.content.append(Content.BK2)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
@@ -73,7 +74,7 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -86,15 +87,13 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
             self.move_overwrite_merge(s_item, d_item)
         os.rmdir(source)
 
-    def dataLooksValid(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
-        GameDataUE4SSMods = self.organizer.managedGame().GameDataUE4SSMods
-        GameDataPakMods = self.organizer.managedGame().GameDataPakMods
-        GameDataMovies = self.organizer.managedGame().GameDataMovieMods
+    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+        GameDataUE4SSMods = getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "")
+        GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
+        GameDataMovieMods = getattr(self.organizer.managedGame(), "GameDataMovieMods", "")
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
-        if filetree.exists(GameDataMovies, mobase.IFileTree.DIRECTORY):
+        if filetree.exists(GameDataMovieMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataUE4SSMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
@@ -102,9 +101,9 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
 
@@ -112,17 +111,16 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+            entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        GameDataUE4SSMods = self.organizer.managedGame().GameDataUE4SSMods + "/"
-        GameDataPakMods = self.organizer.managedGame().GameDataPakMods + "/"
-        GameDataMovies = self.organizer.managedGame().GameDataMovieMods + "/"
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameDataUE4SSMods = getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/"
+        GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "") + "/"
+        GameDataMovieMods = getattr(self.organizer.managedGame(), "GameDataMovieMods", "") + "/"
         treefixed = 0
         if filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
             treefixed = self.allMoveTo(
@@ -140,58 +138,35 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
             allowedUnzippedExt = ["pak", "utoc", "ucas", "bk2", "dll"]
             entriesToMove: list[mobase.FileTreeEntry] = []
             for e in filetree:
-                if e is not None:
-                    if e.isFile():
-                        fileext = e.suffix().casefold()
-                        if fileext in allowedUnzippedExt:
-                            mod_name = filetree.name()
-                            if mod_name == "":
-                                mod_name = e.name()
-                            mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-                            if filetree.createOrphanTree(
-                                "OrphanTree"
-                            ) is None and os.path.exists(mod_path):
-                                match e.suffix().casefold():
-                                    case "pak" | "utoc" | "ucas":
-                                        os.makedirs(
-                                            os.path.join(mod_path, GameDataPakMods),
-                                            exist_ok=True,
-                                        )
-                                        shutil.move(
-                                            os.path.join(mod_path, e.name()),
-                                            os.path.join(
-                                                mod_path, GameDataPakMods, e.name()
-                                            ),
-                                        )
-                                    case "bk2":
-                                        os.makedirs(
-                                            os.path.join(mod_path, GameDataMovies),
-                                            exist_ok=True,
-                                        )
-                                        shutil.move(
-                                            os.path.join(mod_path, e.name()),
-                                            os.path.join(
-                                                mod_path, GameDataMovies, e.name()
-                                            ),
-                                        )
-                                    case _:
-                                        pass
-                                treefixed = 1
-                            else:
-                                entriesToMove.append(e)
-            if entriesToMove is not None:
+                if e.isFile():
+                    fileext = e.suffix().casefold()
+                    if fileext in allowedUnzippedExt:
+                        mod_name = filetree.name()
+                        if mod_name == "":
+                            mod_name = e.name()
+                        mod_path = os.path.join(self.organizer.modsPath(), mod_name)
+                        if not filetree.createOrphanTree("OrphanTree") and os.path.exists(mod_path):
+                            match e.suffix().casefold():
+                                case "pak" | "utoc" | "ucas":
+                                    os.makedirs(os.path.join(mod_path, GameDataPakMods), exist_ok=True)
+                                    shutil.move(os.path.join(mod_path, e.name()), os.path.join(mod_path, GameDataPakMods, e.name()))
+                                case "bk2":
+                                    os.makedirs(os.path.join(mod_path, GameDataMovieMods), exist_ok=True)
+                                    shutil.move(os.path.join(mod_path, e.name()), os.path.join(mod_path, GameDataMovieMods, e.name()))
+                                case _:
+                                    pass
+                            treefixed = 1
+                        else:
+                            entriesToMove.append(e)
+            if entriesToMove:
                 for e in entriesToMove:
                     match e.suffix().casefold():
                         case "pak" | "utoc" | "ucas":
                             filetree.move(e, GameDataPakMods, mobase.IFileTree.MERGE)
                         case "dll":
-                            filetree.move(
-                                e,
-                                os.path.dirname(GameDataUE4SSMods) + "/",
-                                mobase.IFileTree.MERGE,
-                            )
+                            filetree.move(e,os.path.dirname(GameDataUE4SSMods) + "/",mobase.IFileTree.MERGE)
                         case "bk2":
-                            filetree.move(e, GameDataMovies, mobase.IFileTree.MERGE)
+                            filetree.move(e, GameDataMovieMods, mobase.IFileTree.MERGE)
                         case _:
                             pass
                 treefixed = 1
@@ -281,15 +256,6 @@ class Payday3Game(BasicGame):
         ]
         return efls
 
-    def paksDirectory(self) -> QDir:
-        return QDir(self.dataDirectory().absolutePath() + "/" + self.GameDataPakMods)
-
-    def ue4ssDirectory(self) -> QDir:
-        return QDir(self.dataDirectory().absolutePath() + "/" + self.GameDataUE4SSMods)
-
-    def movieDirectory(self) -> QDir:
-        return QDir(self.dataDirectory().absolutePath() + "/" + self.GameDataMovieMods)
-
     def write_default_mods(self, profile: QDir):
         ue4ss_mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
         ue4ss_mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
@@ -309,10 +275,17 @@ class Payday3Game(BasicGame):
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.write_default_mods(directory)
-        if not self.paksDirectory().exists():
-            os.makedirs(self.paksDirectory().absolutePath())
-        if not self.ue4ssDirectory().exists():
-            os.makedirs(self.ue4ssDirectory().absolutePath())
-        if not self.movieDirectory().exists():
-            os.makedirs(self.movieDirectory().absolutePath())
+
+        base_data_dir = self.dataDirectory().absolutePath()
+
+        paksDirectory = QDir(base_data_dir + "/" + self.GameDataPakMods)
+        ue4ssDirectory = QDir(base_data_dir + "/" + self.GameDataUE4SSMods)
+        movieDirectory = QDir(base_data_dir + "/" + self.GameDataMovieMods)
+
+        if not paksDirectory.exists():
+            os.makedirs(paksDirectory.absolutePath())
+        if not ue4ssDirectory.exists():
+            os.makedirs(ue4ssDirectory.absolutePath())
+        if not movieDirectory.exists():
+            os.makedirs(movieDirectory.absolutePath())
         super().initializeProfile(directory, settings)

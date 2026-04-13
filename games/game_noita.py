@@ -16,7 +16,7 @@ class NoitaModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -32,13 +32,11 @@ class NoitaModDataChecker(mobase.ModDataChecker):
     def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
-        GameModsPath = self.organizer.managedGame().GameModsPath
+        GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "")
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree is not None and filetree.exists(
-            GameModsPath + "/FOLDERNAME", mobase.IFileTree.DIRECTORY
-        ):
+        if filetree.exists(GameModsPath + "/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, GameModsPath + "/FOLDERNAME")
             new_path = os.path.join(path, GameModsPath + f"/{modname}")
@@ -48,18 +46,16 @@ class NoitaModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def dataLooksValid(
-        self, filetree: mobase.IFileTree
-    ) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
         if filetree.exists("mods", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
 
@@ -67,15 +63,14 @@ class NoitaModDataChecker(mobase.ModDataChecker):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+            entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        GameModsPath = self.organizer.managedGame().GameModsPath
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "")
         treefixed = 0
         if filetree.exists("mod.xml", mobase.IFileTree.FILE):
             treefixed = self.allMoveTo(filetree, GameModsPath + "/FOLDERNAME/")

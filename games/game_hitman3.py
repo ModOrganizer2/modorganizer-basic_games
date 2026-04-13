@@ -18,7 +18,7 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -34,12 +34,15 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
     def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
-        GameSMMPath = self.organizer.managedGame().GameSMMPath
+        GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        if filetree is not None and filetree.exists(GameSMMPath + "/Mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        if filetree.exists(GameSMMPath + "/Mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+            print("Found folder")
             path = mod.absolutePath()
+            print(path)
             json_path = os.path.join(path, GameSMMPath + "/Mods/FOLDERNAME/manifest.json")
+            print(json_path)
             mod_data = json.load(open(json_path, encoding="utf-8"))
             modname = mod_data["id"]
             old_path = os.path.join(path, GameSMMPath + "/Mods/FOLDERNAME")
@@ -57,36 +60,46 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
 
-    def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
+    def allMoveTo(self, sourcetree: mobase.IFileTree, targettree: mobase.IFileTree, toMoveTo: str):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
-        for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+        for e in sourcetree:
+            entriesToMove.append(e)
         for e in entriesToMove:
-            filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
+            targettree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
+        targettree.remove(sourcetree)
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        GameSMMPath = self.organizer.managedGame().GameSMMPath
+    def first_tree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.isDir():
+                return e
+        return None
+
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
         treefixed = 0
         if filetree.exists("manifest.json", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, GameSMMPath + "/Mods/FOLDERNAME/")
+            print("Found manifest in root, moving to SMM folder")
+            print(GameSMMPath + "/Mods/FOLDERNAME/")
+            treefixed = self.allMoveTo(filetree, filetree, GameSMMPath + "/Mods/FOLDERNAME/")
             if treefixed == 1:
                 self.needsNameFix = True
-        if treefixed == 0:
-            if len(filetree) == 1:
-                filetree = filetree.find(filetree[0].path("/"))
-                treefixed = self.allMoveTo(filetree, GameSMMPath + "/Mods/FOLDERNAME/")
-                if treefixed == 1:
-                    self.needsNameFix = True
+        elif len(filetree) == 1:
+            firsttreelayer: mobase.IFileTree | None = self.first_tree(filetree)
+            if firsttreelayer is not None:
+                if firsttreelayer.exists("manifest.json", mobase.IFileTree.FILE):
+                    print(GameSMMPath + "/Mods/FOLDERNAME/")
+                    treefixed = self.allMoveTo(firsttreelayer, filetree, GameSMMPath + "/Mods/FOLDERNAME/")
+                    if treefixed == 1:
+                        self.needsNameFix = True
         if treefixed == 0:
             return None
         return filetree
@@ -117,9 +130,9 @@ class Hitman3Game(BasicGame):
             key = self._organizer.modList().getMod(key)
             tree = key.fileTree()
             subtree = tree.find(self.GameSMMPath + "/Mods", mobase.IFileTree.DIRECTORY)
-            if subtree is not None and subtree.isDir():
+            if isinstance(subtree, mobase.IFileTree):
                 for e in subtree:
-                    if e is not None and e.isDir():
+                    if isinstance(e, mobase.IFileTree):
                         if e.exists("manifest.json", mobase.IFileTree.FILE):
                             json_path = key.absolutePath() + "/" + e.path() + "/manifest.json"
                             mod_data = json.load(open(json_path, encoding="utf-8"))

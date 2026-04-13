@@ -16,33 +16,32 @@ class EmuVRModDataChecker(mobase.ModDataChecker):
         self.organizer: mobase.IOrganizer = organizer
 
     def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
-        GameDataUGCMods = self.organizer.managedGame().GameDataUGCMods
+        GameDataUGCMods = getattr(self.organizer.managedGame(), "GameDataUGCMods", "")
         if filetree.exists(GameDataUGCMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        GameDataUGCMods = self.organizer.managedGame().GameDataUGCMods + "/"
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameDataUGCMods = getattr(self.organizer.managedGame(), "GameDataUGCMods", "") + "/"
         treefixed = 0
         for branch in filetree:
             mod_name = filetree.name()
             if mod_name == "":
                 mod_name = branch.name()
             mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-            if filetree.createOrphanTree("OrphanTree") is None and os.path.exists(mod_path) and branch.suffix().casefold() == "ugc":
+            if not filetree.createOrphanTree("OrphanTree") and os.path.exists(mod_path) and branch.suffix().casefold() == "ugc":
                 os.makedirs(os.path.join(mod_path, GameDataUGCMods), exist_ok=True)
                 shutil.move(os.path.join(mod_path, branch.name()), os.path.join(mod_path, GameDataUGCMods, branch.name()))
                 treefixed = 1
             else:
-                if branch is not None:
-                    if branch.isDir():
-                        for e in branch:
-                            if e is not None and e.isFile() and e.suffix().casefold() == "ugc":
-                                filetree.move(e, GameDataUGCMods, mobase.IFileTree.MERGE)
-                                treefixed = 1
-                    elif branch.suffix().casefold() == "ugc":
-                        filetree.move(branch, GameDataUGCMods, mobase.IFileTree.MERGE)
-                        treefixed = 1
+                if isinstance(branch, mobase.IFileTree):
+                    for e in branch:
+                        if e.isFile() and e.suffix().casefold() == "ugc":
+                            filetree.move(e, GameDataUGCMods, mobase.IFileTree.MERGE)
+                            treefixed = 1
+                elif branch.suffix().casefold() == "ugc":
+                    filetree.move(branch, GameDataUGCMods, mobase.IFileTree.MERGE)
+                    treefixed = 1
         if treefixed == 0:
             return None
         return filetree

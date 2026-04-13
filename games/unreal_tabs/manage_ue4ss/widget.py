@@ -43,6 +43,7 @@ class UE4SSTabWidget(QWidget):
         self, mods: dict[str, mobase.ModState] | mobase.IModInterface | str
     ):
         game = self._organizer.managedGame()
+        game_data_ue4ss_mods = getattr(game, "GameDataUE4SSMods", None)
         mod_list: list[mobase.IModInterface] = []
         if isinstance(mods, dict):
             for mod in mods.keys():
@@ -54,7 +55,7 @@ class UE4SSTabWidget(QWidget):
 
         for mod in mod_list:
             tree = mod.fileTree()
-            ue4ss_files = tree.find(game.GameDataUE4SSMods)
+            ue4ss_files = tree.find(game_data_ue4ss_mods) if isinstance(game_data_ue4ss_mods, str) else None
             if isinstance(ue4ss_files, mobase.IFileTree):
                 for entry in ue4ss_files:
                     if isinstance(entry, mobase.IFileTree):
@@ -69,6 +70,9 @@ class UE4SSTabWidget(QWidget):
 
     def _parse_mod_files(self):
         game = self._organizer.managedGame()
+        data_ue4ss_mods = getattr(game, "GameDataUE4SSMods", None)
+        data_path = game.dataDirectory()
+        ue4ss_dir = None
         mod_list: set[str] = set()
         for mod in self._organizer.modList().allMods():
             if (
@@ -76,7 +80,7 @@ class UE4SSTabWidget(QWidget):
                 & mobase.ModState.ACTIVE
             ):
                 tree = self._organizer.modList().getMod(mod).fileTree()
-                ue4ss_files = tree.find(game.GameDataUE4SSMods)
+                ue4ss_files = tree.find(data_ue4ss_mods) if isinstance(data_ue4ss_mods, str) else None
                 if isinstance(ue4ss_files, mobase.IFileTree):
                     for entry in ue4ss_files:
                         if isinstance(entry, mobase.IFileTree):
@@ -97,21 +101,16 @@ class UE4SSTabWidget(QWidget):
                                     )
                                 except FileNotFoundError:
                                     pass
-
-        if game.ue4ssDirectory().exists():
-            for dir_info in game.ue4ssDirectory().entryInfoList(
-                QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
-            ):
-                if QFileInfo(
-                    QDir(dir_info.absoluteFilePath()).absoluteFilePath(
-                        "scripts/main.lua"
-                    )
-                ).exists():
-                    mod_list.add(dir_info.fileName())
-                if QFileInfo(
-                    QDir(dir_info.absoluteFilePath()).absoluteFilePath("enabled.txt")
-                ).exists():
-                    Path(dir_info.absoluteFilePath(), "enabled.txt").unlink()
+        if data_path and data_ue4ss_mods:
+            ue4ss_dir = QDir(data_path.absolutePath() + "/" + data_ue4ss_mods)
+            if ue4ss_dir.exists():
+                for dir_info in ue4ss_dir.entryInfoList(QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot):# type: ignore
+                    if QFileInfo(QDir(dir_info.absoluteFilePath()).absoluteFilePath("scripts/main.lua")).exists() or QFileInfo(QDir(dir_info.absoluteFilePath()).absoluteFilePath("dlls/main.dll")).exists():
+                        mod_list.add(dir_info.fileName())
+                    if QFileInfo(
+                        QDir(dir_info.absoluteFilePath()).absoluteFilePath("enabled.txt")
+                    ).exists():
+                        Path(dir_info.absoluteFilePath(), "enabled.txt").unlink()
 
         final_list = sorted(mod_list, key=cmp_to_key(self.sort_mods))
         self._model.setStringList(final_list)

@@ -23,6 +23,7 @@ class Content(IntEnum):
 
 
 class Titanfall2ModDataContent(mobase.ModDataContent):
+    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.MATERIAL, "Materials", ":/MO/gui/content/interface"),
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
@@ -40,34 +41,33 @@ class Titanfall2ModDataContent(mobase.ModDataContent):
             for id, name, icon, *filter_only in self.GAMECONTENTS
         ]
 
-    contents = set()
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "vmt":
-                    self.contents.add(Content.MATERIAL)
+                    self.content.append(Content.MATERIAL)
                 case "vtf":
-                    self.contents.add(Content.TEXTURE)
+                    self.content.append(Content.TEXTURE)
                 case "mdl":
-                    self.contents.add(Content.MODELS)
+                    self.content.append(Content.MODELS)
                 case "nut":
-                    self.contents.add(Content.SCRIPT)
+                    self.content.append(Content.SCRIPT)
                 case "txt":
-                    self.contents.add(Content.CONFIG)
+                    self.content.append(Content.CONFIG)
                 case "bik":
-                    self.contents.add(Content.VIDEO)
+                    self.content.append(Content.VIDEO)
                 case "wav":
-                    self.contents.add(Content.AUDIO)
+                    self.content.append(Content.AUDIO)
                 case "rpak" | "starmap" | "starpak":
-                    self.contents.add(Content.STARPAK)
+                    self.content.append(Content.STARPAK)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
         filetree.walk(self.walkContent, "/")
-        return list(self.contents)
+        return list(self.content)
 
 
 class Titanfall2ModDataChecker(mobase.ModDataChecker):
@@ -77,7 +77,7 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -93,29 +93,25 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
     def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
-        northstarModPath = self.organizer.managedGame().GameNorthstarPath + "/"
+        GameNorthstarPath = getattr(self.organizer.managedGame(), "GameNorthstarPath", "") + "/"
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree is not None and filetree.exists(
-            northstarModPath + "FOLDERNAME", mobase.IFileTree.DIRECTORY
-        ):
+        if filetree.exists(GameNorthstarPath + "FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
-            json_path = os.path.join(path, northstarModPath + "FOLDERNAME/mod.json")
+            json_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME/mod.json")
             with open(json_path, "r") as json_data:
                 mod_data = json.load(json_data)
                 json_data.close()
             modname = mod_data["name"]
-            old_path = os.path.join(path, northstarModPath + "FOLDERNAME")
-            new_path = os.path.join(path, northstarModPath + f"{modname}")
+            old_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME")
+            new_path = os.path.join(path, GameNorthstarPath + f"{modname}")
             self.move_overwrite_merge(old_path, new_path)
             fixed = True
-        elif filetree is not None and filetree.exists(
-            northstarModPath + "FOLDERNAME_NAME", mobase.IFileTree.DIRECTORY
-        ):
+        elif filetree.exists(GameNorthstarPath + "FOLDERNAME_NAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
-            old_path = os.path.join(path, northstarModPath + "FOLDERNAME_NAME")
-            new_path = os.path.join(path, northstarModPath + f"{modname}")
+            old_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME_NAME")
+            new_path = os.path.join(path, GameNorthstarPath + f"{modname}")
             self.move_overwrite_merge(old_path, new_path)
             fixed = True
         if not fixed:
@@ -131,57 +127,55 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
+
+    def first_tree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.isDir():
+                return e
+        return None
 
     def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+            entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        northstarModPath = self.organizer.managedGame().GameNorthstarPath + "/"
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameNorthstarPath = getattr(self.organizer.managedGame(), "GameNorthstarPath", "") + "/"
         treefixed = 0
-        if filetree.exists("mod.json", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, northstarModPath + "FOLDERNAME/")
-            if treefixed == 1:
-                self.needsNameFix = True
-        elif self.fileExistsInNextSubDir(filetree, "mod.json"):
-            filetree.move(filetree[0], northstarModPath, mobase.IFileTree.MERGE)
-            treefixed = 1
-        else:
-            try:
-                if filetree[0][0].exists("mod.json", mobase.IFileTree.FILE):
-                    filetree.move(
-                        filetree[0][0], filetree[0].path("/"), mobase.IFileTree.REPLACE
-                    )
-                    filetree.move(filetree[0], northstarModPath, mobase.IFileTree.MERGE)
-                    treefixed = 1
-            except TypeError:
-                pass
-        if treefixed == 0:
-            if len(filetree) == 1 and filetree[0].isDir:
-                filetree.move(filetree[0], northstarModPath, mobase.IFileTree.MERGE)
+        firsttreelayer: mobase.IFileTree | None = self.first_tree(filetree)
+        if firsttreelayer is not None:
+            secondtreelayer: mobase.IFileTree | None = self.first_tree(firsttreelayer)
+            if filetree.exists("mod.json", mobase.IFileTree.FILE):
+                treefixed = self.allMoveTo(filetree, GameNorthstarPath + "FOLDERNAME/")
+                if treefixed == 1:
+                    self.needsNameFix = True
+            elif self.fileExistsInNextSubDir(filetree, "mod.json"):
+                filetree.move(firsttreelayer, GameNorthstarPath, mobase.IFileTree.MERGE)
                 treefixed = 1
-            else:
-                for e in filetree:
-                    if e is not None and e.path("/").count("/") == 0:
-                        filetree.move(
-                            e,
-                            northstarModPath + "FOLDERNAME_NAME/",
-                            mobase.IFileTree.MERGE,
-                        )
+                if secondtreelayer is not None:
+                    if secondtreelayer.exists("mod.json", mobase.IFileTree.FILE):
+                            filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
+                            filetree.move(firsttreelayer, GameNorthstarPath, mobase.IFileTree.MERGE)
+                            treefixed = 1
+                    elif len(filetree) == 1:
+                        filetree.move(firsttreelayer, GameNorthstarPath, mobase.IFileTree.MERGE)
                         treefixed = 1
-                        self.needsNameFix = True
+                    else:
+                        for e in filetree:
+                            if e.path("/").count("/") == 0:
+                                filetree.move(e,GameNorthstarPath + "FOLDERNAME_NAME/",mobase.IFileTree.MERGE)
+                                treefixed = 1
+                                self.needsNameFix = True
         if treefixed == 0:
             return None
         return filetree
@@ -219,9 +213,9 @@ class Titanfall2Game(BasicGame):
             key = self._organizer.modList().getMod(key)
             tree = key.fileTree()
             subtree = tree.find("R2Northstar/mods", mobase.IFileTree.DIRECTORY)
-            if subtree is not None and subtree.isDir():
+            if isinstance(subtree, mobase.IFileTree):
                 for e in subtree:
-                    if e is not None and e.isDir():
+                    if isinstance(e, mobase.IFileTree):
                         if e.exists("mod.json", mobase.IFileTree.FILE):
                             json_path = (
                                 key.absolutePath() + "/" + e.path() + "/mod.json"

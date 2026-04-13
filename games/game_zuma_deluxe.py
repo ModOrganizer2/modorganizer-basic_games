@@ -37,7 +37,7 @@ class ZumaModDataContent(mobase.ModDataContent):
             for id, name, icon, *filter_only in self.GAMECONTENTS
         ]
 
-    contents = set()
+    contents: set[int] = set()
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
@@ -70,7 +70,7 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -89,7 +89,7 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree is not None and filetree.exists(
+        if filetree.exists(
             "mods/FOLDERNAME", mobase.IFileTree.DIRECTORY
         ):
             path = mod.absolutePath()
@@ -129,9 +129,9 @@ class ZumaModDataChecker(mobase.ModDataChecker):
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
 
@@ -139,15 +139,16 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+            entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        GameLevelsPath = self.organizer.managedGame().GameLevelsPath
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameLevelsPath: str = str(
+            getattr(self.organizer.managedGame(), "GameLevelsPath", "levels")
+)
         validFolders = [
             "images",
             "levels",
@@ -169,22 +170,22 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         else:
             moveonce = 0
             for branch in filetree:
-                if branch is not None and branch.isDir():
+                if isinstance(branch, mobase.IFileTree):
                     for entry in branch:
                         for folder in validFolders:
-                            if entry is not None and entry.name() == folder:
+                            if entry.name() == folder:
                                 moveonce = 1
             if moveonce == 1:
                 for branch in filetree:
-                    if branch is not None and branch.isDir():
+                    if isinstance(branch, mobase.IFileTree):
                         for entry in branch:
                             entriesToMove.append(entry)
-        if entriesToMove is not None:
+        if entriesToMove:
             for e in entriesToMove:
                 filetree.move(e, "", mobase.IFileTree.MERGE)
                 treefixed = 1
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 if len(branch) == 0:
                     filetree.remove(branch)
         if treefixed == 0:

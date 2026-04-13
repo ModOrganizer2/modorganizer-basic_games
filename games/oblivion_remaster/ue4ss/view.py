@@ -27,5 +27,5 @@ class UE4SSView(QListView):
     def dataChanged(
         self, topLeft: QModelIndex, bottomRight: QModelIndex, roles: Iterable[int] = ()
     ):
-        super().dataChanged(topLeft, bottomRight, roles)
+        super().dataChanged(topLeft, bottomRight, roles)  # type: ignore
         self.repaint()

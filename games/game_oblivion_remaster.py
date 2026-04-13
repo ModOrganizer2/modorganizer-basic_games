@@ -344,7 +344,7 @@ class OblivionRemasteredGame(
         match key:
             case Problems.UE4SS_LOADER:
                 return (
-                    "The UE4SS loader DLL is present (dwmapi.dll). This will not function out-of-the box with MO2's virtual filesystem.\n\n"
+                    "The UE4SS loader DLL is present (dwmapi.dll). This will not function out-of-the-box with MO2's virtual filesystem.\n\n"
                     + "In order to resolve this, either delete the DLL and use the OBSE UE4SS Loader plugin, or rename "
                     + "the DLL (ex. 'ue4ss_loader.dll') and set it to force load with the game exe.\n\n"
                     + "Do this for any executable which runs the game, such as the OBSE64 loader."

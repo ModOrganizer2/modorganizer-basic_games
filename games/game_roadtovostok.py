@@ -16,12 +16,12 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
         if filetree.exists("mods", mobase.IFileTree.DIRECTORY) and not filetree.exists("mod.txt", mobase.IFileTree.FILE):
             return mobase.ModDataChecker.VALID
         for e in filetree:
-            if e is not None and e.isFile() and e.suffix().casefold() == "pck":
+            if e.isFile() and e.suffix().casefold() == "pck":
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        GameModsPath = self.organizer.managedGame().GameModsPath + "/"
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "") + "/"
         treefixed = 0
 
         for branch in filetree:
@@ -29,7 +29,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
             if mod_name == "":
                 mod_name = branch.name()
             mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-            if filetree.createOrphanTree("OrphanTree") is None and os.path.exists(mod_path) and branch.suffix().casefold() == "zip":
+            if not filetree.createOrphanTree("OrphanTree") and os.path.exists(mod_path) and branch.suffix().casefold() == "zip":
                 os.makedirs(os.path.join(mod_path, GameModsPath), exist_ok=True)
                 shutil.move(os.path.join(mod_path, branch.name()), os.path.join(mod_path, GameModsPath, branch.name()))
                 treefixed = 1

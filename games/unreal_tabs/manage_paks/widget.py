@@ -115,6 +115,10 @@ class PaksTabWidget(QWidget):
     def _parse_pak_files(self):
         game = self._organizer.managedGame()
         mods = self._organizer.modList().allMods()
+        pak_mods = None
+        data_pak_mods = getattr(game, "GameDataPakMods", None)
+        data_path = game.dataDirectory()
+        pak_dir = None
         paks: dict[str, str] = {}
         pak_paths: dict[str, tuple[str, str]] = {}
         pak_source: dict[str, str] = {}
@@ -123,7 +127,8 @@ class PaksTabWidget(QWidget):
             if not self._organizer.modList().state(mod) & mobase.ModState.ACTIVE:
                 continue
             filetree = mod_item.fileTree()
-            pak_mods = filetree.find(game.GameDataPakMods)
+            if data_pak_mods:
+                pak_mods = filetree.find(data_pak_mods)
             if isinstance(pak_mods, mobase.IFileTree):
                 for entry in pak_mods:
                     if is_directory(entry):
@@ -156,47 +161,44 @@ class PaksTabWidget(QWidget):
                                 mod_item.absolutePath() + "/" + pak_mods.path("/"),
                             )
                             pak_source[pak_name] = mod_item.name()
-        pak_mods = QFileInfo(game.paksDirectory().absolutePath())
-        if pak_mods.exists() and pak_mods.isDir():
-            for entry in QDir(pak_mods.absoluteFilePath()).entryInfoList(
-                QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
-            ):
-                if entry.isDir():
-                    for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(
-                        QDir.Filter.Files
-                    ):
-                        if (
-                            sub_entry.isFile()
-                            and sub_entry.suffix().casefold() == "pak"
-                        ):
-                            pak_name = sub_entry.completeBaseName()
-                            paks[pak_name] = entry.completeBaseName()
+        if data_path and data_pak_mods:
+            pak_dir = QFileInfo(data_path.absolutePath() + "/" + data_pak_mods)
+            if pak_dir.exists() and pak_dir.isDir():
+                for entry in QDir(pak_dir.absoluteFilePath()).entryInfoList(QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot): # type: ignore
+                    if entry.isDir():
+                        for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(QDir.Filter.Files): # type: ignore
+                            if (
+                                sub_entry.isFile()
+                                and sub_entry.suffix().casefold() == "pak"
+                            ):
+                                pak_name = sub_entry.completeBaseName()
+                                paks[pak_name] = entry.completeBaseName()
+                                pak_paths[pak_name] = (
+                                    sub_entry.absolutePath(),
+                                    pak_dir.absolutePath(),
+                                )
+                                pak_source[pak_name] = "Game Directory"
+                    else:
+                        if entry.suffix().casefold() == "pak":
+                            pak_name = entry.completeBaseName()
+                            paks[pak_name] = ""
                             pak_paths[pak_name] = (
-                                sub_entry.absolutePath(),
-                                pak_mods.absolutePath(),
+                                entry.absolutePath(),
+                                pak_dir.absolutePath(),
                             )
                             pak_source[pak_name] = "Game Directory"
-                else:
-                    if entry.suffix().casefold() == "pak":
-                        pak_name = entry.completeBaseName()
-                        paks[pak_name] = ""
-                        pak_paths[pak_name] = (
-                            entry.absolutePath(),
-                            pak_mods.absolutePath(),
-                        )
-                        pak_source[pak_name] = "Game Directory"
-        sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
-        shaken_paks: list[str] = self._shake_paks(sorted_paks)
-        final_paks: dict[str, tuple[str, str, str]] = {}
-        pak_index = 8999
-        for pak in shaken_paks:
-            target_dir = pak_paths[pak][1] + "/" + str(pak_index).zfill(4)
-            final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)
-            pak_index -= 1
-        new_data_paks: dict[int, tuple[str, str, str, str]] = {}
-        i = 0
-        for pak, data in final_paks.items():
-            source, current_path, target_path = data
-            new_data_paks[i] = (pak, source, current_path, target_path)
-            i += 1
-        self._model.set_paks(new_data_paks)
+            sorted_paks = dict(sorted(paks.items(), key=cmp_to_key(pak_sort)))
+            shaken_paks: list[str] = self._shake_paks(sorted_paks)
+            final_paks: dict[str, tuple[str, str, str]] = {}
+            pak_index = 8999
+            for pak in shaken_paks:
+                target_dir = pak_paths[pak][1] + "/" + str(pak_index).zfill(4)
+                final_paks[pak] = (pak_source[pak], pak_paths[pak][0], target_dir)
+                pak_index -= 1
+            new_data_paks: dict[int, tuple[str, str, str, str]] = {}
+            i = 0
+            for pak, data in final_paks.items():
+                source, current_path, target_path = data
+                new_data_paks[i] = (pak, source, current_path, target_path)
+                i += 1
+            self._model.set_paks(new_data_paks)

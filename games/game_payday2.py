@@ -19,6 +19,7 @@ class Content(IntEnum):
 
 
 class Payday2ModDataContent(mobase.ModDataContent):
+    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
         (Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
@@ -31,30 +32,29 @@ class Payday2ModDataContent(mobase.ModDataContent):
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
         return [mobase.ModDataContent.Content(id, name, icon, *filter_only) for id, name, icon, *filter_only in self.GAMECONTENTS]
 
-    contents = set()
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "texture":
-                    self.contents.add(Content.TEXTURE)
+                    self.content.append(Content.TEXTURE)
                 case "model":
-                    self.contents.add(Content.MESH)
+                    self.content.append(Content.MESH)
                 case "lua":
-                    self.contents.add(Content.SCRIPT)
+                    self.content.append(Content.SCRIPT)
                 case "stream":
-                    self.contents.add(Content.SOUND)
+                    self.content.append(Content.SOUND)
                 case "txt":
-                    self.contents.add(Content.STRING)
+                    self.content.append(Content.STRING)
                 case "json":
-                    self.contents.add(Content.CONFIG)
+                    self.content.append(Content.CONFIG)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
         filetree.walk(self.walkContent, "/")
-        return list(self.contents)
+        return list(self.content)
 
 
 class Payday2ModDataChecker(mobase.ModDataChecker):
@@ -64,7 +64,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -83,19 +83,19 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree is not None and filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
             new_path = os.path.join(path, f"mods/{modname}")
             self.move_overwrite_merge(old_path, new_path)
             fixed = True
-        elif filetree is not None and filetree.exists("assets/mod_overrides/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        elif filetree.exists("assets/mod_overrides/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "assets/mod_overrides/FOLDERNAME")
             new_path = os.path.join(path, f"assets/mod_overrides/{modname}")
             self.move_overwrite_merge(old_path, new_path)
             fixed = True
-        elif filetree is not None and filetree.exists("maps/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        elif filetree.exists("maps/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "maps/FOLDERNAME")
             new_path = os.path.join(path, f"maps/{modname}")
@@ -120,75 +120,80 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
+
+    def first_tree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.isDir():
+                return e
+        return None
 
     def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+            entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         treefixed = 0
-
-        if filetree.exists("mod.txt", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, "mods/FOLDERNAME/")
-            if treefixed == 1:
-                self.needsNameFix = True
-        elif self.fileExistsInNextSubDir(filetree, "mod.txt"):
-            filetree.move(filetree[0], "mods/", mobase.IFileTree.MERGE)
-            treefixed = 1
-        elif self.fileExistsInNextSubDir(filetree, "main.xml"):
-            if self.fileExistsInNextSubDir(filetree, "levels"):
-                filetree.move(filetree[0], "maps/", mobase.IFileTree.MERGE)
-                treefixed = 1
-            else:
-                filetree.move(filetree[0], "assets/mod_overrides/", mobase.IFileTree.MERGE)
-                treefixed = 1
-        elif filetree.exists("main.xml", mobase.IFileTree.FILE):
-            if filetree.exists("levels", mobase.IFileTree.DIRECTORY):
-                treefixed = self.move_overwrite_merge(filetree, "maps/FOLDERNAME")
+        firsttreelayer: mobase.IFileTree | None = self.first_tree(filetree)
+        if firsttreelayer is not None:
+            secondtreelayer: mobase.IFileTree | None = self.first_tree(firsttreelayer)
+            if filetree.exists("mod.txt", mobase.IFileTree.FILE):
+                treefixed = self.allMoveTo(filetree, "mods/FOLDERNAME/")
                 if treefixed == 1:
                     self.needsNameFix = True
-            else:
-                treefixed = self.allMoveTo(filetree, "assets/mod_overrides/FOLDERNAME/")
-                if treefixed == 1:
-                    self.needsNameFix = True
-        else:
-            try:
-                if filetree[0][0].exists("mod.txt", mobase.IFileTree.FILE):
-                    filetree.move(filetree[0][0], filetree[0].path("/"), mobase.IFileTree.REPLACE)
-                    filetree.move(filetree[0], "mods/", mobase.IFileTree.MERGE)
+            elif self.fileExistsInNextSubDir(filetree, "mod.txt"):
+                filetree.move(firsttreelayer, "mods/", mobase.IFileTree.MERGE)
+                treefixed = 1
+            elif self.fileExistsInNextSubDir(filetree, "main.xml"):
+                if self.fileExistsInNextSubDir(filetree, "levels"):
+                    filetree.move(firsttreelayer, "maps/", mobase.IFileTree.MERGE)
                     treefixed = 1
-                elif filetree[0][0].exists("main.xml", mobase.IFileTree.FILE):
+                else:
+                    filetree.move(firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE)
+                    treefixed = 1
+            elif filetree.exists("main.xml", mobase.IFileTree.FILE):
+                if filetree.exists("levels", mobase.IFileTree.DIRECTORY):
+                    treefixed = self.allMoveTo(filetree, "maps/FOLDERNAME/")
+                    if treefixed == 1:
+                        self.needsNameFix = True
+                else:
+                    treefixed = self.allMoveTo(filetree, "assets/mod_overrides/FOLDERNAME/")
+                    if treefixed == 1:
+                        self.needsNameFix = True
+            elif secondtreelayer is not None:
+                if secondtreelayer.exists("mod.txt", mobase.IFileTree.FILE):
+                    filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
+                    filetree.move(firsttreelayer, "mods/", mobase.IFileTree.MERGE)
+                    treefixed = 1
+                elif secondtreelayer.exists("main.xml", mobase.IFileTree.FILE):
                     if filetree.exists("levels", mobase.IFileTree.DIRECTORY):
-                        filetree.move(filetree[0][0], filetree[0].path("/"), mobase.IFileTree.REPLACE)
-                        filetree.move(filetree[0], "maps/", mobase.IFileTree.MERGE)
+                        filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
+                        filetree.move(firsttreelayer, "maps/", mobase.IFileTree.MERGE)
                         treefixed = 1
                     else:
-                        filetree.move(filetree[0][0], filetree[0].path("/"), mobase.IFileTree.REPLACE)
-                        filetree.move(filetree[0], "assets/mod_overrides/", mobase.IFileTree.MERGE)
-            except TypeError:
-                pass
-        if treefixed == 0:
-            if len(filetree) == 1 and filetree[0].isDir:
-                filetree.move(filetree[0], "assets/mod_overrides/", mobase.IFileTree.MERGE)
-                treefixed = 1
-            else:
-                for e in filetree:
-                    if e is not None and e.path("/").count("/") == 0:
-                        filetree.move(e, "assets/mod_overrides/FOLDERNAME/", mobase.IFileTree.MERGE)
+                        filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
+                        filetree.move(firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE)
                         treefixed = 1
-                        self.needsNameFix = True
+            if treefixed == 0:
+                if len(filetree) == 1:
+                    filetree.move(firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE)
+                    treefixed = 1
+                else:
+                    for e in filetree:
+                        if e.path("/").count("/") == 0:
+                            filetree.move(e, "assets/mod_overrides/FOLDERNAME/", mobase.IFileTree.MERGE)
+                            treefixed = 1
+                            self.needsNameFix = True
         if treefixed == 0:
             return None
         return filetree
@@ -234,7 +239,7 @@ class Payday2Game(BasicGame):
             key = self._organizer.modList().getMod(key)
             tree = key.fileTree()
             for e in tree:
-                if e is not None and e.name() in self._forced_libraries:
+                if e.name() in self._forced_libraries:
                     #add file
                     file_path_source = key.absolutePath() + "/" + e.path()
                     file_path_target = game_path + e.name()
@@ -267,23 +272,20 @@ class Payday2Game(BasicGame):
         efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
         return efls
 
-    def mapsDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + "/maps")
-
-    def modsDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + "/mods")
-
-    def overridesDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + "/assets/mod_overrides")
-
     def iniFiles(self):
         return ["renderer_settings.xml"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        if not self.mapsDirectory().exists():
-            os.makedirs(self.mapsDirectory().absolutePath())
-        if not self.modsDirectory().exists():
-            os.makedirs(self.modsDirectory().absolutePath())
-        if not self.overridesDirectory().exists():
-            os.makedirs(self.overridesDirectory().absolutePath())
+        base_data_dir = self.dataDirectory().absolutePath()
+
+        mapsDirectory = QDir(base_data_dir + "/maps")
+        modsDirectory = QDir(base_data_dir + "/mods")
+        overridesDirectory = QDir(base_data_dir + "/assets/mod_overrides")
+
+        if not mapsDirectory.exists():
+            os.makedirs(mapsDirectory.absolutePath())
+        if not modsDirectory.exists():
+            os.makedirs(modsDirectory.absolutePath())
+        if not overridesDirectory.exists():
+            os.makedirs(overridesDirectory.absolutePath())
         super().initializeProfile(directory, settings)

@@ -21,6 +21,7 @@ class Content(IntEnum):
 
 
 class RaidWW2ModDataContent(mobase.ModDataContent):
+    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
         (Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
@@ -33,30 +34,28 @@ class RaidWW2ModDataContent(mobase.ModDataContent):
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
         return [mobase.ModDataContent.Content(id, name, icon, *filter_only) for id, name, icon, *filter_only in self.GAMECONTENTS]
 
-    contents = set()
-
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "texture":
-                    self.contents.add(Content.TEXTURE)
+                    self.content.append(Content.TEXTURE)
                 case "model":
-                    self.contents.add(Content.MESH)
+                    self.content.append(Content.MESH)
                 case "lua":
-                    self.contents.add(Content.SCRIPT)
+                    self.content.append(Content.SCRIPT)
                 case "stream":
-                    self.contents.add(Content.SOUND)
+                    self.content.append(Content.SOUND)
                 case "txt":
-                    self.contents.add(Content.STRING)
+                    self.content.append(Content.STRING)
                 case "json":
-                    self.contents.add(Content.CONFIG)
+                    self.content.append(Content.CONFIG)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
         filetree.walk(self.walkContent, "/")
-        return list(self.contents)
+        return list(self.content)
 
 
 class RaidWW2ModDataChecker(mobase.ModDataChecker):
@@ -66,7 +65,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source, destination):
+    def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -85,7 +84,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree is not None and filetree.exists("FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        if filetree.exists("FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "FOLDERNAME")
             new_path = os.path.join(path, f"{modname}")
@@ -102,9 +101,9 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
 
     def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
         for branch in filetree:
-            if branch is not None and branch.isDir():
+            if isinstance(branch, mobase.IFileTree):
                 for e in branch:
-                    if e is not None and e.name() == name:
+                    if e.name() == name:
                         return True
         return False
 
@@ -112,8 +111,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in filetree:
-            if e is not None:
-                entriesToMove.append(e)
+            entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
             retVal = 1
@@ -146,6 +144,14 @@ class RaidWW2Game(BasicGame):
         organizer.modList().onModStateChanged(self.dll_copy)
         return True
 
+    def executables(self):
+        return [
+            mobase.ExecutableInfo(
+                "Raid: World War II",
+                QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
+            )
+        ]
+
     def dll_copy(
         self, mods: dict[str, mobase.ModState]
     ):
@@ -156,7 +162,7 @@ class RaidWW2Game(BasicGame):
             key = self._organizer.modList().getMod(key)
             tree = key.fileTree()
             for e in tree:
-                if e is not None and e.name() in self._forced_libraries:
+                if e.name() in self._forced_libraries:
                     #add file
                     file_path_source = key.absolutePath() + "/" + e.path()
                     file_path_target = game_path + e.name()
@@ -166,14 +172,6 @@ class RaidWW2Game(BasicGame):
                     if value == 33:
                         if os.path.exists(file_path_target):
                             os.remove(file_path_target)
-
-    def executables(self):
-        return [
-            mobase.ExecutableInfo(
-                "Raid: World War II",
-                QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
-            ),
-        ]
 
     @cached_property
     def _base_dlls(self) -> set[str]:
@@ -201,7 +199,10 @@ class RaidWW2Game(BasicGame):
         return ["renderer_settings.xml"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        modsPath = self.dataDirectory().absolutePath()
-        if not os.path.exists(modsPath):
-            os.mkdir(modsPath)
+        base_data_dir = self.dataDirectory().absolutePath()
+
+        modsDirectory = QDir(base_data_dir + "/" + self.GameDataPath)
+
+        if not modsDirectory.exists():
+            os.makedirs(modsDirectory.absolutePath())
         super().initializeProfile(directory, settings)
