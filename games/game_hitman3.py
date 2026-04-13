@@ -1,14 +1,14 @@
+import json
 import os
 import shutil
-import json
-import mobase
-
-from pathlib import Path
 from functools import cached_property
-
-from ..basic_game import BasicGame
+from pathlib import Path
 
 from PyQt6.QtCore import QDir, QFileInfo
+
+import mobase
+
+from ..basic_game import BasicGame
 
 
 class Hitman3ModDataChecker(mobase.ModDataChecker):
@@ -37,11 +37,15 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        if filetree.exists(GameSMMPath + "/Mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        if filetree.exists(
+            GameSMMPath + "/Mods/FOLDERNAME", mobase.IFileTree.DIRECTORY
+        ):
             print("Found folder")
             path = mod.absolutePath()
             print(path)
-            json_path = os.path.join(path, GameSMMPath + "/Mods/FOLDERNAME/manifest.json")
+            json_path = os.path.join(
+                path, GameSMMPath + "/Mods/FOLDERNAME/manifest.json"
+            )
             print(json_path)
             mod_data = json.load(open(json_path, encoding="utf-8"))
             modname = mod_data["id"]
@@ -53,7 +57,9 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if filetree.exists("Simple Mod Framework", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
@@ -66,7 +72,9 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
                         return True
         return False
 
-    def allMoveTo(self, sourcetree: mobase.IFileTree, targettree: mobase.IFileTree, toMoveTo: str):
+    def allMoveTo(
+        self, sourcetree: mobase.IFileTree, targettree: mobase.IFileTree, toMoveTo: str
+    ):
         entriesToMove: list[mobase.FileTreeEntry] = []
         retVal = 0
         for e in sourcetree:
@@ -89,7 +97,9 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         if filetree.exists("manifest.json", mobase.IFileTree.FILE):
             print("Found manifest in root, moving to SMM folder")
             print(GameSMMPath + "/Mods/FOLDERNAME/")
-            treefixed = self.allMoveTo(filetree, filetree, GameSMMPath + "/Mods/FOLDERNAME/")
+            treefixed = self.allMoveTo(
+                filetree, filetree, GameSMMPath + "/Mods/FOLDERNAME/"
+            )
             if treefixed == 1:
                 self.needsNameFix = True
         elif len(filetree) == 1:
@@ -97,7 +107,9 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
             if firsttreelayer is not None:
                 if firsttreelayer.exists("manifest.json", mobase.IFileTree.FILE):
                     print(GameSMMPath + "/Mods/FOLDERNAME/")
-                    treefixed = self.allMoveTo(firsttreelayer, filetree, GameSMMPath + "/Mods/FOLDERNAME/")
+                    treefixed = self.allMoveTo(
+                        firsttreelayer, filetree, GameSMMPath + "/Mods/FOLDERNAME/"
+                    )
                     if treefixed == 1:
                         self.needsNameFix = True
         if treefixed == 0:
@@ -134,7 +146,9 @@ class Hitman3Game(BasicGame):
                 for e in subtree:
                     if isinstance(e, mobase.IFileTree):
                         if e.exists("manifest.json", mobase.IFileTree.FILE):
-                            json_path = key.absolutePath() + "/" + e.path() + "/manifest.json"
+                            json_path = (
+                                key.absolutePath() + "/" + e.path() + "/manifest.json"
+                            )
                             mod_data = json.load(open(json_path, encoding="utf-8"))
                             modname = mod_data["id"]
                             if value == 35:
@@ -147,13 +161,21 @@ class Hitman3Game(BasicGame):
                                     config_json_content = bad_code
                                 if modname not in config_json_content:
                                     substr = "knownMods:["
-                                    config_json_content = config_json_content.replace(substr, substr + "'" + modname + "',")
+                                    config_json_content = config_json_content.replace(
+                                        substr, substr + "'" + modname + "',"
+                                    )
                                     substr = "loadOrder:["
-                                    config_json_content = config_json_content.replace(substr, substr + "'" + modname + "',")
+                                    config_json_content = config_json_content.replace(
+                                        substr, substr + "'" + modname + "',"
+                                    )
                                     substr = ",],modOptions"
-                                    config_json_content = config_json_content.replace(substr, "],modOptions")
+                                    config_json_content = config_json_content.replace(
+                                        substr, "],modOptions"
+                                    )
                                     substr = ",],developer"
-                                    config_json_content = config_json_content.replace(substr, "],developer")
+                                    config_json_content = config_json_content.replace(
+                                        substr, "],developer"
+                                    )
                                     with open(SMM_Config_Json, "w") as config_json:
                                         config_json.write(config_json_content)
                                         config_json.close()
@@ -163,12 +185,20 @@ class Hitman3Game(BasicGame):
                                     config_json_content = config_json.read()
                                     config_json.close()
                                 if modname in config_json_content:
-                                    config_json_content = config_json_content.replace("'" + modname + "',", "")
-                                    config_json_content = config_json_content.replace(",,", ",")
+                                    config_json_content = config_json_content.replace(
+                                        "'" + modname + "',", ""
+                                    )
+                                    config_json_content = config_json_content.replace(
+                                        ",,", ","
+                                    )
                                     substr = ",],modOptions"
-                                    config_json_content = config_json_content.replace(substr, "],modOptions")
+                                    config_json_content = config_json_content.replace(
+                                        substr, "],modOptions"
+                                    )
                                     substr = ",],developer"
-                                    config_json_content = config_json_content.replace(substr, "],developer")
+                                    config_json_content = config_json_content.replace(
+                                        substr, "],developer"
+                                    )
                                     with open(SMM_Config_Json, "w") as config_json:
                                         config_json.write(config_json_content)
                                         config_json.close()
@@ -214,7 +244,9 @@ class Hitman3Game(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -222,7 +254,13 @@ class Hitman3Game(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):

@@ -1,14 +1,14 @@
 import os
 import shutil
-import mobase
-
 from enum import IntEnum, auto
-from pathlib import Path
 from functools import cached_property
-
-from ..basic_game import BasicGame
+from pathlib import Path
 
 from PyQt6.QtCore import QDir, QFileInfo
+
+import mobase
+
+from ..basic_game import BasicGame
 
 
 class Content(IntEnum):
@@ -32,7 +32,10 @@ class RaidWW2ModDataContent(mobase.ModDataContent):
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
-        return [mobase.ModDataContent.Content(id, name, icon, *filter_only) for id, name, icon, *filter_only in self.GAMECONTENTS]
+        return [
+            mobase.ModDataContent.Content(id, name, icon, *filter_only)
+            for id, name, icon, *filter_only in self.GAMECONTENTS
+        ]
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
@@ -94,7 +97,9 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if len(filetree) == 1:
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
@@ -152,9 +157,7 @@ class RaidWW2Game(BasicGame):
             )
         ]
 
-    def dll_copy(
-        self, mods: dict[str, mobase.ModState]
-    ):
+    def dll_copy(self, mods: dict[str, mobase.ModState]):
 
         game_path = self.dataDirectory().absolutePath() + "/"
 
@@ -163,12 +166,12 @@ class RaidWW2Game(BasicGame):
             tree = key.fileTree()
             for e in tree:
                 if e.name() in self._forced_libraries:
-                    #add file
+                    # add file
                     file_path_source = key.absolutePath() + "/" + e.path()
                     file_path_target = game_path + e.name()
                     if value == 35:
                         shutil.copyfile(file_path_source, file_path_target)
-                    #remove file
+                    # remove file
                     if value == 33:
                         if os.path.exists(file_path_target):
                             os.remove(file_path_target)
@@ -184,7 +187,9 @@ class RaidWW2Game(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -192,7 +197,13 @@ class RaidWW2Game(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def iniFiles(self):

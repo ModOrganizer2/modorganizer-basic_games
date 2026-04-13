@@ -1,21 +1,25 @@
-from collections.abc import Mapping, Sequence
-from datetime import datetime
-from functools import cached_property
-from io import BytesIO
-from typing import Any
-from pathlib import Path
 import json
 import math
 import os
 import shutil
 import struct
 import zlib
+from collections.abc import Mapping, Sequence
+from datetime import datetime
+from functools import cached_property
+from io import BytesIO
+from pathlib import Path
+from typing import Any
 
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo
 
+import mobase
+
 from ..basic_features import BasicLocalSavegames
-from ..basic_features.basic_save_game_info import (BasicGameSaveGame,BasicGameSaveGameInfo)
+from ..basic_features.basic_save_game_info import (
+    BasicGameSaveGame,
+    BasicGameSaveGameInfo,
+)
 from ..basic_game import BasicGame
 
 
@@ -26,14 +30,17 @@ def json_get_me(value: Any, path: Sequence[str | int], /, default: Any) -> Any:
         value = value[part]
     return value
 
+
 class CassetteBeastsModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         for e in filetree:
-            if  e.suffix().casefold() == "pck":
+            if e.suffix().casefold() == "pck":
                 return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
@@ -45,9 +52,16 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
             if mod_name == "":
                 mod_name = branch.name()
             mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-            if not filetree.createOrphanTree("OrphanTree") and os.path.exists(mod_path) and branch.suffix().casefold() == "pck":
+            if (
+                not filetree.createOrphanTree("OrphanTree")
+                and os.path.exists(mod_path)
+                and branch.suffix().casefold() == "pck"
+            ):
                 os.makedirs(os.path.join(mod_path, GameDataPath), exist_ok=True)
-                shutil.move(os.path.join(mod_path, branch.name()), os.path.join(mod_path, GameDataPath, branch.name()))
+                shutil.move(
+                    os.path.join(mod_path, branch.name()),
+                    os.path.join(mod_path, GameDataPath, branch.name()),
+                )
                 treefixed = 1
             else:
                 if isinstance(branch, mobase.IFileTree):
@@ -56,15 +70,17 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
                             filetree.move(e, GameDataPath, mobase.IFileTree.MERGE)
                             treefixed = 1
                 elif branch.suffix().casefold() == "pck":
-                        filetree.move(branch, GameDataPath, mobase.IFileTree.MERGE)
-                        treefixed = 1
+                    filetree.move(branch, GameDataPath, mobase.IFileTree.MERGE)
+                    treefixed = 1
         if treefixed == 0:
             return None
         return filetree
 
+
 class CassetteBlock:
     compressed_size: int = 0
-    data: bytes = b''
+    data: bytes = b""
+
 
 class CassetteBeastsSaveGame(BasicGameSaveGame):
     def __init__(self, filepath: Path):
@@ -81,7 +97,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
         try:
             info = bytearray()
             data = bytes()
-            with open(filepath, 'rb') as infile:
+            with open(filepath, "rb") as infile:
                 infile.read(4)
 
                 blocksize, raw_size = struct.unpack("III", infile.read(12))
@@ -106,7 +122,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
             save_data = json.load(BytesIO(info))
         except (OSError, struct.error, ValueError) as err:
             s = str(err)
-            self.errorMessage = ('{0}: {1}' if s else '{0}').format(
+            self.errorMessage = ("{0}: {1}" if s else "{0}").format(
                 err.__class__.__name__, s
             )
             return
@@ -120,13 +136,14 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
             except OSError:
                 pass
             else:
-                self.lastsave = "{0:d}-{1:02d}-{2:02d} at {3:02d}:{4:02d}:{5:02d}".format(
-                    dt.year, dt.month, dt.day,
-                    dt.hour, dt.minute, dt.second
+                self.lastsave = (
+                    "{0:d}-{1:02d}-{2:02d} at {3:02d}:{4:02d}:{5:02d}".format(
+                        dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+                    )
                 )
         x = json_get_me(save_data, ["play_time"], None)
         if type(x) in (int, float):
-            a = [ 0, 0, 0, int(x * 10) ]
+            a = [0, 0, 0, int(x * 10)]
             a[2:4] = divmod(a[3], 10)
             a[1:3] = divmod(a[2], 60)
             a[0:2] = divmod(a[1], 60)
@@ -147,6 +164,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
     def getPlayTime(self) -> str:
         return self.elapsed
 
+
 def getMetadata(p: Path, save: mobase.ISaveGame) -> Mapping[str, str] | None:
     err = getattr(save, "errorMessage", "")
     if err:
@@ -154,12 +172,12 @@ def getMetadata(p: Path, save: mobase.ISaveGame) -> Mapping[str, str] | None:
 
     # If this is our concrete save-game class, the type checker knows the methods.
     if isinstance(save, BasicGameSaveGame):
-        return 
+        return
         {
             "Character": save.getName(),
             "Last Saved": save.getLastSaved(),
             "Play Time": save.getPlayTime(),
-            "Cheated": save.getCheated()
+            "Cheated": save.getCheated(),
         }
     else:
         return None
@@ -182,10 +200,8 @@ class CassetteBeastsGame(BasicGame):
         super().init(organizer)
         self.dataChecker = CassetteBeastsModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(BasicLocalSavegames(QDir(self.GameSavesDirectory))) # type: ignore
-        self._register_feature(
-            BasicGameSaveGameInfo(None, getMetadata)
-        )
+        self._register_feature(BasicLocalSavegames(QDir(self.GameSavesDirectory)))  # type: ignore
+        self._register_feature(BasicGameSaveGameInfo(None, getMetadata))
         return True
 
     def executables(self):
@@ -218,7 +234,9 @@ class CassetteBeastsGame(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -226,7 +244,13 @@ class CassetteBeastsGame(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def iniFiles(self):

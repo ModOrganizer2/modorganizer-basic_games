@@ -1,12 +1,13 @@
-from enum import IntEnum, auto
-from functools import cached_property
-from pathlib import Path
 import os
 import re
 import shutil
+from enum import IntEnum, auto
+from functools import cached_property
+from pathlib import Path
+
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
-from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_features import BasicGameSaveGameInfo
 from ..basic_game import BasicGame
@@ -89,9 +90,7 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree.exists(
-            "mods/FOLDERNAME", mobase.IFileTree.DIRECTORY
-        ):
+        if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
             new_path = os.path.join(path, f"mods/{modname}")
@@ -148,7 +147,7 @@ class ZumaModDataChecker(mobase.ModDataChecker):
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         GameLevelsPath: str = str(
             getattr(self.organizer.managedGame(), "GameLevelsPath", "levels")
-)
+        )
         validFolders = [
             "images",
             "levels",

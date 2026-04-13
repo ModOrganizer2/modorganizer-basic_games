@@ -2,15 +2,17 @@ import json
 from json import JSONDecodeError
 from typing import Any, Iterable
 
-import mobase
-from PyQt6.QtCore import (QDir, QFileInfo, QMimeData, QModelIndex, QStringListModel, Qt)
+from PyQt6.QtCore import QDir, QFileInfo, QMimeData, QModelIndex, QStringListModel, Qt
 from PyQt6.QtWidgets import QWidget
+
+import mobase
 
 from ..constants import DEFAULT_UE4SS_MODS
 
+
 class UE4SSListModel(QStringListModel):
     def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
-        super().__init__(parent) # type: ignore
+        super().__init__(parent)  # type: ignore
         self._checked_items: set[str] = set()
         self._organizer = organizer
         self._init_mod_states()
@@ -87,7 +89,7 @@ class UE4SSListModel(QStringListModel):
         return True
 
     def setStringList(self, strings: Iterable[str | None]) -> None:
-        super().setStringList(strings) # type: ignore
+        super().setStringList(strings)  # type: ignore
         self._set_mod_states()
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:

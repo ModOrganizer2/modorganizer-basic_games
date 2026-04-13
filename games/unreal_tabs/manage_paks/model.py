@@ -1,14 +1,26 @@
-from enum import IntEnum, auto
 import itertools
 import typing
+from enum import IntEnum, auto
 from typing import Any, TypeAlias, overload
+
+from PyQt6.QtCore import (
+    QAbstractItemModel,
+    QByteArray,
+    QDataStream,
+    QDir,
+    QFileInfo,
+    QMimeData,
+    QModelIndex,
+    QObject,
+    Qt,
+    QVariant,
+)
+from PyQt6.QtWidgets import QWidget
 
 import mobase
 
-from PyQt6.QtCore import (QAbstractItemModel, QByteArray, QDataStream, QDir, QFileInfo, QMimeData, QModelIndex, QObject, Qt, QVariant)
-from PyQt6.QtWidgets import QWidget
-
 _PakInfo: TypeAlias = tuple[str, str, str, str]
+
 
 class PaksColumns(IntEnum):
     PRIORITY = auto()
@@ -62,7 +74,9 @@ class PaksModel(QAbstractItemModel):
             parent = QModelIndex()
         return len(PaksColumns)
 
-    def index(self, row: int, column: int, parent: QModelIndex | None = None) -> QModelIndex:
+    def index(
+        self, row: int, column: int, parent: QModelIndex | None = None
+    ) -> QModelIndex:
         if parent is None:
             parent = QModelIndex()
         if (

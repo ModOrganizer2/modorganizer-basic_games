@@ -1,13 +1,15 @@
+import os
+import shutil
 from enum import IntEnum, auto
 from functools import cached_property
 from pathlib import Path
-import os
-import shutil
 
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo
 
+import mobase
+
 from ..basic_game import BasicGame
+
 
 class Content(IntEnum):
     TEXTURE = auto()
@@ -30,7 +32,10 @@ class Payday1ModDataContent(mobase.ModDataContent):
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
-        return [mobase.ModDataContent.Content(id, name, icon, *filter_only) for id, name, icon, *filter_only in self.GAMECONTENTS]
+        return [
+            mobase.ModDataContent.Content(id, name, icon, *filter_only)
+            for id, name, icon, *filter_only in self.GAMECONTENTS
+        ]
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
@@ -88,7 +93,9 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
             new_path = os.path.join(path, f"mods/{modname}")
             self.move_overwrite_merge(old_path, new_path)
             fixed = True
-        elif filetree.exists("assets/mod_overrides/FOLDERNAME/", mobase.IFileTree.DIRECTORY):
+        elif filetree.exists(
+            "assets/mod_overrides/FOLDERNAME/", mobase.IFileTree.DIRECTORY
+        ):
             path = mod.absolutePath()
             old_path = os.path.join(path, "assets/mod_overrides/FOLDERNAME")
             new_path = os.path.join(path, f"assets/mod_overrides/{modname}")
@@ -104,7 +111,9 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if filetree.exists("assets/mod_overrides", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists("mods", mobase.IFileTree.DIRECTORY):
@@ -157,7 +166,9 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                     filetree.move(firsttreelayer, "maps/", mobase.IFileTree.MERGE)
                     treefixed = 1
                 else:
-                    filetree.move(firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE)
+                    filetree.move(
+                        firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE
+                    )
                     treefixed = 1
             elif filetree.exists("main.xml", mobase.IFileTree.FILE):
                 if filetree.exists("levels", mobase.IFileTree.DIRECTORY):
@@ -165,31 +176,55 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                     if treefixed == 1:
                         self.needsNameFix = True
                 else:
-                    treefixed = self.allMoveTo(filetree, "assets/mod_overrides/FOLDERNAME/")
+                    treefixed = self.allMoveTo(
+                        filetree, "assets/mod_overrides/FOLDERNAME/"
+                    )
                     if treefixed == 1:
                         self.needsNameFix = True
             elif secondtreelayer is not None:
                 if secondtreelayer.exists("mod.txt", mobase.IFileTree.FILE):
-                    filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
+                    filetree.move(
+                        secondtreelayer,
+                        firsttreelayer.path("/"),
+                        mobase.IFileTree.REPLACE,
+                    )
                     filetree.move(firsttreelayer, "mods/", mobase.IFileTree.MERGE)
                     treefixed = 1
                 elif secondtreelayer.exists("main.xml", mobase.IFileTree.FILE):
                     if filetree.exists("levels", mobase.IFileTree.DIRECTORY):
-                        filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
+                        filetree.move(
+                            secondtreelayer,
+                            firsttreelayer.path("/"),
+                            mobase.IFileTree.REPLACE,
+                        )
                         filetree.move(firsttreelayer, "maps/", mobase.IFileTree.MERGE)
                         treefixed = 1
                     else:
-                        filetree.move(secondtreelayer, firsttreelayer.path("/"), mobase.IFileTree.REPLACE)
-                        filetree.move(firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE)
+                        filetree.move(
+                            secondtreelayer,
+                            firsttreelayer.path("/"),
+                            mobase.IFileTree.REPLACE,
+                        )
+                        filetree.move(
+                            firsttreelayer,
+                            "assets/mod_overrides/",
+                            mobase.IFileTree.MERGE,
+                        )
                         treefixed = 1
             if treefixed == 0:
                 if len(filetree) == 1:
-                    filetree.move(firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE)
+                    filetree.move(
+                        firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE
+                    )
                     treefixed = 1
                 else:
                     for e in filetree:
                         if e.path("/").count("/") == 0:
-                            filetree.move(e, "assets/mod_overrides/FOLDERNAME/", mobase.IFileTree.MERGE)
+                            filetree.move(
+                                e,
+                                "assets/mod_overrides/FOLDERNAME/",
+                                mobase.IFileTree.MERGE,
+                            )
                             treefixed = 1
                             self.needsNameFix = True
         if treefixed == 0:
@@ -207,7 +242,12 @@ class Payday1Game(BasicGame):
     GameBinary = "payday_win32_release.exe"
     GameDataPath = "%GAME_PATH%"
     GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/PAYDAY"
-    _forced_libraries = ["IPHLPAPI.dll", "WSOCK32.dll" , "DINPUT8.dll", "PDTHModOverrides.dll"]
+    _forced_libraries = [
+        "IPHLPAPI.dll",
+        "WSOCK32.dll",
+        "DINPUT8.dll",
+        "PDTHModOverrides.dll",
+    ]
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -225,9 +265,7 @@ class Payday1Game(BasicGame):
             )
         ]
 
-    def dll_copy(
-        self, mods: dict[str, mobase.ModState]
-    ):
+    def dll_copy(self, mods: dict[str, mobase.ModState]):
 
         game_path = self.dataDirectory().absolutePath() + "/"
 
@@ -236,12 +274,12 @@ class Payday1Game(BasicGame):
             tree = key.fileTree()
             for e in tree:
                 if e.name() in self._forced_libraries:
-                    #add file
+                    # add file
                     file_path_source = key.absolutePath() + "/" + e.path()
                     file_path_target = game_path + e.name()
                     if value == 35:
                         shutil.copyfile(file_path_source, file_path_target)
-                    #remove file
+                    # remove file
                     if value == 33:
                         if os.path.exists(file_path_target):
                             os.remove(file_path_target)
@@ -257,7 +295,9 @@ class Payday1Game(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -265,7 +305,13 @@ class Payday1Game(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def iniFiles(self):

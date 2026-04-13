@@ -1,11 +1,12 @@
-from functools import cmp_to_key
 import json
+from functools import cmp_to_key
 from json import JSONDecodeError
 from pathlib import Path
 
-import mobase
 from PyQt6.QtCore import QDir, QFileInfo, Qt
 from PyQt6.QtWidgets import QGridLayout, QWidget
+
+import mobase
 
 from ..constants import DEFAULT_UE4SS_MODS, UE4SSModInfo
 from .model import UE4SSListModel
@@ -55,7 +56,11 @@ class UE4SSTabWidget(QWidget):
 
         for mod in mod_list:
             tree = mod.fileTree()
-            ue4ss_files = tree.find(game_data_ue4ss_mods) if isinstance(game_data_ue4ss_mods, str) else None
+            ue4ss_files = (
+                tree.find(game_data_ue4ss_mods)
+                if isinstance(game_data_ue4ss_mods, str)
+                else None
+            )
             if isinstance(ue4ss_files, mobase.IFileTree):
                 for entry in ue4ss_files:
                     if isinstance(entry, mobase.IFileTree):
@@ -80,7 +85,11 @@ class UE4SSTabWidget(QWidget):
                 & mobase.ModState.ACTIVE
             ):
                 tree = self._organizer.modList().getMod(mod).fileTree()
-                ue4ss_files = tree.find(data_ue4ss_mods) if isinstance(data_ue4ss_mods, str) else None
+                ue4ss_files = (
+                    tree.find(data_ue4ss_mods)
+                    if isinstance(data_ue4ss_mods, str)
+                    else None
+                )
                 if isinstance(ue4ss_files, mobase.IFileTree):
                     for entry in ue4ss_files:
                         if isinstance(entry, mobase.IFileTree):
@@ -104,11 +113,26 @@ class UE4SSTabWidget(QWidget):
         if data_path and data_ue4ss_mods:
             ue4ss_dir = QDir(data_path.absolutePath() + "/" + data_ue4ss_mods)
             if ue4ss_dir.exists():
-                for dir_info in ue4ss_dir.entryInfoList(QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot):# type: ignore
-                    if QFileInfo(QDir(dir_info.absoluteFilePath()).absoluteFilePath("scripts/main.lua")).exists() or QFileInfo(QDir(dir_info.absoluteFilePath()).absoluteFilePath("dlls/main.dll")).exists():
+                for dir_info in ue4ss_dir.entryInfoList(
+                    QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
+                ):  # type: ignore
+                    if (
+                        QFileInfo(
+                            QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                                "scripts/main.lua"
+                            )
+                        ).exists()
+                        or QFileInfo(
+                            QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                                "dlls/main.dll"
+                            )
+                        ).exists()
+                    ):
                         mod_list.add(dir_info.fileName())
                     if QFileInfo(
-                        QDir(dir_info.absoluteFilePath()).absoluteFilePath("enabled.txt")
+                        QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                            "enabled.txt"
+                        )
                     ).exists():
                         Path(dir_info.absoluteFilePath(), "enabled.txt").unlink()
 

@@ -2,13 +2,15 @@ from functools import cmp_to_key
 from pathlib import Path
 from typing import cast
 
-import mobase
-from PyQt6.QtWidgets import QGridLayout, QWidget
 from PyQt6.QtCore import QDir, QFileInfo
+from PyQt6.QtWidgets import QGridLayout, QWidget
+
+import mobase
 
 from ....basic_features.utils import is_directory
 from .model import PaksModel
 from .view import PaksView
+
 
 def pak_sort(a: tuple[str, str], b: tuple[str, str]) -> int:
     a_pak, a_str = a[0], a[1] or a[0]
@@ -164,9 +166,13 @@ class PaksTabWidget(QWidget):
         if data_path and data_pak_mods:
             pak_dir = QFileInfo(data_path.absolutePath() + "/" + data_pak_mods)
             if pak_dir.exists() and pak_dir.isDir():
-                for entry in QDir(pak_dir.absoluteFilePath()).entryInfoList(QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot): # type: ignore
+                for entry in QDir(pak_dir.absoluteFilePath()).entryInfoList(
+                    QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
+                ):  # type: ignore
                     if entry.isDir():
-                        for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(QDir.Filter.Files): # type: ignore
+                        for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(
+                            QDir.Filter.Files
+                        ):  # type: ignore
                             if (
                                 sub_entry.isFile()
                                 and sub_entry.suffix().casefold() == "pak"

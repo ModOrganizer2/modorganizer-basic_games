@@ -1,20 +1,19 @@
 import json
 import os
 import shutil
+from enum import IntEnum, auto
+from functools import cached_property
+from pathlib import Path
+
+from PyQt6.QtCore import QDir, QFileInfo
+from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
+
 import mobase
 
-from enum import IntEnum, auto
-from pathlib import Path
-from functools import cached_property
-
+from ..basic_game import BasicGame
 from .unreal_tabs.constants import DEFAULT_UE4SS_MODS, UE4SSModInfo
 from .unreal_tabs.manage_paks.widget import PaksTabWidget
 from .unreal_tabs.manage_ue4ss.widget import UE4SSTabWidget
-
-from ..basic_game import BasicGame
-
-from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget
-from PyQt6.QtCore import QDir, QFileInfo
 
 
 class Content(IntEnum):
@@ -38,7 +37,10 @@ class CrimeBossModDataContent(mobase.ModDataContent):
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
-        return [mobase.ModDataContent.Content(id, name, icon, *filter_only) for id, name, icon, *filter_only in self.GAMECONTENTS]
+        return [
+            mobase.ModDataContent.Content(id, name, icon, *filter_only)
+            for id, name, icon, *filter_only in self.GAMECONTENTS
+        ]
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
@@ -88,11 +90,15 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
     def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
-        GameDataNativeMods = getattr(self.organizer.managedGame(), "GameDataNativeMods", "")
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
+        )
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
         modname = mod.name()
-        if filetree.exists(GameDataNativeMods + "/FOLDERNAME", mobase.IFileTree.DIRECTORY):
+        if filetree.exists(
+            GameDataNativeMods + "/FOLDERNAME", mobase.IFileTree.DIRECTORY
+        ):
             path = mod.absolutePath()
             old_path = os.path.join(path, GameDataNativeMods + "/FOLDERNAME")
             new_path = os.path.join(path, GameDataNativeMods + f"/{modname}")
@@ -102,16 +108,26 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
-        GameDataUE4SSMods = getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "")
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
+        GameDataUE4SSMods = getattr(
+            self.organizer.managedGame(), "GameDataUE4SSMods", ""
+        )
         GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
-        GameDataNativeMods = getattr(self.organizer.managedGame(), "GameDataNativeMods", "")
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
+        )
         GameDataMovies = getattr(self.organizer.managedGame(), "GameDataMovies", "")
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
-        if filetree.exists(os.path.dirname(GameDataUE4SSMods), mobase.IFileTree.DIRECTORY):
+        if filetree.exists(
+            os.path.dirname(GameDataUE4SSMods), mobase.IFileTree.DIRECTORY
+        ):
             return mobase.ModDataChecker.VALID
-        if filetree.exists(GameDataNativeMods, mobase.IFileTree.DIRECTORY) and not filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
+        if filetree.exists(
+            GameDataNativeMods, mobase.IFileTree.DIRECTORY
+        ) and not filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataMovies, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
@@ -136,13 +152,23 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         return retVal
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
-        GameDataUE4SSMods = getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/"
-        GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "") + "/"
-        GameDataNativeMods = getattr(self.organizer.managedGame(), "GameDataNativeMods", "") + "/"
-        GameDataMovies = getattr(self.organizer.managedGame(), "GameDataMovies", "") + "/"
+        GameDataUE4SSMods = (
+            getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/"
+        )
+        GameDataPakMods = (
+            getattr(self.organizer.managedGame(), "GameDataPakMods", "") + "/"
+        )
+        GameDataNativeMods = (
+            getattr(self.organizer.managedGame(), "GameDataNativeMods", "") + "/"
+        )
+        GameDataMovies = (
+            getattr(self.organizer.managedGame(), "GameDataMovies", "") + "/"
+        )
         treefixed = 0
         if filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, os.path.dirname(os.path.dirname(GameDataUE4SSMods)) + "/")
+            treefixed = self.allMoveTo(
+                filetree, os.path.dirname(os.path.dirname(GameDataUE4SSMods)) + "/"
+            )
             if treefixed == 1:
                 return filetree
         if filetree.exists("Content", mobase.IFileTree.DIRECTORY):
@@ -163,14 +189,32 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
                         if mod_name == "":
                             mod_name = e.name()
                         mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-                        if not filetree.createOrphanTree("OrphanTree") and os.path.exists(mod_path):
+                        if not filetree.createOrphanTree(
+                            "OrphanTree"
+                        ) and os.path.exists(mod_path):
                             match e.suffix().casefold():
                                 case "pak" | "utoc" | "ucas":
-                                    os.makedirs(os.path.join(mod_path, GameDataPakMods), exist_ok=True)
-                                    shutil.move(os.path.join(mod_path, e.name()), os.path.join(mod_path, GameDataPakMods, e.name()))
+                                    os.makedirs(
+                                        os.path.join(mod_path, GameDataPakMods),
+                                        exist_ok=True,
+                                    )
+                                    shutil.move(
+                                        os.path.join(mod_path, e.name()),
+                                        os.path.join(
+                                            mod_path, GameDataPakMods, e.name()
+                                        ),
+                                    )
                                 case "bk2":
-                                    os.makedirs(os.path.join(mod_path, GameDataMovies), exist_ok=True)
-                                    shutil.move(os.path.join(mod_path, e.name()), os.path.join(mod_path, GameDataMovies, e.name()))
+                                    os.makedirs(
+                                        os.path.join(mod_path, GameDataMovies),
+                                        exist_ok=True,
+                                    )
+                                    shutil.move(
+                                        os.path.join(mod_path, e.name()),
+                                        os.path.join(
+                                            mod_path, GameDataMovies, e.name()
+                                        ),
+                                    )
                                 case _:
                                     pass
                             treefixed = 1
@@ -182,7 +226,11 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
                         case "pak" | "utoc" | "ucas":
                             filetree.move(e, GameDataPakMods, mobase.IFileTree.MERGE)
                         case "dll":
-                            filetree.move(e, os.path.dirname(GameDataUE4SSMods) + "/", mobase.IFileTree.MERGE)
+                            filetree.move(
+                                e,
+                                os.path.dirname(GameDataUE4SSMods) + "/",
+                                mobase.IFileTree.MERGE,
+                            )
                         case "bk2":
                             filetree.move(e, GameDataMovies, mobase.IFileTree.MERGE)
                         case _:
@@ -205,7 +253,9 @@ class CrimeBossGame(BasicGame):
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataNativeMods = "Mods"
     GameDataPakMods = "Content/Paks/~Mods"
-    GameDocumentsDirectory = "%USERPROFILE%/Saved Games/CrimeBoss/Steam/Saved/Config/WindowsNoEditor"
+    GameDocumentsDirectory = (
+        "%USERPROFILE%/Saved Games/CrimeBoss/Steam/Saved/Config/WindowsNoEditor"
+    )
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -255,7 +305,9 @@ class CrimeBossGame(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -263,7 +315,13 @@ class CrimeBossGame(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def paksDirectory(self) -> QDir:

@@ -1,13 +1,13 @@
 import os
 import shutil
-import mobase
-
-from pathlib import Path
 from functools import cached_property
-
-from ..basic_game import BasicGame
+from pathlib import Path
 
 from PyQt6.QtCore import QDir, QFileInfo
+
+import mobase
+
+from ..basic_game import BasicGame
 
 
 class EmuVRModDataChecker(mobase.ModDataChecker):
@@ -15,23 +15,34 @@ class EmuVRModDataChecker(mobase.ModDataChecker):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         GameDataUGCMods = getattr(self.organizer.managedGame(), "GameDataUGCMods", "")
         if filetree.exists(GameDataUGCMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
-        GameDataUGCMods = getattr(self.organizer.managedGame(), "GameDataUGCMods", "") + "/"
+        GameDataUGCMods = (
+            getattr(self.organizer.managedGame(), "GameDataUGCMods", "") + "/"
+        )
         treefixed = 0
         for branch in filetree:
             mod_name = filetree.name()
             if mod_name == "":
                 mod_name = branch.name()
             mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-            if not filetree.createOrphanTree("OrphanTree") and os.path.exists(mod_path) and branch.suffix().casefold() == "ugc":
+            if (
+                not filetree.createOrphanTree("OrphanTree")
+                and os.path.exists(mod_path)
+                and branch.suffix().casefold() == "ugc"
+            ):
                 os.makedirs(os.path.join(mod_path, GameDataUGCMods), exist_ok=True)
-                shutil.move(os.path.join(mod_path, branch.name()), os.path.join(mod_path, GameDataUGCMods, branch.name()))
+                shutil.move(
+                    os.path.join(mod_path, branch.name()),
+                    os.path.join(mod_path, GameDataUGCMods, branch.name()),
+                )
                 treefixed = 1
             else:
                 if isinstance(branch, mobase.IFileTree):
@@ -71,10 +82,19 @@ class EmuVRGame(BasicGame):
                 "Emu VR",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             ),
-            mobase.ExecutableInfo("Force SteamVR", QFileInfo(self.gameDirectory(), "Force SteamVR.exe")),
-            mobase.ExecutableInfo("Force Oculus", QFileInfo(self.gameDirectory(), "Force Oculus.exe")),
-            mobase.ExecutableInfo("Force Virtual Desktop Streamer", QFileInfo(self.gameDirectory(), "Force Virtual Desktop Streamer.exe")),
-            mobase.ExecutableInfo("Force Desktop", QFileInfo(self.gameDirectory(), "Force Desktop.exe")),
+            mobase.ExecutableInfo(
+                "Force SteamVR", QFileInfo(self.gameDirectory(), "Force SteamVR.exe")
+            ),
+            mobase.ExecutableInfo(
+                "Force Oculus", QFileInfo(self.gameDirectory(), "Force Oculus.exe")
+            ),
+            mobase.ExecutableInfo(
+                "Force Virtual Desktop Streamer",
+                QFileInfo(self.gameDirectory(), "Force Virtual Desktop Streamer.exe"),
+            ),
+            mobase.ExecutableInfo(
+                "Force Desktop", QFileInfo(self.gameDirectory(), "Force Desktop.exe")
+            ),
         ]
 
     def iniFiles(self):
@@ -91,7 +111,9 @@ class EmuVRGame(BasicGame):
         except AttributeError:
             efls = []
         libs: set[str] = set()
-        tree: mobase.IFileTree | mobase.FileTreeEntry | None = self._organizer.virtualFileTree()
+        tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
+            self._organizer.virtualFileTree()
+        )
         if type(tree) is not mobase.IFileTree:
             return efls
         for e in tree:
@@ -99,7 +121,13 @@ class EmuVRGame(BasicGame):
             if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
                 libs.add(relpath)
         exes = self.executables()
-        efls = efls + [mobase.ExecutableForcedLoadSetting(exe.binary().fileName(), lib).withEnabled(True) for lib in libs for exe in exes]
+        efls = efls + [
+            mobase.ExecutableForcedLoadSetting(
+                exe.binary().fileName(), lib
+            ).withEnabled(True)
+            for lib in libs
+            for exe in exes
+        ]
         return efls
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):

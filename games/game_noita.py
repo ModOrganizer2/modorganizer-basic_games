@@ -1,10 +1,11 @@
-from functools import cached_property
-from pathlib import Path
 import os
 import shutil
+from functools import cached_property
+from pathlib import Path
+
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
-from PyQt6.QtCore import QDir, QFileInfo
 
 from ..basic_game import BasicGame
 
@@ -46,7 +47,9 @@ class NoitaModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if filetree.exists("mods", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
