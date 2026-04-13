@@ -158,7 +158,6 @@ class RaidWW2Game(BasicGame):
         ]
 
     def dll_copy(self, mods: dict[str, mobase.ModState]):
-
         game_path = self.dataDirectory().absolutePath() + "/"
 
         for key, value in mods.items():

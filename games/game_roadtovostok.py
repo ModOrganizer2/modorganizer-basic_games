@@ -16,7 +16,6 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-
         if filetree.exists("mods", mobase.IFileTree.DIRECTORY) and not filetree.exists(
             "mod.txt", mobase.IFileTree.FILE
         ):
