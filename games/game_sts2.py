@@ -28,17 +28,17 @@ class SlayTheSpire2ModDataChecker(BasicModDataChecker):
 
 
 class SlayTheSpire2Game(BasicGame):
-    Name                   = "Slay the Spire 2 Support Plugin"
-    Author                 = "Azlle"
-    Version                = "1.0.0"
+    Name = "Slay the Spire 2 Support Plugin"
+    Author = "Azlle"
+    Version = "1.0.0"
 
-    GameName               = "Slay the Spire 2"
-    GameShortName          = "slaythespire2"
-    GameNexusName          = "slaythespire2"
-    GameNexusId            = 8916
-    GameSteamId            = 2868840
-    GameBinary             = "SlayTheSpire2.exe"
-    GameDataPath           = "mods"
+    GameName = "Slay the Spire 2"
+    GameShortName = "slaythespire2"
+    GameNexusName = "slaythespire2"
+    GameNexusId = 8916
+    GameSteamId = 2868840
+    GameBinary = "SlayTheSpire2.exe"
+    GameDataPath = "mods"
     GameDocumentsDirectory = "%USERPROFILE%/AppData/Roaming/SlayTheSpire2"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
