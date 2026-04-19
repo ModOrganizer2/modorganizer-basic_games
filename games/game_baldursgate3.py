@@ -190,9 +190,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         moved: dict[str, str] = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                moved[str(path.relative_to(Path.home()))] = str(
-                    (self.utils.log_dir / path.name).relative_to(Path.home())
-                )
+                moved[str(path)] = str((self.utils.log_dir / path.name))
                 path.replace(self.utils.log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))
@@ -201,9 +199,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             if path.name == "log.txt":
                 dest = self.utils.log_dir / f"{path.parent.name}-{path.name}"
             try:
-                moved[str(path.relative_to(Path.home()))] = str(
-                    dest.relative_to(Path.home())
-                )
+                moved[str(path)] = str(dest)
                 path.replace(dest)
             except PermissionError as e:
                 qDebug(str(e))
@@ -230,10 +226,8 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
                 try:
                     folder[0].rmdir()
-                    removed.add(folder[0].relative_to(Path.home()))
+                    removed.add(folder[0])
                 except OSError:
                     pass
             if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
-                qDebug(
-                    f"cleaned empty dirs from {fdir.relative_to(Path.home())} {removed}"
-                )
+                qDebug(f"cleaned empty dirs from {fdir} {removed}")
