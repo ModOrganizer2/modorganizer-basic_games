@@ -250,7 +250,8 @@ class BG3Utils:
                     if mod.name() in metadata
                 )
                 + self._mod_settings_xml_end
-            )
+            ),
+            encoding="utf-8",
         )
         qInfo(
             f"backing up generated file {self.modsettings_path} to {self.modsettings_backup}, "
