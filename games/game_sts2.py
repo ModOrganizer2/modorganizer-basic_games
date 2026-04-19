@@ -46,6 +46,11 @@ class SlayTheSpire2Game(BasicGame):
         self._register_feature(SlayTheSpire2ModDataChecker())
         return True
 
+    def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
+        mods_path = Path(self.dataDirectory().absolutePath())
+        mods_path.mkdir(exist_ok=True)
+        super().initializeProfile(directory, settings)
+
     def savesDirectory(self) -> QDir:
         docs = QDir(self.documentsDirectory())
         steam_dir = Path(docs.absoluteFilePath("steam"))
