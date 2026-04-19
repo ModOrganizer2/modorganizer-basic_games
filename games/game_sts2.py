@@ -30,7 +30,7 @@ class SlayTheSpire2ModDataChecker(BasicModDataChecker):
 class SlayTheSpire2Game(BasicGame):
     Name = "Slay the Spire 2 Support Plugin"
     Author = "Azlle"
-    Version = "1.0.0"
+    Version = "1.0.1"
 
     GameName = "Slay the Spire 2"
     GameShortName = "slaythespire2"
