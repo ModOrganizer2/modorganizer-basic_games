@@ -17,7 +17,7 @@ Download the archive for your MO2 version and extract it directly into your MO2 
 
 - Mod Organizer **2.3.2**: [Download](https://github.com/ModOrganizer2/modorganizer-basic_games/releases/download/v0.0.3/basic_games-0.0.3.zip)
   and extract in your `plugins/` folder (see below).
-- Mod Organizer **2.4**: Basic games is included in Mod Organizer 2.4.
+- Mod Organizer **2.4 and later**: Basic games is included in Mod Organizer 2.4 and later.
   - If you want to use new game plugins that have not been included in the
     release, [download the latest archive](https://github.com/ModOrganizer2/modorganizer-basic_games/archive/master.zip) and extract the files
     in the existing `basic_games` folder, overwriting existing files.
@@ -217,7 +217,7 @@ Game IDs can be found here:
 
 We recommend using a dedicated Python environment to write a new basic game plugins.
 
-1. Install the required version of Python --- Currently Python 3.11 (MO2 2.5).
+1. Install the required version of Python --- Currently Python 3.13 (MO2 2.5).
 2. Remove the repository at `${MO2_INSTALL}/plugins/basic_games`.
 3. Clone this repository at the location of the old plugin (
   `${MO2_INSTALL}/plugins/basic_games`).
@@ -225,7 +225,7 @@ We recommend using a dedicated Python environment to write a new basic game plug
 
   ```bash
   # create a virtual environment (recommended)
-  py -3.11 -m venv .\venv
+  py -3.13 -m venv .\venv
   .\venv\scripts\Activate.ps1
 
   # "install" poetry and the development package
