@@ -222,7 +222,7 @@ class BG3Utils:
             if progress.wasCanceled():
                 qWarning("processing canceled by user")
                 return False
-            threadpool.start(QRunnable.create(retrieve_mod_metadata_in_new_thread(mod)))
+            threadpool.start(QRunnable.create(retrieve_mod_metadata_in_new_thread(mod)))  # type: ignore[reportUnknownMemberType]
         count = 0
         num_active_mods = len(active_mods)
         total_intervals_to_wait = (num_active_mods * 2) + 20

@@ -534,15 +534,13 @@ class Cyberpunk2077Game(BasicGame):
             crash_message = QMessageBox(
                 QMessageBox.Icon.Critical,
                 "Cyberpunk Crashed",
-                textwrap.dedent(
-                    f"""
+                textwrap.dedent(f"""
                     Cyberpunk crashed. Tips:
                     - disable mods (create backup of modlist or use new profile)
                     - clear overwrite or delete at least overwrite/r6/cache (to keep mod settings)
                     - check log files of CET/redscript/RED4ext (in overwrite)
                     - read [FAQ & Troubleshooting]({self.GameSupportURL}#faq--troubleshooting)
-                    """
-                ),
+                    """),
                 QMessageBox.StandardButton.Ok,
                 self._parentWidget,
             )
@@ -696,8 +694,7 @@ class Cyberpunk2077Game(BasicGame):
         message_box = QMessageBox(
             QMessageBox.Icon.Question,
             "RootBuilder obsolete",
-            textwrap.dedent(
-                """
+            textwrap.dedent("""
                 Mod Organizer now supports Cyberpunk Engine Tweaks (CET) and
                 RED4ext native via forced load libraries, making RootBuilder
                 unnecessary.
@@ -706,8 +703,7 @@ class Cyberpunk2077Game(BasicGame):
                 <br/>This usually only affects CET, RED4ext and overwrite.
 
                 You can disable RootBuilder afterwards.
-                """
-            ),
+                """),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             parent_widget,
         )

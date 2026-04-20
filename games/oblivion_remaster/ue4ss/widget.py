@@ -108,7 +108,7 @@ class UE4SSTabWidget(QWidget):
         game = self._organizer.managedGame()
         if isinstance(game, OblivionRemasteredGame):
             if game.ue4ssDirectory().exists():
-                for dir_info in game.ue4ssDirectory().entryInfoList(
+                for dir_info in game.ue4ssDirectory().entryInfoList(  # type: ignore
                     QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
                 ):
                     if QFileInfo(
