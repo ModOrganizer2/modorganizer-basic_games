@@ -27,7 +27,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "") + "/"
-        treefixed = 0
+        allowedUnzippedExt = ["zip", "vmz"]
 
         for branch in filetree:
             mod_name = filetree.name()
@@ -37,17 +37,13 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
             if (
                 not filetree.createOrphanTree("OrphanTree")
                 and os.path.exists(mod_path)
-                and branch.suffix().casefold() == "zip"
+                and branch.suffix().casefold() in allowedUnzippedExt
             ):
                 os.makedirs(os.path.join(mod_path, GameModsPath), exist_ok=True)
                 shutil.move(
                     os.path.join(mod_path, branch.name()),
                     os.path.join(mod_path, GameModsPath, branch.name()),
                 )
-                treefixed = 1
-
-        if treefixed == 0:
-            return None
         return filetree
 
 
@@ -56,14 +52,12 @@ class RoadToVostokGame(BasicGame):
     Author = "modworkshop"
     Version = "1"
     GameName = "Road to Vostok"
-    GameShortName = "road-to-vostok"
+    GameShortName = "roadtovostok"
     GameSteamId = 1963610
     GameBinary = "RTV.exe"
     GameDataPath = "%GAME_PATH%"
     GameModsPath = "mods"
-    GameDocumentsDirectory = (
-        "%USERPROFILE%/AppData/Local/Godot/app_userdata/Road to Vostok"
-    )
+    GameDocumentsDirectory = "%USERPROFILE%/AppData/Roaming/Road to Vostok"
     GameSaveExtension = "tres"
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
@@ -75,11 +69,7 @@ class RoadToVostokGame(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Road to Vostok (Use Injector)",
-                QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
-            ).withArgument("--main-pack Injector.pck"),
-            mobase.ExecutableInfo(
-                "Road to Vostok (No Mods)",
+                "Road to Vostok",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             ),
         ]

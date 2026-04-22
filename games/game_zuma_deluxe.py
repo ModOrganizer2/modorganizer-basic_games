@@ -187,8 +187,6 @@ class ZumaModDataChecker(mobase.ModDataChecker):
             if isinstance(branch, mobase.IFileTree):
                 if len(branch) == 0:
                     filetree.remove(branch)
-        if treefixed == 0:
-            return None
         return filetree
 
 

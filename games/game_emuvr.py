@@ -27,7 +27,6 @@ class EmuVRModDataChecker(mobase.ModDataChecker):
         GameDataUGCMods = (
             getattr(self.organizer.managedGame(), "GameDataUGCMods", "") + "/"
         )
-        treefixed = 0
         for branch in filetree:
             mod_name = filetree.name()
             if mod_name == "":
@@ -43,18 +42,13 @@ class EmuVRModDataChecker(mobase.ModDataChecker):
                     os.path.join(mod_path, branch.name()),
                     os.path.join(mod_path, GameDataUGCMods, branch.name()),
                 )
-                treefixed = 1
             else:
                 if isinstance(branch, mobase.IFileTree):
                     for e in branch:
                         if e.isFile() and e.suffix().casefold() == "ugc":
                             filetree.move(e, GameDataUGCMods, mobase.IFileTree.MERGE)
-                            treefixed = 1
                 elif branch.suffix().casefold() == "ugc":
                     filetree.move(branch, GameDataUGCMods, mobase.IFileTree.MERGE)
-                    treefixed = 1
-        if treefixed == 0:
-            return None
         return filetree
 
 

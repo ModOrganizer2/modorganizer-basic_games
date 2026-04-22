@@ -211,24 +211,11 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                             mobase.IFileTree.MERGE,
                         )
                         treefixed = 1
-            if treefixed == 0:
-                if len(filetree) == 1:
-                    filetree.move(
-                        firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE
-                    )
-                    treefixed = 1
-                else:
-                    for e in filetree:
-                        if e.path("/").count("/") == 0:
-                            filetree.move(
-                                e,
-                                "assets/mod_overrides/FOLDERNAME/",
-                                mobase.IFileTree.MERGE,
-                            )
-                            treefixed = 1
-                            self.needsNameFix = True
-        if treefixed == 0:
-            return None
+            if treefixed == 0 and len(filetree) == 1:
+                filetree.move(
+                    firsttreelayer, "assets/mod_overrides/", mobase.IFileTree.MERGE
+                )
+                treefixed = 1
         return filetree
 
 

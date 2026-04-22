@@ -82,8 +82,6 @@ class NoitaModDataChecker(mobase.ModDataChecker):
         if self.fileExistsInNextSubDir(filetree, "mod.xml"):
             filetree.move(filetree[0], GameModsPath + "/", mobase.IFileTree.MERGE)
             treefixed = 1
-        if treefixed == 0:
-            return None
         return filetree
 
 

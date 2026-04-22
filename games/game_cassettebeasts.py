@@ -46,7 +46,6 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         GameDataPath = getattr(self.organizer.managedGame(), "GameDataPath", "") + "/"
-        treefixed = 0
         for branch in filetree:
             mod_name = filetree.name()
             if mod_name == "":
@@ -62,18 +61,13 @@ class CassetteBeastsModDataChecker(mobase.ModDataChecker):
                     os.path.join(mod_path, branch.name()),
                     os.path.join(mod_path, GameDataPath, branch.name()),
                 )
-                treefixed = 1
             else:
                 if isinstance(branch, mobase.IFileTree):
                     for e in branch:
                         if e.suffix().casefold() == "pck":
                             filetree.move(e, GameDataPath, mobase.IFileTree.MERGE)
-                            treefixed = 1
                 elif branch.suffix().casefold() == "pck":
                     filetree.move(branch, GameDataPath, mobase.IFileTree.MERGE)
-                    treefixed = 1
-        if treefixed == 0:
-            return None
         return filetree
 
 

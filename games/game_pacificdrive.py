@@ -202,8 +202,6 @@ class PacificDriveModDataChecker(mobase.ModDataChecker):
                         case _:
                             pass
                 treefixed = 1
-        if treefixed == 0:
-            return None
         return filetree
 
 

@@ -196,8 +196,6 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
                                 )
                                 treefixed = 1
                                 self.needsNameFix = True
-        if treefixed == 0:
-            return None
         return filetree
 
 
