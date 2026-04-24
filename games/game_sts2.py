@@ -123,11 +123,11 @@ class SlayTheSpire2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Slay the Spire 2",
+                self.GameName,
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             ),
             mobase.ExecutableInfo(
-                "Slay the Spire 2 (OpenGL)",
+                f"{self.GameName} (OpenGL)",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             ).withArgument("--rendering-driver opengl3"),
         ]
