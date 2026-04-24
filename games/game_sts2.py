@@ -1,6 +1,8 @@
+import json
+import re
 from pathlib import Path
 
-from PyQt6.QtCore import QDir, QFileInfo
+from PyQt6.QtCore import QDir, QFileInfo, qInfo, qWarning
 
 import mobase
 
@@ -44,6 +46,7 @@ class SlayTheSpire2Game(BasicGame):
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._register_feature(SlayTheSpire2ModDataChecker())
+        organizer.modList().onModInstalled(self._on_mod_installed)
         return True
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
@@ -51,6 +54,32 @@ class SlayTheSpire2Game(BasicGame):
         mods_path.mkdir(exist_ok=True)
         super().initializeProfile(directory, settings)
 
+    def _on_mod_installed(self, mod: mobase.IModInterface):
+        mod_name = mod.name()
+        self._organizer.onNextRefresh(
+            lambda: self._apply_version(self._organizer.modList().getMod(mod_name)), True
+        )
+
+    def _apply_version(self, mod: mobase.IModInterface | None):
+        if mod is None:
+            return
+        mod_path = Path(mod.absolutePath())
+        for json_file in mod_path.glob("*.json"):
+            try:
+                with open(json_file, encoding="utf-8-sig") as f:
+                    data = json.load(f)
+                    if version := data.get("version"):
+                        version = version.lstrip("v")
+                        meta_ini = mod_path / "meta.ini"
+                        raw = meta_ini.read_bytes()
+                        raw = re.sub(rb"^\s*version\s*=\s*[^\r\n]*", f"version={version}".encode(), raw, flags=re.MULTILINE)
+                        meta_ini.write_bytes(raw)
+                        qInfo(f"Set version of {mod_path.name} to {version} using {json_file.name}")
+                        self._organizer.modDataChanged(mod)
+                        break
+            except (json.JSONDecodeError, OSError) as e:
+                qWarning(f"Failed to apply version for {mod_path.name} via {json_file.name}: {e}")
+                continue
     def savesDirectory(self) -> QDir:
         docs = QDir(self.documentsDirectory())
         steam_dir = Path(docs.absoluteFilePath("steam"))
