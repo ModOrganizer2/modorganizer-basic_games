@@ -62,7 +62,8 @@ class SlayTheSpire2Game(BasicGame):
     def _on_mod_installed(self, mod: mobase.IModInterface):
         mod_name = mod.name()
         self._organizer.onNextRefresh(
-            lambda: self._apply_version(self._organizer.modList().getMod(mod_name)), True
+            lambda: self._apply_version(self._organizer.modList().getMod(mod_name)),
+            True,
         )
 
     def _apply_version(self, mod: mobase.IModInterface | None):
@@ -77,13 +78,22 @@ class SlayTheSpire2Game(BasicGame):
                         version = version.lstrip("v")
                         meta_ini = mod_path / "meta.ini"
                         raw = meta_ini.read_bytes()
-                        raw = re.sub(rb"^\s*version\s*=\s*[^\r\n]*", f"version={version}".encode(), raw, flags=re.MULTILINE)
+                        raw = re.sub(
+                            rb"^\s*version\s*=\s*[^\r\n]*",
+                            f"version={version}".encode(),
+                            raw,
+                            flags=re.MULTILINE,
+                        )
                         meta_ini.write_bytes(raw)
-                        qInfo(f"Set version of {mod_path.name} to {version} using {json_file.name}")
+                        qInfo(
+                            f"Set version of {mod_path.name} to {version} using {json_file.name}"
+                        )
                         self._organizer.modDataChanged(mod)
                         break
             except (json.JSONDecodeError, OSError) as e:
-                qWarning(f"Failed to apply version for {mod_path.name} via {json_file.name}: {e}")
+                qWarning(
+                    f"Failed to apply version for {mod_path.name} via {json_file.name}: {e}"
+                )
                 continue
 
     def savesDirectory(self) -> QDir:
