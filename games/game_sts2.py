@@ -9,6 +9,7 @@ import mobase
 from ..basic_features import BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
+from ..steam_utils import find_steam_path
 
 
 class SlayTheSpire2ModDataChecker(BasicModDataChecker):
@@ -42,6 +43,8 @@ class SlayTheSpire2Game(BasicGame):
     GameBinary = "SlayTheSpire2.exe"
     GameDataPath = "mods"
     GameDocumentsDirectory = "%USERPROFILE%/AppData/Roaming/SlayTheSpire2"
+
+    _last_save_dir: str = ""
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -80,13 +83,31 @@ class SlayTheSpire2Game(BasicGame):
             except (json.JSONDecodeError, OSError) as e:
                 qWarning(f"Failed to apply version for {mod_path.name} via {json_file.name}: {e}")
                 continue
+
     def savesDirectory(self) -> QDir:
-        docs = QDir(self.documentsDirectory())
-        steam_dir = Path(docs.absoluteFilePath("steam"))
-        if steam_dir.exists():
-            entries = [e for e in steam_dir.iterdir() if e.is_dir()]
-            if entries:
-                return QDir(str(entries[0]))
+        steam_dir = Path(self.documentsDirectory().absolutePath()) / "steam"
+        candidates = []
+        is_fallback = False
+        steam_path = find_steam_path()
+        if steam_path is not None:
+            userdata = steam_path / "userdata"
+            if userdata.exists():
+                candidates = [
+                    child / "2868840" / "remote"
+                    for child in userdata.iterdir()
+                    if child.is_dir() and (child / "2868840" / "remote").exists()
+                ]
+        if not candidates:
+            is_fallback = True
+            if steam_dir.exists():
+                candidates = [child for child in steam_dir.iterdir() if child.is_dir()]
+        if candidates:
+            save_dir = max(candidates, key=lambda p: p.stat().st_mtime)
+            if (s := str(save_dir)) != self._last_save_dir:
+                status = "not found, using AppData" if is_fallback else "found"
+                qInfo(f"Steam save directory {status}: {save_dir}")
+                self.__class__._last_save_dir = s
+            return QDir(s)
         return QDir(str(steam_dir))
 
     def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
