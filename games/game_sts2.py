@@ -117,7 +117,7 @@ class SlayTheSpire2Game(BasicGame):
         return [
             BasicGameSaveGame(save)
             for save in base.rglob("*")
-            if save.is_file() and save.suffix in (".save", ".run")
+            if save.is_file() and save.suffix in (".save", ".run", ".backup")
         ]
 
     def executables(self):
