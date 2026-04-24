@@ -54,7 +54,9 @@ class SlayTheSpire2Game(BasicGame):
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         mods_path = Path(self.dataDirectory().absolutePath())
-        mods_path.mkdir(exist_ok=True)
+        if not mods_path.exists():
+            qInfo(f"Creating mods directory: {mods_path}")
+            mods_path.mkdir()
         super().initializeProfile(directory, settings)
 
     def _on_mod_installed(self, mod: mobase.IModInterface):
