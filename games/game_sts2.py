@@ -20,7 +20,9 @@ class SlayTheSpire2ModDataChecker(mobase.ModDataChecker):
             for entry in filetree
         )
 
-    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+    def dataLooksValid(
+        self, filetree: mobase.IFileTree
+    ) -> mobase.ModDataChecker.CheckReturn:
         if self._has_mod_files(filetree):
             return mobase.ModDataChecker.VALID
         if any(entry.isDir() and self._has_mod_files(entry) for entry in filetree):
