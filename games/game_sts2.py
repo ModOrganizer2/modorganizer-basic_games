@@ -1,6 +1,7 @@
 import json
 import re
 from pathlib import Path
+from typing import cast
 
 from PyQt6.QtCore import QDir, QFileInfo, qInfo, qWarning
 
@@ -9,7 +10,6 @@ import mobase
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
-from typing import cast
 
 
 class SlayTheSpire2ModDataChecker(mobase.ModDataChecker):
