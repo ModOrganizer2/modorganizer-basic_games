@@ -6,28 +6,33 @@ from PyQt6.QtCore import QDir, QFileInfo, qInfo, qWarning
 
 import mobase
 
-from ..basic_features import BasicModDataChecker, GlobPatterns
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
 
 
-class SlayTheSpire2ModDataChecker(BasicModDataChecker):
-    def __init__(self):
-        super().__init__(
-            GlobPatterns(
-                valid=[
-                    "*.pck",
-                    "*.dll",
-                    "*.json",
-                ],
-                move={
-                    "*/*.pck": "",
-                    "*/*.dll": "",
-                    "*/*.json": "",
-                },
-            )
+class SlayTheSpire2ModDataChecker(mobase.ModDataChecker):
+    _VALID_EXTENSIONS = (".pck", ".dll", ".json")
+
+    def _has_mod_files(self, filetree: mobase.FileTreeEntry) -> bool:
+        return any(
+            entry.isFile() and entry.name().endswith(self._VALID_EXTENSIONS)
+            for entry in filetree
         )
+
+    def dataLooksValid(self, filetree: mobase.IFileTree) -> mobase.ModDataChecker.CheckReturn:
+        if self._has_mod_files(filetree):
+            return mobase.ModDataChecker.VALID
+        if any(entry.isDir() and self._has_mod_files(entry) for entry in filetree):
+            return mobase.ModDataChecker.FIXABLE
+        return mobase.ModDataChecker.INVALID
+
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
+        for entry in list(filetree):
+            if entry.isDir() and self._has_mod_files(entry):
+                filetree.merge(entry)
+                entry.detach()
+        return filetree
 
 
 class SlayTheSpire2Game(BasicGame):
