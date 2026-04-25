@@ -9,12 +9,13 @@ import mobase
 from ..basic_features.basic_save_game_info import BasicGameSaveGame
 from ..basic_game import BasicGame
 from ..steam_utils import find_steam_path
+from typing import cast
 
 
 class SlayTheSpire2ModDataChecker(mobase.ModDataChecker):
     _VALID_EXTENSIONS = (".pck", ".dll", ".json")
 
-    def _has_mod_files(self, filetree: mobase.FileTreeEntry) -> bool:
+    def _has_mod_files(self, filetree: mobase.IFileTree) -> bool:
         return any(
             entry.isFile() and entry.name().endswith(self._VALID_EXTENSIONS)
             for entry in filetree
@@ -25,15 +26,18 @@ class SlayTheSpire2ModDataChecker(mobase.ModDataChecker):
     ) -> mobase.ModDataChecker.CheckReturn:
         if self._has_mod_files(filetree):
             return mobase.ModDataChecker.VALID
-        if any(entry.isDir() and self._has_mod_files(entry) for entry in filetree):
-            return mobase.ModDataChecker.FIXABLE
+        for entry in filetree:
+            if entry.isDir() and self._has_mod_files(cast(mobase.IFileTree, entry)):
+                return mobase.ModDataChecker.FIXABLE
         return mobase.ModDataChecker.INVALID
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
         for entry in list(filetree):
-            if entry.isDir() and self._has_mod_files(entry):
-                filetree.merge(entry)
-                entry.detach()
+            if entry.isDir():
+                tree = cast(mobase.IFileTree, entry)
+                if self._has_mod_files(tree):
+                    filetree.merge(tree)
+                    entry.detach()
         return filetree
 
 
