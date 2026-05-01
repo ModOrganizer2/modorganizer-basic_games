@@ -131,7 +131,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
 
 class RaidWW2Game(BasicGame):
     Name = "RAID World War II Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "RAID World War II"
     GameShortName = "raidww2"

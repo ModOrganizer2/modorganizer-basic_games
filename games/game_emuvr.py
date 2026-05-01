@@ -54,7 +54,7 @@ class EmuVRModDataChecker(mobase.ModDataChecker):
 
 class EmuVRGame(BasicGame):
     Name = "Emu VR Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Emu VR"
     GameShortName = "emuvr"

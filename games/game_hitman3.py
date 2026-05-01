@@ -117,7 +117,7 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
 
 class Hitman3Game(BasicGame):
     Name = "Hitman 3 Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Hitman: World of Assassination"
     GameShortName = "hitman3"

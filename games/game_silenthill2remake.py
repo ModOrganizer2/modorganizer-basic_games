@@ -33,7 +33,7 @@ class SilentHill2ModDataContent(mobase.ModDataContent):
         (Content.PAK, "PAK", ":/MO/gui/content/geometries"),
         (Content.UE4SS, "UE4SS", ":/MO/gui/content/script"),
         (Content.DLL, "DLL", ":/MO/gui/content/skse"),
-        (Content.BK2, "Video", ":/MO/gui/content/skse"),
+        (Content.BK2, "Video", ":/MO/gui/content/modgroup"),
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
@@ -207,7 +207,7 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
 
 class SilentHill2Game(BasicGame):
     Name = "Silent Hill 2 Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Silent Hill 2 Remake"
     GameLauncher = "SHProto.exe"

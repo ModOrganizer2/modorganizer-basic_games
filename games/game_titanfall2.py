@@ -201,7 +201,7 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
 
 class Titanfall2Game(BasicGame):
     Name = "Titanfall 2 Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Titanfall 2"
     GameShortName = "titanfall-2"

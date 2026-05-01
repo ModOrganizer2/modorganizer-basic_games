@@ -221,7 +221,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
 
 class Payday1Game(BasicGame):
     Name = "Payday 1 Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Payday: The Heist"
     GameShortName = "pdth"

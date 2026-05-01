@@ -195,7 +195,7 @@ PROGRAM_DATA = str(os.getenv("ProgramData"))
 
 class ZumaGame(BasicGame, mobase.IPluginFileMapper):
     Name = "Zuma Deluxe Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Zuma Deluxe"
     GameShortName = "zuma"

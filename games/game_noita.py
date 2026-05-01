@@ -87,7 +87,7 @@ class NoitaModDataChecker(mobase.ModDataChecker):
 
 class NoitaGame(BasicGame):
     Name = "Noita Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Noita"
     GameShortName = "noita"

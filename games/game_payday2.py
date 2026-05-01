@@ -222,7 +222,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
 
 class Payday2Game(BasicGame):
     Name = "Payday 2 Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Payday 2"
     GameShortName = "payday-2"

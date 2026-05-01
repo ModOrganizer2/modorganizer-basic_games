@@ -33,7 +33,7 @@ class PacificDriveModDataContent(mobase.ModDataContent):
         (Content.PAK, "PAK", ":/MO/gui/content/geometries"),
         (Content.UE4SS, "UE4SS", ":/MO/gui/content/script"),
         (Content.DLL, "DLL", ":/MO/gui/content/skse"),
-        (Content.BK2, "Video", ":/MO/gui/content/skse"),
+        (Content.BK2, "Video", ":/MO/gui/content/modgroup"),
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
@@ -207,7 +207,7 @@ class PacificDriveModDataChecker(mobase.ModDataChecker):
 
 class PacificDriveGame(BasicGame):
     Name = "Pacific Drive Support Plugin"
-    Author = "modworkshop"
+    Author = "ModWorkshop"
     Version = "1"
     GameName = "Pacific Drive"
     GameLauncher = "PenDriverPro.exe"

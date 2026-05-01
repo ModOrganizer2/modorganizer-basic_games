@@ -25,9 +25,8 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class Payday3ModDataContent(mobase.ModDataContent):
+class WindroseModDataContent(mobase.ModDataContent):
     content: list[int] = []
-
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -68,7 +67,7 @@ class Payday3ModDataContent(mobase.ModDataContent):
         return list(self.contents)
 
 
-class Payday3ModDataChecker(mobase.ModDataChecker):
+class WindroseModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -206,20 +205,21 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class Payday3Game(BasicGame):
-    Name = "Payday 3 Support Plugin"
-    Author = "ModWorkshop, MaskPlague and Silarn"
+class WindroseGame(BasicGame):
+    Name = "Windrose Support Plugin"
+    Author = "ModWorkshop"
     Version = "1"
-    GameName = "Payday 3"
-    GameLauncher = "PAYDAY3.exe"
-    GameShortName = "payday-3"
-    GameSteamId = 1272080
-    GameBinary = "PAYDAY3/Binaries/Win64/PAYDAY3-Win64-Shipping.exe"
-    GameDataPath = "PAYDAY3"
+    GameName = "Windrose"
+    GameLauncher = "Windrose.exe"
+    GameShortName = "windrose"
+    GameSteamId = 3041230
+    GameBinary = "R5/Binaries/Win64/WindroseWin64-Shipping.exe"
+    GameDataPath = "R5"
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/PAYDAY3/Saved/Config/WindowsClient"
+    GameDocumentsDirectory = "%LOCALAPPDATA%/R5/Saved/Config/Windows"
+    GameSavesDirectory = "%LOCALAPPDATA%/R5/Saved/SaveGames"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -227,9 +227,9 @@ class Payday3Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = Payday3ModDataChecker(organizer)
+        self.dataChecker = WindroseModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(Payday3ModDataContent())
+        self._register_feature(WindroseModDataContent())
         organizer.onUserInterfaceInitialized(self.init_tab)
         return True
 
@@ -253,9 +253,9 @@ class Payday3Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Payday 3",
+                "Windrose",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
-            ).withArgument("-fileopenlog")
+            )
         ]
 
     @cached_property
@@ -303,7 +303,7 @@ class Payday3Game(BasicGame):
                 mods_json.write(json.dumps(mods_data, indent=4))
 
     def iniFiles(self):
-        return ["GameUserSettings.ini", "Input.ini"]
+        return ["GameUserSettings.ini", "Engine.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.write_default_mods(directory)
