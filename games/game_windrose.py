@@ -213,7 +213,7 @@ class WindroseGame(BasicGame):
     GameLauncher = "Windrose.exe"
     GameShortName = "windrose"
     GameSteamId = 3041230
-    GameBinary = "R5/Binaries/Win64/WindroseWin64-Shipping.exe"
+    GameBinary = "R5/Binaries/Win64/Windrose-Win64-Shipping.exe"
     GameDataPath = "R5"
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataPakMods = "Content/Paks/~Mods"
