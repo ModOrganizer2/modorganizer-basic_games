@@ -20,7 +20,7 @@ import mobase
 from ..basic_game import BasicGame
 
 
-def sanitize_folder_name(name: str) -> str:
+def sanitizeFolderName(name: str) -> str:
     # Remove invalid characters for Windows folder names
     invalid_chars = '+&<>:"|?*\\/'
     for char in invalid_chars:
@@ -136,7 +136,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
             return
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = sanitize_folder_name(mod.name())
+        modname = sanitizeFolderName(mod.name())
         if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
@@ -180,20 +180,6 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         if filetree.exists("WSOCK32.dll", mobase.IFileTree.FILE):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
-
-    def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
-        for branch in filetree:
-            if isinstance(branch, mobase.IFileTree):
-                for e in branch:
-                    if e.name() == name:
-                        return True
-        return False
-
-    def firstTree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
-        for e in filetree:
-            if isinstance(e, mobase.IFileTree) and e.isDir():
-                return e
-        return None
 
     def moveTreeContent(
         self,
@@ -277,6 +263,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         self, tree: mobase.IFileTree | mobase.FileTreeEntry
     ) -> bool:
         if isinstance(tree, mobase.IFileTree):
+            sanitizedName = sanitizeFolderName(tree.name())
             hasDisallowedPath = False
             disallowedFolders = {"assets", "levels", "lua", "map_replacements"}
             tree_path = tree.path()
@@ -287,62 +274,50 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
                 tree.exists(validFolder, mobase.IFileTree.DIRECTORY)
                 for validFolder in self.folderList
             )
-            if (
-                tree.exists("mod.txt", mobase.IFileTree.FILE)
-                and not hasFolderListSubfolder
-            ):
-                self.addModDetectionCandidate(
-                    tree,
-                    sanitize_folder_name(tree.name()),
-                    "Mods Folder with mod.txt",
-                    "mods/FOLDERNAME/",
-                )
-                return True
-            elif (
-                tree.exists("main.xml", mobase.IFileTree.FILE)
-                and tree.exists("levels", mobase.IFileTree.DIRECTORY)
-                and not hasDisallowedPath
-            ):
-                self.addModDetectionCandidate(
-                    tree,
-                    sanitize_folder_name(tree.name()),
-                    "Maps Folder with main.xml and levels folder",
-                    "maps/FOLDERNAME/",
-                )
-                return True
-            elif (
-                tree.exists("main.xml", mobase.IFileTree.FILE)
-                or tree.exists("add.xml", mobase.IFileTree.FILE)
-                or tree.exists("supermod.xml", mobase.IFileTree.FILE)
-            ):
-                if not hasDisallowedPath:
+            if not hasDisallowedPath:
+                if (
+                    tree.exists("mod.txt", mobase.IFileTree.FILE)
+                    and not hasFolderListSubfolder
+                ):
                     self.addModDetectionCandidate(
                         tree,
-                        sanitize_folder_name(tree.name()),
-                        "Mod Override Folder with main.xml/add.xml",
-                        "assets/mod_overrides/FOLDERNAME/",
+                        sanitizeFolderName(tree.name()),
+                        "SuperBLT",
+                        "mods/" + sanitizedName + "/",
                     )
                     return True
-            elif tree.exists("mod_overrides", mobase.IFileTree.DIRECTORY):
-                sourcetree = tree.find("mod_overrides", mobase.IFileTree.DIRECTORY)
-                if isinstance(sourcetree, mobase.IFileTree):
+                elif tree.exists("main.xml", mobase.IFileTree.FILE) and tree.exists(
+                    "levels", mobase.IFileTree.DIRECTORY
+                ):
                     self.addModDetectionCandidate(
-                        sourcetree,
-                        sanitize_folder_name(sourcetree.name()),
-                        "Mod Override Folder",
-                        "assets/mod_overrides/FOLDERNAME/",
+                        tree,
+                        sanitizeFolderName(tree.name()),
+                        "Map Core",
+                        "maps/" + sanitizedName + "/",
                     )
                     return True
-            elif not hasDisallowedPath:
-                for validFolder in self.folderList:
-                    if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
-                        self.addModDetectionCandidate(
-                            tree,
-                            sanitize_folder_name(tree.name()),
-                            "Fallback Mod Override Folder",
-                            "assets/mod_overrides/FOLDERNAME/",
-                        )
-                        return True
+                elif (
+                    tree.exists("main.xml", mobase.IFileTree.FILE)
+                    or tree.exists("add.xml", mobase.IFileTree.FILE)
+                    or tree.exists("supermod.xml", mobase.IFileTree.FILE)
+                ):
+                    self.addModDetectionCandidate(
+                        tree,
+                        sanitizeFolderName(tree.name()),
+                        "Beard Lib",
+                        "assets/mod_overrides/" + sanitizedName + "/",
+                    )
+                    return True
+                else:
+                    for validFolder in self.folderList:
+                        if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
+                            self.addModDetectionCandidate(
+                                tree,
+                                sanitizeFolderName(tree.name()),
+                                "Override",
+                                "assets/mod_overrides/" + sanitizedName + "/",
+                            )
+                            return True
         return False
 
     def walk_entry(self, path: str, entry: mobase.FileTreeEntry):
@@ -366,10 +341,6 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
 
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
-            candidate["destination"] = candidate["destination"].replace(
-                "FOLDERNAME",
-                candidate["name"],
-            )
             if isinstance(candidate["tree"], mobase.IFileTree):
                 print(
                     f"Installing Mod: {candidate['name']} to {candidate['destination']}"
