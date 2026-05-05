@@ -3,12 +3,36 @@ import shutil
 from enum import IntEnum, auto
 from functools import cached_property
 from pathlib import Path
+from typing import TypedDict
 
-from PyQt6.QtCore import QDir, QFileInfo
+from PyQt6.QtCore import QDir, QFileInfo, Qt
+from PyQt6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QVBoxLayout,
+)
 
 import mobase
 
 from ..basic_game import BasicGame
+
+
+def sanitize_folder_name(name: str) -> str:
+    # Remove invalid characters for Windows folder names
+    invalid_chars = '+&<>:"|?*\\/'
+    for char in invalid_chars:
+        name = name.replace(char, "")
+    # Remove control characters (ASCII 0-31)
+    name = "".join(c for c in name if ord(c) >= 32)
+    # Remove trailing periods and spaces
+    name = name.rstrip(". ")
+    # If name is empty after sanitization, use a default
+    if not name:
+        name = "Unnamed"
+    return name
 
 
 class Content(IntEnum):
@@ -61,12 +85,38 @@ class RaidWW2ModDataContent(mobase.ModDataContent):
         return list(self.content)
 
 
+class ModDetectionCandidate(TypedDict):
+    tree: mobase.IFileTree
+    name: str
+    display: str
+    destination: str
+
+
 class RaidWW2ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
         self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
         self.needsNameFix = False
+        self.modDetectionCandidates: list[ModDetectionCandidate] = []
+
+    folderList = [
+        "anims",
+        "core",
+        "effects",
+        "environments",
+        "fonts",
+        "gamedata",
+        "guis",
+        "lib",
+        "movies",
+        "physic_effects",
+        "settings",
+        "shaders",
+        "soundbanks",
+        "strings",
+        "units",
+    ]
 
     def move_overwrite_merge(self, source: str, destination: str):
         if not os.path.exists(destination):
@@ -86,7 +136,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
             return
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = mod.name()
+        modname = sanitize_folder_name(mod.name())
         if filetree.exists("FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "FOLDERNAME")
@@ -122,11 +172,154 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
             retVal = 1
         return retVal
 
-    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree:
-        treefixed = self.allMoveTo(filetree, "FOLDERNAME/")
-        if treefixed == 1:
-            self.needsNameFix = True
-        return filetree
+    def addModDetectionCandidate(
+        self,
+        tree: mobase.IFileTree,
+        name: str,
+        category: str,
+        destination: str,
+    ) -> None:
+        debug_name = name or tree.name()
+        debug_path = ""
+        if hasattr(tree, "path"):
+            try:
+                debug_path = tree.path()
+            except Exception:
+                debug_path = ""
+        if not debug_path and hasattr(tree, "name"):
+            debug_path = tree.name()
+
+        print(
+            f"[RaidWW2ModDataChecker] Detected mod candidate: {debug_name} | "
+            f"path={debug_path} | category={category} | destination={destination}"
+        )
+        self.modDetectionCandidates.append(
+            {
+                "tree": tree,
+                "name": name,
+                "display": f"{name} ({category})",
+                "destination": destination,
+            }
+        )
+
+    def showModDetectionDialog(self) -> set[int] | None:
+        if not self.modDetectionCandidates:
+            return set()
+
+        dialog = QDialog()
+        dialog.setWindowTitle("Found Mods")
+
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(QLabel("Select the mods to install:"))
+
+        listWidget = QListWidget()
+        listWidget.setSelectionMode(QListWidget.SelectionMode.NoSelection)
+        for candidate in self.modDetectionCandidates:
+            item = QListWidgetItem(candidate["display"])
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked)
+            listWidget.addItem(item)
+
+        layout.addWidget(listWidget)
+
+        buttonBox = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttonBox.accepted.connect(lambda: dialog.accept())  # type: ignore
+        buttonBox.rejected.connect(lambda: dialog.reject())  # type: ignore
+        layout.addWidget(buttonBox)
+
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return None
+
+        selectedIndexes: set[int] = set()
+        for index in range(listWidget.count()):
+            item = listWidget.item(index)
+            if (
+                isinstance(item, QListWidgetItem)
+                and item.checkState() == Qt.CheckState.Checked
+            ):
+                selectedIndexes.add(index)
+
+        return selectedIndexes
+
+    def collectModCandidates(
+        self, tree: mobase.IFileTree | mobase.FileTreeEntry
+    ) -> bool:
+        if tree.exists("mod.txt", mobase.IFileTree.FILE):
+            self.addModDetectionCandidate(
+                tree,
+                sanitize_folder_name(tree.name()),
+                "Mods Folder with mod.txt",
+                "mods/FOLDERNAME/",
+            )
+            return True
+        elif tree.exists("main.xml", mobase.IFileTree.FILE):
+            self.addModDetectionCandidate(
+                tree,
+                sanitize_folder_name(tree.name()),
+                "Mods Folder with main.xml",
+                "mods/FOLDERNAME/",
+            )
+            return True
+        else:
+            for validFolder in self.folderList:
+                if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
+                    self.addModDetectionCandidate(
+                        tree,
+                        sanitize_folder_name(tree.name()),
+                        "Mods Folder with game folders",
+                        "mods/FOLDERNAME/",
+                    )
+                    return True
+        return False
+
+    def walk_entry(self, path: str, entry: mobase.FileTreeEntry):
+        if entry.isDir():
+            if isinstance(entry, mobase.IFileTree):
+                self.collectModCandidates(entry)
+        return mobase.IFileTree.WalkReturn.CONTINUE
+
+    def moveTreeContent(
+        self,
+        sourcetree: mobase.IFileTree,
+        targettree: mobase.IFileTree,
+        destination: str,
+    ) -> bool:
+        entriesToMove: list[mobase.FileTreeEntry] = []
+        for e in sourcetree:
+            entriesToMove.append(e)
+        for e in entriesToMove:
+            targettree.move(e, destination, mobase.IFileTree.MERGE)
+        targettree.remove(sourcetree)
+        return bool(entriesToMove)
+
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        self.modDetectionCandidates = []
+        newtree = filetree.createOrphanTree("Fixed Tree")
+
+        filetree.walk(self.walk_entry, "/")
+
+        if len(self.modDetectionCandidates) == 1:
+            selectedIndexes = {0}
+        else:
+            selectedIndexes = self.showModDetectionDialog()
+            if selectedIndexes is None:
+                return None
+
+        for index in selectedIndexes:
+            candidate = self.modDetectionCandidates[index]
+            candidate["destination"] = candidate["destination"].replace(
+                "FOLDERNAME",
+                candidate["name"],
+            )
+            print(f"Installing Mod: {candidate['name']} to {candidate['destination']}")
+            if self.moveTreeContent(
+                candidate["tree"], newtree, candidate["destination"]
+            ):
+                self.needsNameFix = True
+
+        return newtree if len(newtree) > 0 else filetree
 
 
 class RaidWW2Game(BasicGame):
