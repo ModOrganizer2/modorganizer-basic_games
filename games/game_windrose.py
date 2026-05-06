@@ -72,7 +72,7 @@ class WindroseModDataChecker(mobase.ModDataChecker):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
 
-    def move_overwrite_merge(self, source: str, destination: str):
+    def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -82,7 +82,7 @@ class WindroseModDataChecker(mobase.ModDataChecker):
         for item in os.listdir(source):
             s_item = os.path.join(source, item)
             d_item = os.path.join(destination, item)
-            self.move_overwrite_merge(s_item, d_item)
+            self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
     def dataLooksValid(
@@ -231,10 +231,10 @@ class WindroseGame(BasicGame):
         self.dataChecker = WindroseModDataChecker(organizer)
         self._register_feature(self.dataChecker)
         self._register_feature(WindroseModDataContent())
-        organizer.onUserInterfaceInitialized(self.init_tab)
+        organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
-    def init_tab(self, main_window: QMainWindow):
+    def initTab(self, main_window: QMainWindow):
         if self._organizer.managedGame() != self:
             return
         self._main_window = main_window
@@ -260,7 +260,7 @@ class WindroseGame(BasicGame):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -277,7 +277,7 @@ class WindroseGame(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [
@@ -289,7 +289,7 @@ class WindroseGame(BasicGame):
         ]
         return efls
 
-    def write_default_mods(self, profile: QDir):
+    def writeDefaultMods(self, profile: QDir):
         ue4ss_mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
         ue4ss_mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
         if not ue4ss_mods_txt.exists():
@@ -307,7 +307,7 @@ class WindroseGame(BasicGame):
         return ["GameUserSettings.ini", "Engine.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        self.write_default_mods(directory)
+        self.writeDefaultMods(directory)
 
         base_data_dir = self.dataDirectory().absolutePath()
 

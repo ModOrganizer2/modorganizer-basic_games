@@ -15,10 +15,10 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
-        self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
+        self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source: str, destination: str):
+    def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -28,10 +28,10 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         for item in os.listdir(source):
             s_item = os.path.join(source, item)
             d_item = os.path.join(destination, item)
-            self.move_overwrite_merge(s_item, d_item)
+            self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
-    def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
+    def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
@@ -51,7 +51,7 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
             modname = mod_data["id"]
             old_path = os.path.join(path, GameSMMPath + "/Mods/FOLDERNAME")
             new_path = os.path.join(path, GameSMMPath + f"/Mods/{modname}")
-            self.move_overwrite_merge(old_path, new_path)
+            self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         if not fixed:
             return
@@ -85,7 +85,7 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         targettree.remove(sourcetree)
         return retVal
 
-    def first_tree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+    def firstTree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         for e in filetree:
             if isinstance(e, mobase.IFileTree) and e.isDir():
                 return e
@@ -103,7 +103,7 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
             if treefixed == 1:
                 self.needsNameFix = True
         elif len(filetree) == 1:
-            firsttreelayer: mobase.IFileTree | None = self.first_tree(filetree)
+            firsttreelayer: mobase.IFileTree | None = self.firstTree(filetree)
             if firsttreelayer is not None:
                 if firsttreelayer.exists("manifest.json", mobase.IFileTree.FILE):
                     print(GameSMMPath + "/Mods/FOLDERNAME/")
@@ -130,10 +130,10 @@ class Hitman3Game(BasicGame):
         super().init(organizer)
         self.dataChecker = Hitman3ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        organizer.modList().onModStateChanged(self.update_smm_meta)
+        organizer.modList().onModStateChanged(self.updateSmmMeta)
         return True
 
-    def update_smm_meta(self, mods: dict[str, mobase.ModState]):
+    def updateSmmMeta(self, mods: dict[str, mobase.ModState]):
         SMM_Path = os.path.join(self.dataDirectory().absolutePath(), self.GameSMMPath)
         SMM_Config_Json = SMM_Path + "/config.json"
         for key, value in mods.items():
@@ -232,7 +232,7 @@ class Hitman3Game(BasicGame):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -249,7 +249,7 @@ class Hitman3Game(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [

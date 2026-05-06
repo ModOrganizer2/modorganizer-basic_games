@@ -96,7 +96,7 @@ class EmuVRGame(BasicGame):
         return ["settings.ini"]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -113,7 +113,7 @@ class EmuVRGame(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [

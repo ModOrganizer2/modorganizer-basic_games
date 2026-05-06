@@ -123,9 +123,9 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
-        self.content = []
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
-        return self.content
+        return self.contents
 
 
 class StalkerAnomalySaveGame(BasicGameSaveGame):

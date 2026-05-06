@@ -111,10 +111,10 @@ class OblivionRemasteredGame(
         self._register_feature(OblivionRemasteredScriptExtender(self))
         self._register_feature(OblivionRemasteredDataContent())
 
-        organizer.onUserInterfaceInitialized(self.init_tab)
+        organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
-    def init_tab(self, main_window: QMainWindow):
+    def initTab(self, main_window: QMainWindow):
         """
         Initializes tabs unique to Oblivion Remastered.
         The "UE4SS Mods" tab and "Paks" tab.
@@ -261,7 +261,7 @@ class OblivionRemasteredGame(
                     else:
                         Path(profile_ini).touch()
         # Initialize a default UE4SS mods.ini and mods.json with the core mods included
-        self.write_default_mods(directory)
+        self.writeDefaultMods(directory)
         # Bootstrap common mod directories used by the USVFS map
         if (
             self._organizer.managedGame()
@@ -274,7 +274,7 @@ class OblivionRemasteredGame(
             if not self.ue4ssDirectory().exists():
                 os.makedirs(self.ue4ssDirectory().absolutePath())
 
-    def write_default_mods(self, profile: QDir):
+    def writeDefaultMods(self, profile: QDir):
         """
         Writer for the default UE4SS 'mods.txt' and 'mods.json' profile files.
         """

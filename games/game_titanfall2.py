@@ -75,10 +75,10 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
-        self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
+        self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source: str, destination: str):
+    def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -88,10 +88,10 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
         for item in os.listdir(source):
             s_item = os.path.join(source, item)
             d_item = os.path.join(destination, item)
-            self.move_overwrite_merge(s_item, d_item)
+            self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
-    def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
+    def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         GameNorthstarPath = (
@@ -111,7 +111,7 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
             modname = mod_data["name"]
             old_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME")
             new_path = os.path.join(path, GameNorthstarPath + f"{modname}")
-            self.move_overwrite_merge(old_path, new_path)
+            self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         elif filetree.exists(
             GameNorthstarPath + "FOLDERNAME_NAME", mobase.IFileTree.DIRECTORY
@@ -119,7 +119,7 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
             path = mod.absolutePath()
             old_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME_NAME")
             new_path = os.path.join(path, GameNorthstarPath + f"{modname}")
-            self.move_overwrite_merge(old_path, new_path)
+            self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         if not fixed:
             return
@@ -140,7 +140,7 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
                         return True
         return False
 
-    def first_tree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+    def firstTree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         for e in filetree:
             if isinstance(e, mobase.IFileTree) and e.isDir():
                 return e
@@ -161,9 +161,9 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
             getattr(self.organizer.managedGame(), "GameNorthstarPath", "") + "/"
         )
         treefixed = 0
-        firsttreelayer: mobase.IFileTree | None = self.first_tree(filetree)
+        firsttreelayer: mobase.IFileTree | None = self.firstTree(filetree)
         if firsttreelayer is not None:
-            secondtreelayer: mobase.IFileTree | None = self.first_tree(firsttreelayer)
+            secondtreelayer: mobase.IFileTree | None = self.firstTree(firsttreelayer)
             if filetree.exists("mod.json", mobase.IFileTree.FILE):
                 treefixed = self.allMoveTo(filetree, GameNorthstarPath + "FOLDERNAME/")
                 if treefixed == 1:
@@ -220,10 +220,10 @@ class Titanfall2Game(BasicGame):
         self.dataChecker = Titanfall2ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
         self._register_feature(Titanfall2ModDataContent())
-        organizer.modList().onModStateChanged(self.update_enable_mods_json)
+        organizer.modList().onModStateChanged(self.updateEnableModsJson)
         return True
 
-    def update_enable_mods_json(self, mods: dict[str, mobase.ModState]):
+    def updateEnableModsJson(self, mods: dict[str, mobase.ModState]):
         Northstar_Config_Json = (
             self._organizer.profilePath() + "/" + self.NorthstarModJson
         )
@@ -268,7 +268,7 @@ class Titanfall2Game(BasicGame):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -285,7 +285,7 @@ class Titanfall2Game(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [

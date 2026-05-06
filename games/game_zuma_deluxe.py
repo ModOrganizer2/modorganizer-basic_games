@@ -68,10 +68,10 @@ class ZumaModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
-        self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
+        self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source: str, destination: str):
+    def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -81,10 +81,10 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         for item in os.listdir(source):
             s_item = os.path.join(source, item)
             d_item = os.path.join(destination, item)
-            self.move_overwrite_merge(s_item, d_item)
+            self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
-    def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
+    def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         filetree: mobase.IFileTree = mod.fileTree()
@@ -94,7 +94,7 @@ class ZumaModDataChecker(mobase.ModDataChecker):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
             new_path = os.path.join(path, f"mods/{modname}")
-            self.move_overwrite_merge(old_path, new_path)
+            self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         if not fixed:
             return
@@ -219,10 +219,10 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(self.dataChecker)
         self._register_feature(ZumaModDataContent())
         self._register_feature(BasicGameSaveGameInfo())
-        organizer.modList().onModStateChanged(self.update_levels)
+        organizer.modList().onModStateChanged(self.updateLevels)
         return True
 
-    def update_levels(self, mods: dict[str, mobase.ModState]):
+    def updateLevels(self, mods: dict[str, mobase.ModState]):
         profile_levels_path = (
             self._organizer.profilePath() + "/" + self.ProfileLevelsXml
         )
@@ -328,7 +328,7 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -345,7 +345,7 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [

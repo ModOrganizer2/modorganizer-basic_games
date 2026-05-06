@@ -14,10 +14,10 @@ class NoitaModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
-        self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
+        self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source: str, destination: str):
+    def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -27,10 +27,10 @@ class NoitaModDataChecker(mobase.ModDataChecker):
         for item in os.listdir(source):
             s_item = os.path.join(source, item)
             d_item = os.path.join(destination, item)
-            self.move_overwrite_merge(s_item, d_item)
+            self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
-    def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
+    def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "")
@@ -41,7 +41,7 @@ class NoitaModDataChecker(mobase.ModDataChecker):
             path = mod.absolutePath()
             old_path = os.path.join(path, GameModsPath + "/FOLDERNAME")
             new_path = os.path.join(path, GameModsPath + f"/{modname}")
-            self.move_overwrite_merge(old_path, new_path)
+            self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         if not fixed:
             return
@@ -119,7 +119,7 @@ class NoitaGame(BasicGame):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -136,7 +136,7 @@ class NoitaGame(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [

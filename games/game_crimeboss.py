@@ -71,10 +71,10 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
-        self.organizer.modList().onModInstalled(self._Fix_Installed_Mod)
+        self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
 
-    def move_overwrite_merge(self, source: str, destination: str):
+    def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
             return
@@ -84,10 +84,10 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         for item in os.listdir(source):
             s_item = os.path.join(source, item)
             d_item = os.path.join(destination, item)
-            self.move_overwrite_merge(s_item, d_item)
+            self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
-    def _Fix_Installed_Mod(self, mod: mobase.IModInterface):
+    def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         GameDataNativeMods = getattr(
@@ -102,7 +102,7 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             path = mod.absolutePath()
             old_path = os.path.join(path, GameDataNativeMods + "/FOLDERNAME")
             new_path = os.path.join(path, GameDataNativeMods + f"/{modname}")
-            self.move_overwrite_merge(old_path, new_path)
+            self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         if not fixed:
             return
@@ -265,10 +265,10 @@ class CrimeBossGame(BasicGame):
         self.dataChecker = CrimeBossModDataChecker(organizer)
         self._register_feature(self.dataChecker)
         self._register_feature(CrimeBossModDataContent())
-        organizer.onUserInterfaceInitialized(self.init_tab)
+        organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
-    def init_tab(self, main_window: QMainWindow):
+    def initTab(self, main_window: QMainWindow):
         if self._organizer.managedGame() != self:
             return
         self._main_window = main_window
@@ -294,7 +294,7 @@ class CrimeBossGame(BasicGame):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -311,7 +311,7 @@ class CrimeBossGame(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [
@@ -332,7 +332,7 @@ class CrimeBossGame(BasicGame):
     def nativeDirectory(self) -> QDir:
         return QDir(self.dataDirectory().absolutePath() + "/" + self.GameDataNativeMods)
 
-    def write_default_mods(self, profile: QDir):
+    def writeDefaultMods(self, profile: QDir):
         ue4ss_mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
         ue4ss_mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
         if not ue4ss_mods_txt.exists():
@@ -350,7 +350,7 @@ class CrimeBossGame(BasicGame):
         return ["GameUserSettings.ini", "Input.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        self.write_default_mods(directory)
+        self.writeDefaultMods(directory)
         if not self.paksDirectory().exists():
             os.makedirs(self.paksDirectory().absolutePath())
         if not self.ue4ssDirectory().exists():

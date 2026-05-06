@@ -23,7 +23,7 @@ from ..basic_features.basic_save_game_info import (
 from ..basic_game import BasicGame
 
 
-def json_get_me(value: Any, path: Sequence[str | int], /, default: Any) -> Any:
+def jsonGetMe(value: Any, path: Sequence[str | int], /, default: Any) -> Any:
     for part in path:
         if type(part) not in (str, int) or type(value) not in (dict, list):
             return default
@@ -120,10 +120,10 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
                 err.__class__.__name__, s
             )
             return
-        x = json_get_me(save_data, ["party", "player", "custom", "name"], None)
+        x = jsonGetMe(save_data, ["party", "player", "custom", "name"], None)
         if type(x) is str:
             self.name = x
-        x = json_get_me(save_data, ["saved_datetime"], None)
+        x = jsonGetMe(save_data, ["saved_datetime"], None)
         if type(x) in (int, float):
             try:
                 dt = datetime.fromtimestamp(float(x))
@@ -135,14 +135,14 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
                         dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
                     )
                 )
-        x = json_get_me(save_data, ["play_time"], None)
+        x = jsonGetMe(save_data, ["play_time"], None)
         if type(x) in (int, float):
             a = [0, 0, 0, int(x * 10)]
             a[2:4] = divmod(a[3], 10)
             a[1:3] = divmod(a[2], 60)
             a[0:2] = divmod(a[1], 60)
             self.elapsed = "{0:02d}:{1:02d}:{2:02d}.{3:01d}".format(*a)
-        x = json_get_me(save_data, ["has_cheated"], None)
+        x = jsonGetMe(save_data, ["has_cheated"], None)
         if type(x) is bool:
             self.cheated = "Yes" if x else "No"
 
@@ -219,7 +219,7 @@ class CassetteBeastsGame(BasicGame):
         ]
 
     @cached_property
-    def _base_dlls(self) -> set[str]:
+    def baseDlls(self) -> set[str]:
         base_dir = Path(self.gameDirectory().absolutePath())
         return {str(f.relative_to(base_dir)) for f in base_dir.glob("*.dll")}
 
@@ -236,7 +236,7 @@ class CassetteBeastsGame(BasicGame):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
-            if relpath and e.hasSuffix("dll") and relpath not in self._base_dlls:
+            if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
                 libs.add(relpath)
         exes = self.executables()
         efls = efls + [
