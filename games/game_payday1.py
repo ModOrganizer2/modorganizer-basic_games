@@ -20,21 +20,6 @@ import mobase
 from ..basic_game import BasicGame
 
 
-def sanitizeFolderName(name: str) -> str:
-    # Remove invalid characters for Windows folder names
-    invalid_chars = '+&<>:"|?*\\/'
-    for char in invalid_chars:
-        name = name.replace(char, "")
-    # Remove control characters (ASCII 0-31)
-    name = "".join(c for c in name if ord(c) >= 32)
-    # Remove trailing periods and spaces
-    name = name.rstrip(". ")
-    # If name is empty after sanitization, use a default
-    if not name:
-        name = "Unnamed"
-    return name
-
-
 class Content(IntEnum):
     TEXTURE = auto()
     MESH = auto()
@@ -118,6 +103,21 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
         "units",
     ]
 
+    def sanitizeFolderName(self, name: str) -> str:
+        # Remove invalid characters for Windows folder names
+        invalid_chars = '+&<>:"|?*\\/'
+        for char in invalid_chars:
+            name = name.replace(char, "")
+        # Remove control characters (ASCII 0-31)
+        name = "".join(c for c in name if ord(c) >= 32)
+        # Remove trailing periods and spaces
+        name = name.rstrip(". ")
+        # If name is empty after sanitization, use a default
+        if not name:
+            name = "FOLDERNAME"
+            self.needsNameFix = True
+        return name
+
     def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
@@ -136,7 +136,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
             return
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = sanitizeFolderName(mod.name())
+        modname = self.sanitizeFolderName(mod.name())
         if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
@@ -263,7 +263,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
         self, tree: mobase.IFileTree | mobase.FileTreeEntry
     ) -> bool:
         if isinstance(tree, mobase.IFileTree):
-            sanitizedName = sanitizeFolderName(tree.name())
+            sanitizedName = self.sanitizeFolderName(tree.name())
             hasDisallowedPath = False
             disallowedFolders = {"assets", "levels", "lua", "map_replacements"}
             tree_path = tree.path()
@@ -281,7 +281,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        sanitizeFolderName(tree.name()),
+                        self.sanitizeFolderName(tree.name()),
                         "BLT",
                         "mods/" + sanitizedName + "/",
                     )
@@ -291,7 +291,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        sanitizeFolderName(tree.name()),
+                        self.sanitizeFolderName(tree.name()),
                         "Map Core",
                         "maps/" + sanitizedName + "/",
                     )
@@ -303,7 +303,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        sanitizeFolderName(tree.name()),
+                        self.sanitizeFolderName(tree.name()),
                         "SuperBLT",
                         "assets/mod_overrides/" + sanitizedName + "/",
                     )
@@ -313,7 +313,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
                         if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
                             self.addModDetectionCandidate(
                                 tree,
-                                sanitizeFolderName(tree.name()),
+                                self.sanitizeFolderName(tree.name()),
                                 "Override",
                                 "assets/mod_overrides/" + sanitizedName + "/",
                             )
@@ -329,7 +329,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         self.modDetectionCandidates = []
         newtree = filetree.createOrphanTree("Fixed Tree")
-
+        self.collectModCandidates(filetree)
         filetree.walk(self.walkEntry, "/")
 
         if len(self.modDetectionCandidates) == 1:

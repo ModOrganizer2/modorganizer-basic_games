@@ -20,21 +20,6 @@ import mobase
 from ..basic_game import BasicGame
 
 
-def sanitizeFolderName(name: str) -> str:
-    # Remove invalid characters for Windows folder names
-    invalid_chars = '+&<>:"|?*\\/'
-    for char in invalid_chars:
-        name = name.replace(char, "")
-    # Remove control characters (ASCII 0-31)
-    name = "".join(c for c in name if ord(c) >= 32)
-    # Remove trailing periods and spaces
-    name = name.rstrip(". ")
-    # If name is empty after sanitization, use a default
-    if not name:
-        name = "Unnamed"
-    return name
-
-
 class Content(IntEnum):
     TEXTURE = auto()
     MESH = auto()
@@ -119,6 +104,21 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         "units",
     ]
 
+    def sanitizeFolderName(self, name: str) -> str:
+        # Remove invalid characters for Windows folder names
+        invalid_chars = '+&<>:"|?*\\/'
+        for char in invalid_chars:
+            name = name.replace(char, "")
+        # Remove control characters (ASCII 0-31)
+        name = "".join(c for c in name if ord(c) >= 32)
+        # Remove trailing periods and spaces
+        name = name.rstrip(". ")
+        # If name is empty after sanitization, use a default
+        if not name:
+            name = "FOLDERNAME"
+            self.needsNameFix = True
+        return name
+
     def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
@@ -137,7 +137,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
             return
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = sanitizeFolderName(mod.name())
+        modname = self.sanitizeFolderName(mod.name())
         if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
@@ -231,7 +231,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
             hasDisallowedPath = True
         if not hasDisallowedPath:
             if isinstance(tree, mobase.IFileTree):
-                sanitizedName = sanitizeFolderName(tree.name())
+                sanitizedName = self.sanitizeFolderName(tree.name())
                 if (
                     tree.exists("mod.txt", mobase.IFileTree.FILE)
                     or tree.exists("mod.xml", mobase.IFileTree.FILE)
@@ -249,7 +249,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        sanitizeFolderName(tree.name()),
+                        self.sanitizeFolderName(tree.name()),
                         "Beard Lib",
                         "mods/" + sanitizedName + "/",
                     )
@@ -259,14 +259,14 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
                         if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
                             self.addModDetectionCandidate(
                                 tree,
-                                sanitizeFolderName(tree.name()),
+                                self.sanitizeFolderName(tree.name()),
                                 "Override",
                                 "mods/" + sanitizedName + "/",
                             )
                             return True
         return False
 
-    def walk_entry(self, path: str, entry: mobase.FileTreeEntry):
+    def walkEntry(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isDir():
             if isinstance(entry, mobase.IFileTree):
                 self.collectModCandidates(entry)
@@ -289,8 +289,8 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         self.modDetectionCandidates = []
         newtree = filetree.createOrphanTree("Fixed Tree")
-
-        filetree.walk(self.walk_entry, "/")
+        self.collectModCandidates(filetree)
+        filetree.walk(self.walkEntry, "/")
 
         if len(self.modDetectionCandidates) == 1:
             selectedIndexes = {0}
