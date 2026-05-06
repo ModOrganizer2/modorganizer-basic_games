@@ -47,23 +47,23 @@ class Payday3ModDataContent(mobase.ModDataContent):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "utoc":
-                    self.content.append(Content.UTOC)
+                    self.contents.append(Content.UTOC)
                 case "ucas":
-                    self.content.append(Content.UCAS)
+                    self.contents.append(Content.UCAS)
                 case "pak":
-                    self.content.append(Content.PAK)
+                    self.contents.append(Content.PAK)
                 case "lua":
-                    self.content.append(Content.UE4SS)
+                    self.contents.append(Content.UE4SS)
                 case "dll":
-                    self.content.append(Content.DLL)
+                    self.contents.append(Content.DLL)
                 case "bk2":
-                    self.content.append(Content.BK2)
+                    self.contents.append(Content.BK2)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
-        self.contents: set[int] = set()
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
         return list(self.contents)
 
@@ -209,6 +209,7 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
 class Payday3Game(BasicGame):
     Name = "Payday 3 Support Plugin"
     Author = "ModWorkshop, MaskPlague and Silarn"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Payday 3"
     GameLauncher = "PAYDAY3.exe"

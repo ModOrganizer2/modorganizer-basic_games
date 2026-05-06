@@ -50,24 +50,25 @@ class Payday1ModDataContent(mobase.ModDataContent):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "texture":
-                    self.content.append(Content.TEXTURE)
+                    self.contents.append(Content.TEXTURE)
                 case "model":
-                    self.content.append(Content.MESH)
+                    self.contents.append(Content.MESH)
                 case "lua":
-                    self.content.append(Content.SCRIPT)
+                    self.contents.append(Content.SCRIPT)
                 case "stream":
-                    self.content.append(Content.SOUND)
+                    self.contents.append(Content.SOUND)
                 case "txt":
-                    self.content.append(Content.STRING)
+                    self.contents.append(Content.STRING)
                 case "json":
-                    self.content.append(Content.CONFIG)
+                    self.contents.append(Content.CONFIG)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
-        return list(self.content)
+        return list(self.contents)
 
 
 class ModDetectionCandidate(TypedDict):
@@ -178,6 +179,10 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
         if filetree.exists("IPHLPAPI.dll", mobase.IFileTree.FILE):
             return mobase.ModDataChecker.VALID
         if filetree.exists("WSOCK32.dll", mobase.IFileTree.FILE):
+            return mobase.ModDataChecker.VALID
+        if filetree.exists("DINPUT8.dll", mobase.IFileTree.FILE):
+            return mobase.ModDataChecker.VALID
+        if filetree.exists("PDTHModOverrides.dll", mobase.IFileTree.FILE):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
@@ -356,6 +361,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
 class Payday1Game(BasicGame):
     Name = "Payday 1 Support Plugin"
     Author = "ModWorkshop"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Payday: The Heist"
     GameShortName = "pdth"

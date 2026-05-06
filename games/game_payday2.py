@@ -50,24 +50,25 @@ class Payday2ModDataContent(mobase.ModDataContent):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "texture":
-                    self.content.append(Content.TEXTURE)
+                    self.contents.append(Content.TEXTURE)
                 case "model":
-                    self.content.append(Content.MESH)
+                    self.contents.append(Content.MESH)
                 case "lua":
-                    self.content.append(Content.SCRIPT)
+                    self.contents.append(Content.SCRIPT)
                 case "stream":
-                    self.content.append(Content.SOUND)
+                    self.contents.append(Content.SOUND)
                 case "txt":
-                    self.content.append(Content.STRING)
+                    self.contents.append(Content.STRING)
                 case "json":
-                    self.content.append(Content.CONFIG)
+                    self.contents.append(Content.CONFIG)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
-        return list(self.content)
+        return list(self.contents)
 
 
 class ModDetectionCandidate(TypedDict):
@@ -355,6 +356,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
 class Payday2Game(BasicGame):
     Name = "Payday 2 Support Plugin"
     Author = "ModWorkshop"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Payday 2"
     GameShortName = "payday-2"

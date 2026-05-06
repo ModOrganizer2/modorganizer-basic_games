@@ -50,6 +50,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
 class RoadToVostokGame(BasicGame):
     Name = "Road to Vostok Support Plugin"
     Author = "ModWorkshop"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Road to Vostok"
     GameShortName = "roadtovostok"

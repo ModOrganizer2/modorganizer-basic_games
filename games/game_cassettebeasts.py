@@ -180,6 +180,7 @@ def getMetadata(p: Path, save: mobase.ISaveGame) -> Mapping[str, str] | None:
 class CassetteBeastsGame(BasicGame):
     Name = "Cassette Beasts Support Plugin"
     Author = "ModWorkshop"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Cassette Beasts"
     GameShortName = "cassette-beasts"

@@ -46,28 +46,29 @@ class Titanfall2ModDataContent(mobase.ModDataContent):
         if entry.isFile():
             match entry.suffix().casefold():
                 case "vmt":
-                    self.content.append(Content.MATERIAL)
+                    self.contents.append(Content.MATERIAL)
                 case "vtf":
-                    self.content.append(Content.TEXTURE)
+                    self.contents.append(Content.TEXTURE)
                 case "mdl":
-                    self.content.append(Content.MODELS)
+                    self.contents.append(Content.MODELS)
                 case "nut":
-                    self.content.append(Content.SCRIPT)
+                    self.contents.append(Content.SCRIPT)
                 case "txt":
-                    self.content.append(Content.CONFIG)
+                    self.contents.append(Content.CONFIG)
                 case "bik":
-                    self.content.append(Content.VIDEO)
+                    self.contents.append(Content.VIDEO)
                 case "wav":
-                    self.content.append(Content.AUDIO)
+                    self.contents.append(Content.AUDIO)
                 case "rpak" | "starmap" | "starpak":
-                    self.content.append(Content.STARPAK)
+                    self.contents.append(Content.STARPAK)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
-        return list(self.content)
+        return list(self.contents)
 
 
 class Titanfall2ModDataChecker(mobase.ModDataChecker):
@@ -202,6 +203,7 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
 class Titanfall2Game(BasicGame):
     Name = "Titanfall 2 Support Plugin"
     Author = "ModWorkshop"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Titanfall 2"
     GameShortName = "titanfall-2"

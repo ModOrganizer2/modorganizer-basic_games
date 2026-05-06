@@ -23,6 +23,7 @@ class Content(IntEnum):
 
 
 class ZumaModDataContent(mobase.ModDataContent):
+    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
         (Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
@@ -38,28 +39,27 @@ class ZumaModDataContent(mobase.ModDataContent):
             for id, name, icon, *filter_only in self.GAMECONTENTS
         ]
 
-    contents: set[int] = set()
-
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
             match entry.suffix().lower():
                 case "texture":
-                    self.contents.add(Content.TEXTURE)
+                    self.contents.append(Content.TEXTURE)
                 case "model":
-                    self.contents.add(Content.MESH)
+                    self.contents.append(Content.MESH)
                 case "lua":
-                    self.contents.add(Content.SCRIPT)
+                    self.contents.append(Content.SCRIPT)
                 case "stream":
-                    self.contents.add(Content.SOUND)
+                    self.contents.append(Content.SOUND)
                 case "txt":
-                    self.contents.add(Content.STRING)
+                    self.contents.append(Content.STRING)
                 case "json":
-                    self.contents.add(Content.CONFIG)
+                    self.contents.append(Content.CONFIG)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
         return list(self.contents)
 
@@ -196,6 +196,7 @@ PROGRAM_DATA = str(os.getenv("ProgramData"))
 class ZumaGame(BasicGame, mobase.IPluginFileMapper):
     Name = "Zuma Deluxe Support Plugin"
     Author = "ModWorkshop"
+    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Zuma Deluxe"
     GameShortName = "zuma"
