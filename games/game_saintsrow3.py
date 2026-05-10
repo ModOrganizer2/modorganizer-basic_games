@@ -17,10 +17,10 @@ class SaintsRow3Game(BasicGame):
     GameDataPath = ""
     GameSteamId = 55230
     GameGogId = 1430740694
-    #GameIniFiles = "display.ini" # Doesn't work for some reason
-    #GameNexusId = # No idea how to get it, most mods aren't on Nexus anyway
-    #GameSavesDirectory = #Need to get it from user-prefixed steam cloud directory
-    
+    # GameIniFiles = "display.ini" # Doesn't work for some reason
+    # GameNexusId = # No idea how to get it, most mods aren't on Nexus anyway
+    # GameSavesDirectory = # Need to get it from user-prefixed steam cloud directory
+
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
         self._register_feature(
@@ -39,12 +39,9 @@ class SaintsRow3Game(BasicGame):
                         "*.asi",
                         "packfiles",
                         "videos",
-                        "*.txt"
+                        "*.txt",
                     ],
-                    move={
-                        "*.vpp_pc": "packfiles/pc/cache/",
-                        "*.bik": "videos/"
-                    }
+                    move={"*.vpp_pc": "packfiles/pc/cache/", "*.bik": "videos/"},
                 )
             ),
         )
@@ -53,12 +50,15 @@ class SaintsRow3Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Saints Row: The Third (DX11)", QFileInfo(self.gameDirectory(), "SaintsRowTheThird_DX11.exe")
+                "Saints Row: The Third (DX11)",
+                QFileInfo(self.gameDirectory(), "SaintsRowTheThird_DX11.exe"),
             ),
             mobase.ExecutableInfo(
-                "Saints Row: The Third (DX9)", QFileInfo(self.gameDirectory(), "SaintsRowTheThird.exe")
+                "Saints Row: The Third (DX9)",
+                QFileInfo(self.gameDirectory(), "SaintsRowTheThird.exe"),
             ),
             mobase.ExecutableInfo(
-                "Saints Row: The Third (Launcher)", QFileInfo(self.gameDirectory(), "game_launcher.exe")
-            )
+                "Saints Row: The Third (Launcher)",
+                QFileInfo(self.gameDirectory(), "game_launcher.exe"),
+            ),
         ]
