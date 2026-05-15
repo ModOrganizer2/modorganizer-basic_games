@@ -418,7 +418,7 @@ class OblivionRemasteredGame(
                                         pass
                                     except FileNotFoundError:
                                         pass
-                for entry in self.ue4ssDirectory().entryInfoList(
+                for entry in self.ue4ssDirectory().entryInfoList(  # type: ignore[reportUnknownMemberType]
                     QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
                 ):
                     entry_dir = QDir(entry.absoluteFilePath())

@@ -26,7 +26,7 @@ class XRReader:
             size = len(self._buffer)
         if len(self._buffer) <= self._pos:
             return b""
-        (buffer, pos) = self._read(size)
+        buffer, pos = self._read(size)
         self._pos = pos
         return buffer
 
@@ -35,7 +35,7 @@ class XRReader:
             size = len(self._buffer)
         if len(self._buffer) <= self._pos:
             return b""
-        (buffer, _pos) = self._read(size)
+        buffer, _pos = self._read(size)
         return buffer
 
     def seek(self, pos: int, whence: int = io.SEEK_SET) -> int:
@@ -98,7 +98,7 @@ class XRReader:
         return ""
 
     def fvec3(self) -> IVec3:
-        (f1, f2, f3) = struct.unpack("<fff", self.read(12))
+        f1, f2, f3 = struct.unpack("<fff", self.read(12))
         return IVec3(f1, f2, f3)
 
 

@@ -167,13 +167,13 @@ class PaksTabWidget(QWidget):
         if isinstance(game, OblivionRemasteredGame):
             pak_mods = QFileInfo(game.paksDirectory().absoluteFilePath("~mods"))
             if pak_mods.exists() and pak_mods.isDir():
-                for entry in QDir(pak_mods.absoluteFilePath()).entryInfoList(
+                for entry in QDir(pak_mods.absoluteFilePath()).entryInfoList(  # type: ignore
                     QDir.Filter.Dirs | QDir.Filter.Files | QDir.Filter.NoDotAndDotDot
                 ):
                     if entry.isDir():
                         if "magicloader" in entry.completeBaseName().casefold():
                             continue
-                        for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(
+                        for sub_entry in QDir(entry.absoluteFilePath()).entryInfoList(  # type: ignore
                             QDir.Filter.Files
                         ):
                             if (

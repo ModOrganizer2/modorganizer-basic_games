@@ -19,7 +19,7 @@ from ..constants import DEFAULT_UE4SS_MODS
 
 class UE4SSListModel(QStringListModel):
     def __init__(self, parent: QWidget | None, organizer: mobase.IOrganizer):
-        super().__init__(parent)
+        super().__init__(parent)  # type: ignore[reportUnknownMemberType]
         self._checked_items: set[str] = set()
         self._organizer = organizer
         self._init_mod_states()
@@ -96,7 +96,7 @@ class UE4SSListModel(QStringListModel):
         return True
 
     def setStringList(self, strings: Iterable[str | None]):
-        super().setStringList(strings)
+        super().setStringList(strings)  # type: ignore[reportUnknownMemberType]
         self._set_mod_states()
 
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:

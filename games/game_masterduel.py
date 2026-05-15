@@ -52,7 +52,7 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
         dir = self.gameDirectory()
         dir.cd("LocalData")
 
-        subdirs = dir.entryList(filters=QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot)
+        subdirs = dir.entryList(filters=QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot)  # type: ignore[reportUnknownMemberType]
         dir.cd(subdirs[0])
 
         self._userDataDirCached = dir.absolutePath()
