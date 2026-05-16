@@ -25,8 +25,9 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class Payday3ModDataContent(mobase.ModDataContent):
     content: list[int] = []
+
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -67,7 +68,7 @@ class SilentHill2ModDataContent(mobase.ModDataContent):
         return list(self.contents)
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class Payday3ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -205,20 +206,21 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
-    Author = "ModWorkshop"
+class Payday3Game(BasicGame):
+    Name = "Payday 3 Support Plugin"
+    Author = "ModWorkshop, MaskPlague and Silarn"
+    CategorySource = "modworkshop"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "Payday 3"
+    GameLauncher = "PAYDAY3.exe"
+    GameShortName = "payday-3"
+    GameSteamId = 1272080
+    GameBinary = "PAYDAY3/Binaries/Win64/PAYDAY3-Win64-Shipping.exe"
+    GameDataPath = "PAYDAY3"
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
+    GameDocumentsDirectory = "%LOCALAPPDATA%/PAYDAY3/Saved/Config/WindowsClient"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -226,9 +228,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = Payday3ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(Payday3ModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -252,9 +254,9 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "Payday 3",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
-            )
+            ).withArgument("-fileopenlog")
         ]
 
     @cached_property

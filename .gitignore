@@ -10,3 +10,12 @@ venv
 mob.log
 vsbuild
 lib
+/.vs/modorganizer-basic_games/CopilotIndices
+/pyproject.toml
+/pyrightconfig.json
+/.vs/VSWorkspaceState.json
+/.vs/slnx.sqlite
+/.vs/modorganizer-basic_games.slnx/copilot-chat/5bceb36a/sessions
+/.vs/modorganizer-basic_games.slnx/FileContentIndex
+*.json
+*.wsuo

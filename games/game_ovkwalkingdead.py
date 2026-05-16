@@ -25,7 +25,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class OTWDModDataContent(mobase.ModDataContent):
     content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
@@ -67,7 +67,7 @@ class SilentHill2ModDataContent(mobase.ModDataContent):
         return list(self.contents)
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class OTWDModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -205,20 +205,22 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
-    Author = "ModWorkshop"
+class OTWDGame(BasicGame):
+    Name = "OVERKILL's The Walking Dead Support Plugin"
+    Author = "ModWorkshop, MaskPlague and Silarn"
+    CategorySource = "modworkshop"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "OVERKILL's The Walking Dead"
+    GameShortName = "otwd"
+    GameSteamId = 717690
+    GameBinary = "OTWD/Binaries/Win64/OTWD-Win64-Shipping.exe"
+    GameDataPath = "OTWD"
     GameDataUE4SSMods = "Binaries/Win64/Mods"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
+    GameDocumentsDirectory = (
+        "%USERPROFILE%/AppData/Local/OTWD/Saved/Config/WindowsClient"
+    )
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -226,9 +228,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = OTWDModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(OTWDModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -252,7 +254,7 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "OVERKILL's The Walking Dead",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
         ]
