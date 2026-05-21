@@ -166,7 +166,7 @@ class DarkestDungeonGame(BasicGame):
     GameNexusName = "darkestdungeon"
     GameNexusId = 804
     GameSteamId = 262060
-    GameGogId = 1719198803
+    GameGogId = 1450711444
     GameBinary = "_windows/win64/Darkest.exe"
     GameDataPath = ""
     GameDocumentsDirectory = "%DOCUMENTS%/Darkest"
