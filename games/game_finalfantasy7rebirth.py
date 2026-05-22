@@ -83,7 +83,7 @@ class FinalFantasy7RebirthFileManager:
 
 
 class FinalFantasy7RebirthGame(BasicGame, mobase.IPluginFileMapper):
-    Name = "Final Fasntasy 7 Rebirth Support Plugin"
+    Name = "Final Fantasy 7 Rebirth Support Plugin"
     Author = "diegofesanto, TheUnlocked"
     Version = "0.0.1"
 
