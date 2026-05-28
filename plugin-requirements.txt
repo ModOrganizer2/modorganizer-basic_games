@@ -1,4 +1,4 @@
-psutil==5.8.0
+psutil==7.2.2
 vdf==3.4
-lzokay==1.1.5
-pyyaml==6.0.2
+lzokay==2.1.0
+pyyaml==6.0.3
