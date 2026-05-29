@@ -225,7 +225,6 @@ class GoatSimulatorRemasteredModDataChecker(mobase.ModDataChecker):
         tree: mobase.IFileTree | mobase.FileTreeEntry,
         installtype: str = "virtual",
     ) -> bool:
-
         sanitized_name = self.sanitizeFolderName(tree.name())
         category = None
         entryext = "None"
@@ -247,7 +246,9 @@ class GoatSimulatorRemasteredModDataChecker(mobase.ModDataChecker):
             entryext = tree.suffix().casefold()
 
         if isinstance(tree, mobase.IFileTree) and tree.isDir():
-            if tree.exists("ue4ss.dll", mobase.IFileTree.FILE):
+            if tree.exists("ue4ss.dll", mobase.IFileTree.FILE) or tree.exists(
+                "dsound.dll", mobase.IFileTree.FILE
+            ):
                 category = "Root"
             elif tree.exists("Scripts", mobase.IFileTree.DIRECTORY) and not tree.exists(
                 "ue4ss.dll", mobase.IFileTree.FILE
@@ -352,7 +353,7 @@ class GoatSimulatorRemasteredGame(BasicGame):
     GameLauncher = "Goatsim_UE4.exe"
     GameName = "Goat Simulator Remastered"
     GameShortName = "GoatSimulatorRemastered"
-    GameSteamId = 850190
+    GameSteamId = 1762930
     GameBinary = "Goatsim_UE4/Binaries/Win64/Goatsim_UE4-Win64-Shipping.exe"
     GameDataPath = "Goatsim_UE4"
     GameDataUE4SSRoot = "Binaries/Win64"

@@ -151,15 +151,11 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         GameDataMovies = getattr(self.organizer.managedGame(), "GameDataMovies", "")
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
-        if filetree.exists(
-            os.path.dirname(GameDataUE4SSMods), mobase.IFileTree.DIRECTORY
-        ):
-            return mobase.ModDataChecker.VALID
-        if filetree.exists(
-            GameDataNativeMods, mobase.IFileTree.DIRECTORY
-        ) and not filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
-            return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataMovies, mobase.IFileTree.DIRECTORY):
+            return mobase.ModDataChecker.VALID
+        if filetree.exists(GameDataUE4SSMods, mobase.IFileTree.DIRECTORY):
+            return mobase.ModDataChecker.VALID
+        if filetree.exists(GameDataNativeMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
@@ -256,72 +252,69 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         category = None
         entryext = "None"
 
+        GameDataUE4SSRootDir = getattr(
+            self.organizer.managedGame(), "GameDataUE4SSMods", ""
+        )
+        GameDataPakModsDir = getattr(
+            self.organizer.managedGame(), "GameDataPakMods", ""
+        )
+        GameDataNativeModsDir = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
+        )
+        GameDataMoviesDir = getattr(self.organizer.managedGame(), "GameDataMovies", "")
+
         if installtype == "os" and isinstance(tree, mobase.IFileTree):
             for entry in tree:
                 entryext = os.path.splitext(entry.name())[1].removeprefix(".")
         else:
             entryext = tree.suffix().casefold()
 
-        if (
-            tree.exists("UE4SS.dll", mobase.IFileTree.FILE)
-            or tree.exists("Scripts", mobase.IFileTree.DIRECTORY)
-            or tree.exists("dlls", mobase.IFileTree.DIRECTORY)
-            or tree.exists("Binaries", mobase.IFileTree.DIRECTORY)
-        ):
-            category = "UE4SS"
-        elif tree.exists("Content/Paks", mobase.IFileTree.DIRECTORY):
-            category = "Paks"
-        elif tree.exists("Content/Movies", mobase.IFileTree.DIRECTORY):
-            category = "Movie"
-        elif tree.exists("Content", mobase.IFileTree.DIRECTORY):
-            category = "Native"
-        else:
-            for entry in tree:
-                if entry.isFile():
-                    suffix = entry.suffix().casefold()
-                    if suffix in {"pak", "utoc", "ucas"}:
-                        category = "Paks"
-                        break
-                    if suffix == "bk2":
-                        category = "Movie"
-                        break
-                    if suffix in {"dll", "lua"}:
-                        category = "UE4SS"
-                        break
+        # Check for UE4SS installations
+        if isinstance(tree, mobase.IFileTree) and tree.isDir():
+            if tree.exists("ue4ss.dll", mobase.IFileTree.FILE) or tree.exists(
+                "dsound.dll", mobase.IFileTree.FILE
+            ):
+                category = "Root"
+            elif tree.exists("Scripts", mobase.IFileTree.DIRECTORY) and not tree.exists(
+                "UE4SS.dll", mobase.IFileTree.FILE
+            ):
+                disallowedFolders = {"mods"}
+                tree_path = tree.path()
+                tree_path_lower = tree_path.replace("\\", "/").casefold()
+                if not disallowedFolders & set(tree_path_lower.split("/")):
+                    category = "UE4SS"
+            elif tree.exists("Content", mobase.IFileTree.DIRECTORY):
+                category = "Native"
 
-        if category is None:
-            match entryext:
-                case "pak" | "utoc" | "ucas":
-                    category = "Paks"
-                case "bk2":
-                    category = "Movie"
-                case _:
-                    pass
+        # Check single file for correct extensions
+        match entryext:
+            case "pak" | "utoc" | "ucas":
+                category = "Paks"
+            case "bk2":
+                category = "Movie"
+            case _:
+                pass
 
         if category is None:
             return False
 
         if category == "UE4SS":
-            destination = (
-                getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/"
-            )
+            destination = GameDataUE4SSRootDir + "/"
+        elif category == "Root":
+            destination = GameDataUE4SSRootDir + "/"
         elif category == "Paks":
-            destination = (
-                getattr(self.organizer.managedGame(), "GameDataPakMods", "") + "/"
-            )
+            destination = GameDataPakModsDir + "/"
         elif category == "Movie":
-            destination = (
-                getattr(self.organizer.managedGame(), "GameDataMovies", "") + "/"
-            )
+            destination = GameDataMoviesDir + "/"
+        elif category == "Native":
+            destination = GameDataNativeModsDir + "/"
         else:
-            destination = (
-                getattr(self.organizer.managedGame(), "GameDataNativeMods", "") + "/"
-            )
+            destination = "/"
 
         self.addModDetectionCandidate(
             tree,
             sanitized_name,
-            category,
+            f"{category} Mod",
             destination,
             installtype,
         )
@@ -354,6 +347,7 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         self.modDetectionCandidates = []
         newtree = filetree.createOrphanTree("Fixed Tree")
 
+        # Check for Non Zipped Mod
         if filetree.name() != "":
             self.collectModCandidates(filetree, installtype="os")
         else:
@@ -376,93 +370,18 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
                 candidate["destination"],
             )
 
-        if len(newtree) > 0:
+        if newtree:
             return newtree
 
-        GameDataUE4SSMods = (
-            getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/"
+        # Fallback: Handle native mods with FOLDERNAME substitution
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
         )
-        GameDataPakMods = (
-            getattr(self.organizer.managedGame(), "GameDataPakMods", "") + "/"
-        )
-        GameDataNativeMods = (
-            getattr(self.organizer.managedGame(), "GameDataNativeMods", "") + "/"
-        )
-        GameDataMovies = (
-            getattr(self.organizer.managedGame(), "GameDataMovies", "") + "/"
-        )
-        treefixed = 0
-        if filetree.exists("UE4SS.dll", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(
-                filetree, os.path.dirname(os.path.dirname(GameDataUE4SSMods)) + "/"
-            )
-            if treefixed == 1:
-                return filetree
         if filetree.exists("Content", mobase.IFileTree.DIRECTORY):
-            treefixed = self.allMoveTo(filetree, GameDataNativeMods + "FOLDERNAME/")
-            if treefixed == 1:
-                self.needsNameFix = True
-        if self.fileExistsInNextSubDir(filetree, "Content"):
-            filetree.move(filetree[0], GameDataNativeMods + "/", mobase.IFileTree.MERGE)
-            treefixed = 1
-        if treefixed == 0:
-            allowedUnzippedExt = ["pak", "utoc", "ucas", "bk2", "dll"]
-            entriesToMove: list[mobase.FileTreeEntry] = []
-            for e in filetree:
-                if e.isFile():
-                    fileext = e.suffix().casefold()
-                    if fileext in allowedUnzippedExt:
-                        mod_name = filetree.name()
-                        if mod_name == "":
-                            mod_name = e.name()
-                        mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-                        if not filetree.createOrphanTree(
-                            "OrphanTree"
-                        ) and os.path.exists(mod_path):
-                            match e.suffix().casefold():
-                                case "pak" | "utoc" | "ucas":
-                                    os.makedirs(
-                                        os.path.join(mod_path, GameDataPakMods),
-                                        exist_ok=True,
-                                    )
-                                    shutil.move(
-                                        os.path.join(mod_path, e.name()),
-                                        os.path.join(
-                                            mod_path, GameDataPakMods, e.name()
-                                        ),
-                                    )
-                                case "bk2":
-                                    os.makedirs(
-                                        os.path.join(mod_path, GameDataMovies),
-                                        exist_ok=True,
-                                    )
-                                    shutil.move(
-                                        os.path.join(mod_path, e.name()),
-                                        os.path.join(
-                                            mod_path, GameDataMovies, e.name()
-                                        ),
-                                    )
-                                case _:
-                                    pass
-                            treefixed = 1
-                        else:
-                            entriesToMove.append(e)
-            if entriesToMove:
-                for e in entriesToMove:
-                    match e.suffix().casefold():
-                        case "pak" | "utoc" | "ucas":
-                            filetree.move(e, GameDataPakMods, mobase.IFileTree.MERGE)
-                        case "dll":
-                            filetree.move(
-                                e,
-                                os.path.dirname(GameDataUE4SSMods) + "/",
-                                mobase.IFileTree.MERGE,
-                            )
-                        case "bk2":
-                            filetree.move(e, GameDataMovies, mobase.IFileTree.MERGE)
-                        case _:
-                            pass
-                treefixed = 1
+            self.needsNameFix = True
+            self.allMoveTo(filetree, GameDataNativeMods + "/FOLDERNAME/")
+            return filetree
+
         return filetree
 
 
