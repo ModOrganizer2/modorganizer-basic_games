@@ -10,10 +10,12 @@ from PyQt6.QtCore import QDir, QFileInfo, Qt
 from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
+    QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QPushButton,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -113,14 +115,14 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
         name = "".join(c for c in name if ord(c) >= 32)
         name = name.rstrip(". ")
         if not name:
-            name = "FOLDERNAME"
+            name = "Mod"
         return name
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        GameDataUE4SSMods = (
-            getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/Mods"
+        GameDataUE4SSMods = getattr(
+            self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
         GameDataMovieMods = getattr(
@@ -145,8 +147,8 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
             targettree.move(entry, destination, mobase.IFileTree.MERGE)
         elif installtype == "os":
             if isinstance(entry, mobase.IFileTree):
-                for element in entry:
-                    mod_file = element.name()
+                for subentry in entry:
+                    mod_file = subentry.name()
                     mod_name = entry.name()
                     mod_path = os.path.join(self.organizer.modsPath(), mod_name)
                     insideMods = os.path.join(mod_path, destination)
@@ -167,7 +169,7 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
         destination: str,
         installtype: str,
     ) -> None:
-        tree_name = tree.name()
+        tree_name = self.sanitizeFolderName(tree.name())
 
         self.modDetectionCandidates.append(
             {
@@ -177,6 +179,9 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
                 "destination": destination,
                 "installtype": installtype,
             }
+        )
+        print(
+            f"Added mod detection candidate: {tree_name} as {category} with install type {installtype} and destination {destination}"
         )
 
     def showModDetectionDialog(self) -> set[int] | None:
@@ -199,6 +204,19 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
 
         layout.addWidget(listWidget)
 
+        selectButtons = QHBoxLayout()
+        selectAllButton = QPushButton("Select All")
+        selectNoneButton = QPushButton("Select None")
+        selectAllButton.clicked.connect(
+            lambda: self.setDialogSelection(listWidget, True)
+        )
+        selectNoneButton.clicked.connect(
+            lambda: self.setDialogSelection(listWidget, False)
+        )
+        selectButtons.addWidget(selectAllButton)
+        selectButtons.addWidget(selectNoneButton)
+        layout.addLayout(selectButtons)
+
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
@@ -220,6 +238,13 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
 
         return selectedIndexes
 
+    def setDialogSelection(self, listWidget: QListWidget, select: bool) -> None:
+        state = Qt.CheckState.Checked if select else Qt.CheckState.Unchecked
+        for index in range(listWidget.count()):
+            item = listWidget.item(index)
+            if isinstance(item, QListWidgetItem):
+                item.setCheckState(state)
+
     def collectModCandidates(
         self,
         tree: mobase.IFileTree | mobase.FileTreeEntry,
@@ -229,7 +254,7 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
         category = None
         entryext = "None"
         GameDataUE4SSRootDir = getattr(
-            self.organizer.managedGame(), "GameDataUE4SSMods", ""
+            self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataUE4SSModsDir = GameDataUE4SSRootDir + "/Mods"
         GameDataPakModsDir = getattr(
@@ -247,7 +272,7 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
 
         if isinstance(tree, mobase.IFileTree) and tree.isDir():
             if tree.exists("ue4ss.dll", mobase.IFileTree.FILE) or tree.exists(
-                "ue4ss_loader.dll", mobase.IFileTree.FILE
+                "dsound.dll", mobase.IFileTree.FILE
             ):
                 category = "Root"
             elif tree.exists("Scripts", mobase.IFileTree.DIRECTORY) and not tree.exists(
@@ -282,44 +307,39 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
         else:
             destination = "/"
 
-        self.addModDetectionCandidate(
-            tree,
-            sanitized_name,
-            f"{category} Mod",
-            destination,
-            installtype,
-        )
+        if category == "Root":
+            for element in tree:
+                self.addModDetectionCandidate(
+                    element,
+                    sanitized_name,
+                    f"{category} Mod",
+                    destination,
+                    installtype,
+                )
+
+        else:
+            self.addModDetectionCandidate(
+                tree,
+                sanitized_name,
+                f"{category} Mod",
+                destination,
+                installtype,
+            )
         return True
 
     def walkEntry(self, path: str, entry: mobase.FileTreeEntry):
         self.collectModCandidates(entry)
         return mobase.IFileTree.WalkReturn.CONTINUE
 
-    def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
-        for branch in filetree:
-            if isinstance(branch, mobase.IFileTree):
-                for e in branch:
-                    if e.name() == name:
-                        return True
-        return False
-
-    def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
-        entriesToMove: list[mobase.FileTreeEntry] = []
-        retVal = 0
-        for e in filetree:
-            entriesToMove.append(e)
-        for e in entriesToMove:
-            filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
-            retVal = 1
-        return retVal
-
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         self.modDetectionCandidates = []
-        newtree = filetree.createOrphanTree("Fixed Tree")
         # Check for Non Zipped Mod
+        UnZippedInstallation = False
         if filetree.name() != "":
             self.collectModCandidates(filetree, installtype="os")
+            UnZippedInstallation = True
         else:
+            newtree = filetree.createOrphanTree("Fixed Tree")
             self.collectModCandidates(filetree)
             filetree.walk(self.walkEntry, "/")
 
@@ -335,14 +355,11 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
             self.moveTreeContent(
                 candidate["installtype"],
                 candidate["tree"],
-                newtree,
+                filetree if UnZippedInstallation else newtree,
                 candidate["destination"],
             )
 
-        if newtree:
-            return newtree
-        else:
-            return filetree
+        return filetree if UnZippedInstallation else newtree
 
 
 class MarvelRivalsGame(BasicGame):

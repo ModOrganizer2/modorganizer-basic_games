@@ -142,7 +142,7 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
         GameDataUE4SSMods = getattr(
-            self.organizer.managedGame(), "GameDataUE4SSMods", ""
+            self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
         GameDataNativeMods = getattr(
@@ -253,7 +253,7 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         entryext = "None"
 
         GameDataUE4SSRootDir = getattr(
-            self.organizer.managedGame(), "GameDataUE4SSMods", ""
+            self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataPakModsDir = getattr(
             self.organizer.managedGame(), "GameDataPakMods", ""

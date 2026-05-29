@@ -120,7 +120,7 @@ class OTWDModDataChecker(mobase.ModDataChecker):
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
         GameDataUE4SSMods = (
-            getattr(self.organizer.managedGame(), "GameDataUE4SSMods", "") + "/Mods"
+            getattr(self.organizer.managedGame(), "GameDataUE4SSRoot", "") + "/Mods"
         )
         GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
         GameDataMovieMods = getattr(
@@ -229,7 +229,7 @@ class OTWDModDataChecker(mobase.ModDataChecker):
         category = None
         entryext = "None"
         GameDataUE4SSRootDir = getattr(
-            self.organizer.managedGame(), "GameDataUE4SSMods", ""
+            self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataUE4SSModsDir = GameDataUE4SSRootDir + "/Mods"
         GameDataPakModsDir = getattr(
