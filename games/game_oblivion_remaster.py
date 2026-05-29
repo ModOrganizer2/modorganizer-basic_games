@@ -198,9 +198,13 @@ class OblivionRemasteredGame(
             "DLCThievesDen.esp",
             "DLCVileLair.esp",
             "Knights.esp",
+            "AltarESPLocal.esp",  # Not actually shipped with the game files but present in plugins.txt.
+        ]
+
+    def enabledPlugins(self) -> list[str]:
+        return [
             "AltarESPMain.esp",
             "AltarDeluxe.esp",
-            "AltarESPLocal.esp",  # Not actually shipped with the game files but present in plugins.txt.
         ]
 
     def modDataDirectory(self) -> str:
