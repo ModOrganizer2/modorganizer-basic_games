@@ -159,7 +159,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
         self, tree: mobase.IFileTree | mobase.FileTreeEntry
     ) -> bool:
         print(f"Collecting mod candidates in: {tree.path()}")
-        if os.path.splitext(tree.path())[1] == ".vmz":
+        if os.path.splitext(tree.path())[1].removeprefix(".") == "vmz":
             print(f"Found vmz file: {tree.name()}")
             self.addModDetectionCandidate(
                 tree,

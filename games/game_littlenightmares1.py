@@ -36,7 +36,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class Payday3ModDataContent(mobase.ModDataContent):
+class LittleNightmares1ModDataContent(mobase.ModDataContent):
     content: list[int] = []
 
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
@@ -87,7 +87,7 @@ class ModDetectionCandidate(TypedDict):
     installtype: str
 
 
-class Payday3ModDataChecker(mobase.ModDataChecker):
+class LittleNightmares1ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -344,21 +344,25 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
             return filetree
 
 
-class Payday3Game(BasicGame):
-    Name = "Payday 3 Support Plugin"
-    Author = "ModWorkshop, MaskPlague and Silarn"
+class LittleNightmares1Game(BasicGame):
+    Name = "Little Nightmares Support Plugin"
+    Author = "ModWorkshop"
     CategorySource = "modworkshop"
     Version = "1"
-    GameName = "Payday 3"
-    GameLauncher = "PAYDAY3.exe"
-    GameShortName = "payday-3"
-    GameSteamId = 1272080
-    GameBinary = "PAYDAY3/Binaries/Win64/PAYDAY3-Win64-Shipping.exe"
-    GameDataPath = "PAYDAY3"
+    GameName = "Little Nightmares"
+    GameShortName = "littlenightmares"
+    GameSteamId = 424840
+    GameBinary = "Atlas/Binaries/Win64/LittleNightmares.exe"
+    GameDataPath = "Atlas"
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/PAYDAY3/Saved/Config/WindowsClient"
+    GameDocumentsDirectory = (
+        "%LOCALAPPDATA%/Little Nightmares Enhanced Edition/Saved/Config/Windows"
+    )
+    GameSavesDirectory = (
+        "%LOCALAPPDATA%/Little Nightmares Enhanced Edition/Saved/SaveGames"
+    )
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -366,9 +370,9 @@ class Payday3Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = Payday3ModDataChecker(organizer)
+        self.dataChecker = LittleNightmares1ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(Payday3ModDataContent())
+        self._register_feature(LittleNightmares1ModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -392,9 +396,9 @@ class Payday3Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Payday 3",
+                "Little Nightmares",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
-            ).withArgument("-fileopenlog")
+            )
         ]
 
     @cached_property
@@ -442,7 +446,7 @@ class Payday3Game(BasicGame):
                 mods_json.write(json.dumps(mods_data, indent=4))
 
     def iniFiles(self):
-        return ["GameUserSettings.ini", "Input.ini"]
+        return ["GameUserSettings.ini", "Engine.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.writeDefaultMods(directory)
