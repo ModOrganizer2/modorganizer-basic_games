@@ -141,21 +141,21 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
-    def groupRelatedFiles(
-        self,
-        entries: list[mobase.FileTreeEntry],
-    ) -> list[list[mobase.FileTreeEntry]]:
-        """Group files that belong together (e.g., .pak, .utoc, .ucas with same base name)."""
-        grouped: dict[str, list[mobase.FileTreeEntry]] = {}
+    def hasLooseInstallableFiles(self, filetree: mobase.IFileTree) -> bool:
+        """Return True if loose installable files exist at the mod root.
 
-        for entry in entries:
-            # Get base name without extension
-            name_without_ext = os.path.splitext(entry.name())[0]
-            if name_without_ext not in grouped:
-                grouped[name_without_ext] = []
-            grouped[name_without_ext].append(entry)
-
-        return list(grouped.values())
+        This lets merge installs re-run the fixer when a valid mod already has
+        Content/Paks/~Mods, but a new .pak/.utoc/.ucas/.bk2 was merged at root.
+        """
+        for entry in filetree:
+            if entry.isFile() and entry.suffix().casefold() in {
+                "pak",
+                "utoc",
+                "ucas",
+                "bk2",
+            }:
+                return True
+        return False
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
@@ -168,6 +168,13 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         GameDataNativeMods = getattr(
             self.organizer.managedGame(), "GameDataNativeMods", ""
         )
+
+        print("dataLooksValid called")
+        print("hasLooseInstallableFiles =", self.hasLooseInstallableFiles(filetree))
+
+        if self.hasLooseInstallableFiles(filetree):
+            return mobase.ModDataChecker.FIXABLE
+
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataMovies, mobase.IFileTree.DIRECTORY):
@@ -185,17 +192,44 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         targettree: mobase.IFileTree,
         destination: str,
     ) -> None:
+        print("RUNNING moveTreeContent")
         if installtype == "virtual":
+            print("INSTALLTYPE:", installtype)
             for entry in entries:
                 targettree.move(entry, destination, mobase.IFileTree.MERGE)
         elif installtype == "os":
             entry = entries[0]
+            print("INSTALLTYPE:", installtype)
             if isinstance(entry, mobase.IFileTree):
+                destination_root = (
+                    destination.strip("/\\")
+                    .replace("\\", "/")
+                    .split("/", 1)[0]
+                    .casefold()
+                )
                 for subentry in entry:
                     mod_file = subentry.name()
                     mod_name_val = entry.name()
                     mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
+
+                    # On merge installs, the existing fixed structure is also
+                    # present in this tree. Do not move it into itself; only move
+                    # the newly-added loose files/folders.
+                    if (
+                        destination_root
+                        and subentry.isDir()
+                        and mod_file.casefold() == destination_root
+                    ):
+                        print("SKIPPING already-fixed destination root:", mod_file)
+                        continue
+
                     insideMods = os.path.join(mod_path, destination)
+                    print("----")
+                    print("MOD:", mod_name_val)
+                    print("FILE:", mod_file)
+                    print("SRC:", os.path.join(mod_path, mod_file))
+                    print("DST:", os.path.join(mod_path, destination, mod_file))
+                    print("TREE:", [e.name() for e in entry])
                     os.makedirs(insideMods, exist_ok=True)
                     src = os.path.join(mod_path, mod_file)
                     dst = os.path.join(mod_path, destination, mod_file)
@@ -213,13 +247,13 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         destination: str,
         installtype: str,
     ) -> None:
-        tree_name = self.sanitizeFolderName(trees[0].name() if trees else "Unknown")
+        candidate_name = self.sanitizeFolderName(name)
 
         self.modDetectionCandidates.append(
             {
                 "trees": trees,
-                "name": tree_name,
-                "display": f"{name} ({category})",
+                "name": candidate_name,
+                "display": f"{candidate_name} ({category})",
                 "destination": destination,
                 "installtype": installtype,
             }
@@ -286,6 +320,9 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             if isinstance(item, QListWidgetItem):
                 item.setCheckState(state)
 
+    def normalizedPathParts(self, path: str) -> set[str]:
+        return set(path.replace("\\", "/").casefold().split("/"))
+
     def collectModCandidates(
         self,
         path: str,
@@ -295,6 +332,7 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         category = None
         entryext = "None"
         basename = "Unknown"
+
         GameDataUE4SSRootDir = getattr(
             self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
@@ -315,6 +353,14 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             entryext = entry.suffix().casefold()
             basename = os.path.splitext(entry.name())[0]
 
+        path_parts = self.normalizedPathParts(entry.path())
+
+        # Native Unreal mods contain their own Content tree. Once we are inside
+        # that tree, do not create additional candidates for nested files such as
+        # .pak/.utoc/.ucas.
+        if "content" in path_parts:
+            return mobase.IFileTree.WalkReturn.CONTINUE
+
         if isinstance(entry, mobase.IFileTree) and entry.isDir():
             if entry.exists("ue4ss.dll", mobase.IFileTree.FILE) or entry.exists(
                 "dsound.dll", mobase.IFileTree.FILE
@@ -323,15 +369,11 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             elif entry.exists(
                 "Scripts", mobase.IFileTree.DIRECTORY
             ) and not entry.exists("ue4ss.dll", mobase.IFileTree.FILE):
-                disallowedFolders = {"mods"}
-                tree_path = entry.path()
-                tree_path_lower = tree_path.replace("\\", "/").casefold()
-                if not disallowedFolders & set(tree_path_lower.split("/")):
+                if "mods" not in path_parts:
                     category = "UE4SS"
             elif entry.exists("Content", mobase.IFileTree.DIRECTORY):
                 category = "Native"
 
-        # Check single file for correct extensions
         match entryext:
             case "pak" | "utoc" | "ucas":
                 category = "Paks"
@@ -348,7 +390,6 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
 
             self.category_groups[basename].append(entry)
 
-            # Add grouped entries as candidates
             for group_key, entries in self.category_groups.items():
                 if group_key not in self.processedBasenames:
                     self.processedBasenames.add(group_key)
@@ -369,7 +410,6 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
                         destination = "/"
 
                     if installtype == "os":
-                        # Single file/entry
                         self.addModDetectionCandidate(
                             [entry],
                             sanitized_name,
@@ -380,7 +420,7 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
                     else:
                         candidate_entries = entries
 
-                        if group_category == "Root":
+                        if group_category in {"Root", "Native"}:
                             candidate_entries: list[mobase.FileTreeEntry] = []
                             for root_entry in entries:
                                 if (
@@ -449,15 +489,33 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         if not UnZippedInstallation:
             filetree = newtree
 
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
+        )
+        selected_native_indexes = {
+            index
+            for index in selectedIndexes
+            if self.modDetectionCandidates[index]["destination"].endswith(
+                "/FOLDERNAME/"
+            )
+        }
+        multiple_native = len(selected_native_indexes) > 1
+
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
-            if "/FOLDERNAME/" in candidate["destination"]:
-                self.needsNameFix = True
+            destination = candidate["destination"]
+
+            if index in selected_native_indexes:
+                if multiple_native:
+                    destination = GameDataNativeMods + f"/{candidate['name']}/"
+                else:
+                    self.needsNameFix = True
+
             self.moveTreeContent(
                 candidate["installtype"],
                 candidate["trees"],
                 filetree,
-                candidate["destination"],
+                destination,
             )
 
         return filetree

@@ -95,19 +95,6 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
         self.processedBasenames: set[str] = set()  # Track already-grouped files
         self.category_groups: dict[str, list[mobase.FileTreeEntry]] = {}
 
-    def moveOverwriteMerge(self, source: str, destination: str):
-        if not os.path.exists(destination):
-            shutil.move(source, destination)
-            return
-        if os.path.isfile(source):
-            os.replace(source, destination)
-            return
-        for item in os.listdir(source):
-            s_item = os.path.join(source, item)
-            d_item = os.path.join(destination, item)
-            self.moveOverwriteMerge(s_item, d_item)
-        os.rmdir(source)
-
     def sanitizeFolderName(self, name: str) -> str:
         invalid_chars = '+&<>:"|?*\\/'
         for char in invalid_chars:
@@ -118,21 +105,16 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
             name = "Mod"
         return name
 
-    def groupRelatedFiles(
-        self,
-        entries: list[mobase.FileTreeEntry],
-    ) -> list[list[mobase.FileTreeEntry]]:
-        """Group files that belong together (e.g., .pak, .utoc, .ucas with same base name)."""
-        grouped: dict[str, list[mobase.FileTreeEntry]] = {}
-
-        for entry in entries:
-            # Get base name without extension
-            name_without_ext = os.path.splitext(entry.name())[0]
-            if name_without_ext not in grouped:
-                grouped[name_without_ext] = []
-            grouped[name_without_ext].append(entry)
-
-        return list(grouped.values())
+    def hasLooseInstallableFiles(self, filetree: mobase.IFileTree) -> bool:
+        for entry in filetree:
+            if entry.isFile() and entry.suffix().casefold() in {
+                "pak",
+                "utoc",
+                "ucas",
+                "bk2",
+            }:
+                return True
+        return False
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
@@ -144,6 +126,10 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
         GameDataMovieMods = getattr(
             self.organizer.managedGame(), "GameDataMovieMods", ""
         )
+
+        if self.hasLooseInstallableFiles(filetree):
+            return mobase.ModDataChecker.FIXABLE
+
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataMovieMods, mobase.IFileTree.DIRECTORY):
@@ -165,18 +151,24 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
         elif installtype == "os":
             entry = entries[0]
             if isinstance(entry, mobase.IFileTree):
+                mod_name_val = entry.name()
+                mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
+                insideMods = os.path.join(mod_path, destination)
+                os.makedirs(insideMods, exist_ok=True)
+
+                destination_root = (
+                    destination.replace("\\", "/").split("/", 1)[0].casefold()
+                )
+
                 for subentry in entry:
                     mod_file = subentry.name()
-                    mod_name_val = entry.name()
-                    mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
-                    insideMods = os.path.join(mod_path, destination)
-                    os.makedirs(insideMods, exist_ok=True)
+
+                    if subentry.isDir() and mod_file.casefold() == destination_root:
+                        continue
+
                     src = os.path.join(mod_path, mod_file)
                     dst = os.path.join(mod_path, destination, mod_file)
-                    shutil.move(
-                        src,
-                        dst,
-                    )
+                    shutil.move(src, dst)
             return None
 
     def addModDetectionCandidate(
@@ -222,12 +214,12 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect(  # type: ignore # type: ignore
+        selectAllButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
-        )  # type: ignore
+        )
         selectNoneButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
-        )  # type: ignore
+        )
         selectButtons.addWidget(selectAllButton)
         selectButtons.addWidget(selectNoneButton)
         layout.addLayout(selectButtons)
@@ -506,7 +498,7 @@ class GothamKnightsGame(BasicGame):
                 mods_json.write(json.dumps(mods_data, indent=4))
 
     def iniFiles(self):
-        return ["GameUserSettings.ini", "Engine.ini"]
+        return ["GameUserSettings.ini", "Engine.ini", "Input.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.writeDefaultMods(directory)

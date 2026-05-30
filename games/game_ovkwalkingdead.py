@@ -105,21 +105,16 @@ class OTWDModDataChecker(mobase.ModDataChecker):
             name = "Mod"
         return name
 
-    def groupRelatedFiles(
-        self,
-        entries: list[mobase.FileTreeEntry],
-    ) -> list[list[mobase.FileTreeEntry]]:
-        """Group files that belong together (e.g., .pak, .utoc, .ucas with same base name)."""
-        grouped: dict[str, list[mobase.FileTreeEntry]] = {}
-
-        for entry in entries:
-            # Get base name without extension
-            name_without_ext = os.path.splitext(entry.name())[0]
-            if name_without_ext not in grouped:
-                grouped[name_without_ext] = []
-            grouped[name_without_ext].append(entry)
-
-        return list(grouped.values())
+    def hasLooseInstallableFiles(self, filetree: mobase.IFileTree) -> bool:
+        for entry in filetree:
+            if entry.isFile() and entry.suffix().casefold() in {
+                "pak",
+                "utoc",
+                "ucas",
+                "bk2",
+            }:
+                return True
+        return False
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
@@ -131,6 +126,10 @@ class OTWDModDataChecker(mobase.ModDataChecker):
         GameDataMovieMods = getattr(
             self.organizer.managedGame(), "GameDataMovieMods", ""
         )
+
+        if self.hasLooseInstallableFiles(filetree):
+            return mobase.ModDataChecker.FIXABLE
+
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataMovieMods, mobase.IFileTree.DIRECTORY):
@@ -152,18 +151,23 @@ class OTWDModDataChecker(mobase.ModDataChecker):
         elif installtype == "os":
             entry = entries[0]
             if isinstance(entry, mobase.IFileTree):
+                mod_name_val = entry.name()
+                mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
+                insideMods = os.path.join(mod_path, destination)
+                os.makedirs(insideMods, exist_ok=True)
+
+                destination_root = (
+                    destination.replace("\\", "/").split("/", 1)[0].casefold()
+                )
+
                 for subentry in entry:
                     mod_file = subentry.name()
-                    mod_name_val = entry.name()
-                    mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
-                    insideMods = os.path.join(mod_path, destination)
-                    os.makedirs(insideMods, exist_ok=True)
+                    if subentry.isDir() and mod_file.casefold() == destination_root:
+                        continue
+
                     src = os.path.join(mod_path, mod_file)
                     dst = os.path.join(mod_path, destination, mod_file)
-                    shutil.move(
-                        src,
-                        dst,
-                    )
+                    shutil.move(src, dst)
             return None
 
     def addModDetectionCandidate(
@@ -396,10 +400,11 @@ class OTWDModDataChecker(mobase.ModDataChecker):
 
 class OTWDGame(BasicGame):
     Name = "OVERKILL's The Walking Dead Support Plugin"
-    Author = "ModWorkshop, MaskPlague and Silarn"
+    Author = "ModWorkshop"
     CategorySource = "modworkshop"
     Version = "1"
     GameName = "OVERKILL's The Walking Dead"
+    GameLauncher = "OTWD - UE4SS.cmd"
     GameShortName = "otwd"
     GameSteamId = 717690
     GameBinary = "OTWD/Binaries/Win64/OTWD-Win64-Shipping.exe"
@@ -407,9 +412,8 @@ class OTWDGame(BasicGame):
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = (
-        "%USERPROFILE%/AppData/Local/OTWD/Saved/Config/WindowsClient"
-    )
+    GameDocumentsDirectory = "%LOCALAPPDATA%/OTWD/Saved/Config/Windows"
+    GameSavesDirectory = "%LOCALAPPDATA%/OTWD/Saved/SaveGames"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -493,7 +497,7 @@ class OTWDGame(BasicGame):
                 mods_json.write(json.dumps(mods_data, indent=4))
 
     def iniFiles(self):
-        return ["GameUserSettings.ini", "Input.ini"]
+        return ["GameUserSettings.ini", "Engine.ini", "Input.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.writeDefaultMods(directory)
