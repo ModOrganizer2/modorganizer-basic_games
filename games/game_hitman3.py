@@ -40,13 +40,10 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         if filetree.exists(
             GameSMMPath + "/Mods/FOLDERNAME", mobase.IFileTree.DIRECTORY
         ):
-            print("Found folder")
             path = mod.absolutePath()
-            print(path)
             json_path = os.path.join(
                 path, GameSMMPath + "/Mods/FOLDERNAME/manifest.json"
             )
-            print(json_path)
             mod_data = json.load(open(json_path, encoding="utf-8"))
             modname = mod_data["id"]
             old_path = os.path.join(path, GameSMMPath + "/Mods/FOLDERNAME")
@@ -95,8 +92,6 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
         GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
         treefixed = 0
         if filetree.exists("manifest.json", mobase.IFileTree.FILE):
-            print("Found manifest in root, moving to SMM folder")
-            print(GameSMMPath + "/Mods/FOLDERNAME/")
             treefixed = self.allMoveTo(
                 filetree, filetree, GameSMMPath + "/Mods/FOLDERNAME/"
             )
@@ -106,7 +101,6 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
             firsttreelayer: mobase.IFileTree | None = self.firstTree(filetree)
             if firsttreelayer is not None:
                 if firsttreelayer.exists("manifest.json", mobase.IFileTree.FILE):
-                    print(GameSMMPath + "/Mods/FOLDERNAME/")
                     treefixed = self.allMoveTo(
                         firsttreelayer, filetree, GameSMMPath + "/Mods/FOLDERNAME/"
                     )

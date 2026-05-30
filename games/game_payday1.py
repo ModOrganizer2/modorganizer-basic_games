@@ -208,12 +208,7 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
         destination: str,
     ) -> None:
         tree_name = tree.name()
-        tree_path = tree.path()
 
-        print(
-            f"Detected mod candidate: {tree_name} | "
-            f"path={tree_path} | category={category} | destination={destination}"
-        )
         self.modDetectionCandidates.append(
             {
                 "tree": tree,
@@ -347,9 +342,6 @@ class Payday1ModDataChecker(mobase.ModDataChecker):
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
             if isinstance(candidate["tree"], mobase.IFileTree):
-                print(
-                    f"Installing Mod: {candidate['name']} to {candidate['destination']}"
-                )
                 if self.moveTreeContent(
                     candidate["tree"], newtree, candidate["destination"]
                 ):

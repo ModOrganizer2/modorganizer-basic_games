@@ -10,10 +10,12 @@ from PyQt6.QtCore import QDir, QFileInfo, Qt
 from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
+    QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QPushButton,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -37,7 +39,6 @@ class Content(IntEnum):
 
 
 class CrimeBossModDataContent(mobase.ModDataContent):
-    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -79,7 +80,7 @@ class CrimeBossModDataContent(mobase.ModDataContent):
 
 
 class ModDetectionCandidate(TypedDict):
-    tree: mobase.IFileTree | mobase.FileTreeEntry
+    trees: list[mobase.IFileTree | mobase.FileTreeEntry]
     name: str
     display: str
     destination: str
@@ -93,6 +94,8 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
         self.modDetectionCandidates: list[ModDetectionCandidate] = []
+        self.processedBasenames: set[str] = set()  # Track already-grouped files
+        self.category_groups: dict[str, list[mobase.FileTreeEntry]] = {}
 
     def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
@@ -138,6 +141,22 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             return
         self.needsNameFix = False
 
+    def groupRelatedFiles(
+        self,
+        entries: list[mobase.FileTreeEntry],
+    ) -> list[list[mobase.FileTreeEntry]]:
+        """Group files that belong together (e.g., .pak, .utoc, .ucas with same base name)."""
+        grouped: dict[str, list[mobase.FileTreeEntry]] = {}
+
+        for entry in entries:
+            # Get base name without extension
+            name_without_ext = os.path.splitext(entry.name())[0]
+            if name_without_ext not in grouped:
+                grouped[name_without_ext] = []
+            grouped[name_without_ext].append(entry)
+
+        return list(grouped.values())
+
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
@@ -145,10 +164,10 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
+        GameDataMovies = getattr(self.organizer.managedGame(), "GameDataMovies", "")
         GameDataNativeMods = getattr(
             self.organizer.managedGame(), "GameDataNativeMods", ""
         )
-        GameDataMovies = getattr(self.organizer.managedGame(), "GameDataMovies", "")
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataMovies, mobase.IFileTree.DIRECTORY):
@@ -162,37 +181,43 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
     def moveTreeContent(
         self,
         installtype: str,
-        entry: mobase.IFileTree | mobase.FileTreeEntry,
+        entries: list[mobase.IFileTree | mobase.FileTreeEntry],
         targettree: mobase.IFileTree,
         destination: str,
     ) -> None:
         if installtype == "virtual":
-            targettree.move(entry, destination, mobase.IFileTree.MERGE)
-            return None
-        if installtype == "os" and isinstance(entry, mobase.IFileTree):
-            for element in entry:
-                mod_file = element.name()
-                mod_name = entry.name()
-                mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-                inside_mods = os.path.join(mod_path, destination)
-                os.makedirs(inside_mods, exist_ok=True)
+            for entry in entries:
+                targettree.move(entry, destination, mobase.IFileTree.MERGE)
+        elif installtype == "os":
+            entry = entries[0]
+            for subentry in entry:
+                mod_file = subentry.name()
+                mod_name_val = entry.name()
+                mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
+                insideMods = os.path.join(mod_path, destination)
+                os.makedirs(insideMods, exist_ok=True)
                 src = os.path.join(mod_path, mod_file)
                 dst = os.path.join(mod_path, destination, mod_file)
-                shutil.move(src, dst)
+                shutil.move(
+                    src,
+                    dst,
+                )
             return None
 
     def addModDetectionCandidate(
         self,
-        tree: mobase.IFileTree | mobase.FileTreeEntry,
+        trees: list[mobase.IFileTree | mobase.FileTreeEntry],
         name: str,
         category: str,
         destination: str,
-        installtype: str = "virtual",
+        installtype: str,
     ) -> None:
+        tree_name = self.sanitizeFolderName(trees[0].name() if trees else "Unknown")
+
         self.modDetectionCandidates.append(
             {
-                "tree": tree,
-                "name": tree.name(),
+                "trees": trees,
+                "name": tree_name,
                 "display": f"{name} ({category})",
                 "destination": destination,
                 "installtype": installtype,
@@ -219,6 +244,19 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
 
         layout.addWidget(listWidget)
 
+        selectButtons = QHBoxLayout()
+        selectAllButton = QPushButton("Select All")
+        selectNoneButton = QPushButton("Select None")
+        selectAllButton.clicked.connect(
+            lambda: self.setDialogSelection(listWidget, True)
+        )  # type: ignore
+        selectNoneButton.clicked.connect(
+            lambda: self.setDialogSelection(listWidget, False)
+        )  # type: ignore
+        selectButtons.addWidget(selectAllButton)
+        selectButtons.addWidget(selectNoneButton)
+        layout.addLayout(selectButtons)
+
         buttonBox = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
@@ -240,50 +278,56 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
 
         return selectedIndexes
 
+    def setDialogSelection(self, listWidget: QListWidget, select: bool) -> None:
+        state = Qt.CheckState.Checked if select else Qt.CheckState.Unchecked
+        for index in range(listWidget.count()):
+            item = listWidget.item(index)
+            if isinstance(item, QListWidgetItem):
+                item.setCheckState(state)
+
     def collectModCandidates(
         self,
-        tree: mobase.IFileTree | mobase.FileTreeEntry,
+        path: str,
+        entry: mobase.FileTreeEntry,
         installtype: str = "virtual",
-    ) -> bool:
-        if not isinstance(tree, mobase.IFileTree) or not tree.name():
-            return False
-
-        sanitized_name = self.sanitizeFolderName(tree.name())
+    ):
         category = None
         entryext = "None"
-
+        basename = "Unknown"
         GameDataUE4SSRootDir = getattr(
             self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
+        GameDataUE4SSModsDir = GameDataUE4SSRootDir + "/Mods"
         GameDataPakModsDir = getattr(
             self.organizer.managedGame(), "GameDataPakMods", ""
         )
+        GameDataMoviesDir = getattr(self.organizer.managedGame(), "GameDataMovies", "")
         GameDataNativeModsDir = getattr(
             self.organizer.managedGame(), "GameDataNativeMods", ""
         )
-        GameDataMoviesDir = getattr(self.organizer.managedGame(), "GameDataMovies", "")
 
-        if installtype == "os" and isinstance(tree, mobase.IFileTree):
-            for entry in tree:
-                entryext = os.path.splitext(entry.name())[1].removeprefix(".")
+        if installtype == "os" and isinstance(entry, mobase.IFileTree):
+            for subentry in entry:
+                entryext = os.path.splitext(subentry.name())[1].removeprefix(".")
+                basename = os.path.splitext(subentry.name())[0]
         else:
-            entryext = tree.suffix().casefold()
+            entryext = entry.suffix().casefold()
+            basename = os.path.splitext(entry.name())[0]
 
-        # Check for UE4SS installations
-        if isinstance(tree, mobase.IFileTree) and tree.isDir():
-            if tree.exists("ue4ss.dll", mobase.IFileTree.FILE) or tree.exists(
+        if isinstance(entry, mobase.IFileTree) and entry.isDir():
+            if entry.exists("ue4ss.dll", mobase.IFileTree.FILE) or entry.exists(
                 "dsound.dll", mobase.IFileTree.FILE
             ):
                 category = "Root"
-            elif tree.exists("Scripts", mobase.IFileTree.DIRECTORY) and not tree.exists(
-                "UE4SS.dll", mobase.IFileTree.FILE
-            ):
+            elif entry.exists(
+                "Scripts", mobase.IFileTree.DIRECTORY
+            ) and not entry.exists("ue4ss.dll", mobase.IFileTree.FILE):
                 disallowedFolders = {"mods"}
-                tree_path = tree.path()
+                tree_path = entry.path()
                 tree_path_lower = tree_path.replace("\\", "/").casefold()
                 if not disallowedFolders & set(tree_path_lower.split("/")):
                     category = "UE4SS"
-            elif tree.exists("Content", mobase.IFileTree.DIRECTORY):
+            elif entry.exists("Content", mobase.IFileTree.DIRECTORY):
                 category = "Native"
 
         # Check single file for correct extensions
@@ -295,43 +339,63 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             case _:
                 pass
 
-        if category is None:
-            return False
+        if category is not None:
+            basename = basename + " " + category
 
-        if category == "UE4SS":
-            destination = GameDataUE4SSRootDir + "/"
-        elif category == "Root":
-            destination = GameDataUE4SSRootDir + "/"
-        elif category == "Paks":
-            destination = GameDataPakModsDir + "/"
-        elif category == "Movie":
-            destination = GameDataMoviesDir + "/"
-        elif category == "Native":
-            destination = GameDataNativeModsDir + "/"
-        else:
-            destination = "/"
+            if basename not in self.category_groups:
+                self.category_groups[basename] = []
 
-        self.addModDetectionCandidate(
-            tree,
-            sanitized_name,
-            f"{category} Mod",
-            destination,
-            installtype,
-        )
-        return True
+            self.category_groups[basename].append(entry)
 
-    def walkEntry(self, path: str, entry: mobase.FileTreeEntry):
-        if entry.isDir() and isinstance(entry, mobase.IFileTree):
-            self.collectModCandidates(entry)
+            # Add grouped entries as candidates
+            for group_key, entries in self.category_groups.items():
+                if group_key not in self.processedBasenames:
+                    self.processedBasenames.add(group_key)
+                    sanitized_name = self.sanitizeFolderName(entries[0].name())
+                    group_category = group_key.rsplit(" ", 1)[-1]
+
+                    if group_category == "UE4SS":
+                        destination = GameDataUE4SSModsDir + "/"
+                    elif group_category == "Root":
+                        destination = GameDataUE4SSRootDir + "/"
+                    elif group_category == "Paks":
+                        destination = GameDataPakModsDir + "/"
+                    elif group_category == "Movie":
+                        destination = GameDataMoviesDir + "/"
+                    elif group_category == "Native":
+                        destination = GameDataNativeModsDir + "/FOLDERNAME/"
+                    else:
+                        destination = "/"
+
+                    if installtype == "os":
+                        # Single file/entry
+                        self.addModDetectionCandidate(
+                            [entry],
+                            sanitized_name,
+                            f"{group_category} Mod",
+                            destination,
+                            installtype,
+                        )
+                    else:
+                        candidate_entries = entries
+
+                        if group_category == "Root":
+                            candidate_entries = []
+                            for root_entry in entries:
+                                if root_entry.isDir():
+                                    candidate_entries.extend(list(root_entry))
+                                else:
+                                    candidate_entries.append(root_entry)
+
+                        self.addModDetectionCandidate(
+                            candidate_entries,
+                            sanitized_name,
+                            f"{group_category} Mod",
+                            destination,
+                            installtype,
+                        )
+
         return mobase.IFileTree.WalkReturn.CONTINUE
-
-    def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
-        for branch in filetree:
-            if isinstance(branch, mobase.IFileTree):
-                for e in branch:
-                    if e.name() == name:
-                        return True
-        return False
 
     def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
         entriesToMove: list[mobase.FileTreeEntry] = []
@@ -345,14 +409,20 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         self.modDetectionCandidates = []
+        self.processedBasenames = set()
+        self.category_groups = {}
+        UnZippedInstallation = False
         newtree = filetree.createOrphanTree("Fixed Tree")
+        originaltree = filetree
 
-        # Check for Non Zipped Mod
         if filetree.name() != "":
-            self.collectModCandidates(filetree, installtype="os")
+            # Initial Check on Main Directory
+            self.collectModCandidates("/", filetree, installtype="os")
+            UnZippedInstallation = True
         else:
-            self.collectModCandidates(filetree)
-            filetree.walk(self.walkEntry, "/")
+            # Initial Check on Main Directory
+            self.collectModCandidates("/", filetree)
+            filetree.walk(self.collectModCandidates, "/")
 
         if len(self.modDetectionCandidates) == 1:
             selectedIndexes = {0}
@@ -361,26 +431,30 @@ class CrimeBossModDataChecker(mobase.ModDataChecker):
             if selectedIndexes is None:
                 return None
 
+        # Fallback: handle root-level native mods with FOLDERNAME substitution.
+        if not selectedIndexes and originaltree.exists(
+            "Content", mobase.IFileTree.DIRECTORY
+        ):
+            GameDataNativeMods = getattr(
+                self.organizer.managedGame(), "GameDataNativeMods", ""
+            )
+            self.needsNameFix = True
+            self.allMoveTo(originaltree, GameDataNativeMods + "/FOLDERNAME/")
+            return originaltree
+
+        if not UnZippedInstallation:
+            filetree = newtree
+
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
+            if "/FOLDERNAME/" in candidate["destination"]:
+                self.needsNameFix = True
             self.moveTreeContent(
                 candidate["installtype"],
-                candidate["tree"],
-                newtree,
+                candidate["trees"],
+                filetree,
                 candidate["destination"],
             )
-
-        if newtree:
-            return newtree
-
-        # Fallback: Handle native mods with FOLDERNAME substitution
-        GameDataNativeMods = getattr(
-            self.organizer.managedGame(), "GameDataNativeMods", ""
-        )
-        if filetree.exists("Content", mobase.IFileTree.DIRECTORY):
-            self.needsNameFix = True
-            self.allMoveTo(filetree, GameDataNativeMods + "/FOLDERNAME/")
-            return filetree
 
         return filetree
 
@@ -398,6 +472,7 @@ class CrimeBossGame(BasicGame):
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataNativeMods = "Mods"
     GameDataPakMods = "Content/Paks/~Mods"
+    GameDataMovies = "Content/Movies"
     GameDocumentsDirectory = (
         "%USERPROFILE%/Saved Games/CrimeBoss/Steam/Saved/Config/WindowsNoEditor"
     )
@@ -453,7 +528,7 @@ class CrimeBossGame(BasicGame):
         tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
             self._organizer.virtualFileTree()
         )
-        if type(tree) is not mobase.IFileTree:
+        if not isinstance(tree, mobase.IFileTree):
             return efls
         for e in tree:
             relpath = e.pathFrom(tree)
@@ -468,17 +543,6 @@ class CrimeBossGame(BasicGame):
             for exe in exes
         ]
         return efls
-
-    def paksDirectory(self) -> QDir:
-        return QDir(self.dataDirectory().absolutePath() + "/" + self.GameDataPakMods)
-
-    def ue4ssDirectory(self) -> QDir:
-        return QDir(
-            self.dataDirectory().absolutePath() + "/" + self.GameDataUE4SSRoot + "/Mods"
-        )
-
-    def nativeDirectory(self) -> QDir:
-        return QDir(self.dataDirectory().absolutePath() + "/" + self.GameDataNativeMods)
 
     def writeDefaultMods(self, profile: QDir):
         ue4ss_mods_txt = QFileInfo(profile.absoluteFilePath("mods.txt"))
@@ -499,10 +563,20 @@ class CrimeBossGame(BasicGame):
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.writeDefaultMods(directory)
-        if not self.paksDirectory().exists():
-            os.makedirs(self.paksDirectory().absolutePath())
-        if not self.ue4ssDirectory().exists():
-            os.makedirs(self.ue4ssDirectory().absolutePath())
-        if not self.nativeDirectory().exists():
-            os.makedirs(self.nativeDirectory().absolutePath())
+
+        base_data_dir = self.dataDirectory().absolutePath()
+
+        paksDirectory = QDir(base_data_dir + "/" + self.GameDataPakMods)
+        ue4ssDirectory = QDir(base_data_dir + "/" + self.GameDataUE4SSRoot + "/Mods")
+        movieDirectory = QDir(base_data_dir + "/" + self.GameDataMovies)
+        nativeDirectory = QDir(base_data_dir + "/" + self.GameDataNativeMods)
+
+        if not paksDirectory.exists():
+            os.makedirs(paksDirectory.absolutePath())
+        if not ue4ssDirectory.exists():
+            os.makedirs(ue4ssDirectory.absolutePath())
+        if not movieDirectory.exists():
+            os.makedirs(movieDirectory.absolutePath())
+        if not nativeDirectory.exists():
+            os.makedirs(nativeDirectory.absolutePath())
         super().initializeProfile(directory, settings)

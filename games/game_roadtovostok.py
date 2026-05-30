@@ -81,10 +81,6 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
             os.makedirs(insideMods, exist_ok=True)
             src = os.path.join(mod_path, mod_file)
             dst = os.path.join(mod_path, GameModsPath, mod_file)
-            print(
-                f"Mod: {mod_name} with File: {mod_file} at {mod_path} is being moved to: {insideMods}"
-            )
-            print(f"Moving {src} to {dst}")
             shutil.move(
                 src,
                 dst,
@@ -99,12 +95,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
         destination: str,
     ) -> None:
         tree_name = tree.name()
-        tree_path = tree.path()
 
-        print(
-            f"Detected mod candidate: {tree_name} | "
-            f"path={tree_path} | category={category} | destination={destination}"
-        )
         self.modDetectionCandidates.append(
             {
                 "tree": tree,
@@ -158,9 +149,7 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
     def collectModCandidates(
         self, tree: mobase.IFileTree | mobase.FileTreeEntry
     ) -> bool:
-        print(f"Collecting mod candidates in: {tree.path()}")
         if os.path.splitext(tree.path())[1].removeprefix(".") == "vmz":
-            print(f"Found vmz file: {tree.name()}")
             self.addModDetectionCandidate(
                 tree,
                 self.sanitizeFolderName(tree.name()),
@@ -189,7 +178,6 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
 
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
-            print(f"Installing Mod: {candidate['name']}")
             self.moveTreeContent(filetree, candidate["tree"])
 
         return filetree

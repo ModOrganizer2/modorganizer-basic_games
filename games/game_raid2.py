@@ -164,12 +164,6 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         destination: str,
     ) -> None:
         tree_name = tree.name()
-        tree_path = tree.path()
-
-        print(
-            f"Detected mod candidate: {tree_name} | "
-            f"path={tree_path} | category={category}"
-        )
 
         self.modDetectionCandidates.append(
             {
@@ -303,9 +297,6 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
             if isinstance(candidate["tree"], mobase.IFileTree):
-                print(
-                    f"Installing Mod: {candidate['name']} to {candidate['destination']}"
-                )
                 if self.moveTreeContent(
                     candidate["tree"], newtree, candidate["destination"]
                 ):
