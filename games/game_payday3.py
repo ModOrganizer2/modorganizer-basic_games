@@ -162,6 +162,7 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
 
                 for subentry in entry:
                     mod_file = subentry.name()
+
                     if subentry.isDir() and mod_file.casefold() == destination_root:
                         continue
 
@@ -213,10 +214,10 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect(  # type: ignore # type: ignore
+        selectAllButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
         )
-        selectNoneButton.clicked.connect(  # type: ignore # type: ignore
+        selectNoneButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
         )
         selectButtons.addWidget(selectAllButton)

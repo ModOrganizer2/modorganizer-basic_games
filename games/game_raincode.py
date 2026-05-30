@@ -403,10 +403,10 @@ class RainCodePlusGame(BasicGame):
     Author = "ModWorkshop"
     CategorySource = "modworkshop"
     Version = "1"
-    GameName = "Windrose"
+    GameName = "Master Detective Archives: RAIN CODE Plus"
     GameLauncher = "RainCodePlus.exe"
     GameShortName = "masterdetectivearchivesraincodeplus"
-    GameSteamId = 903950
+    GameSteamId = 2903950
     GameBinary = "RainCodePlus/Binaries/Win64/RainCodePlus-Win64-Shipping.exe"
     GameDataPath = "RainCodePlus"
     GameDataUE4SSRoot = "Binaries/Win64"
