@@ -222,10 +222,10 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect( # type: ignore # type: ignore
+        selectAllButton.clicked.connect(  # type: ignore # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
         )  # type: ignore
-        selectNoneButton.clicked.connect( # type: ignore
+        selectNoneButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
         )  # type: ignore
         selectButtons.addWidget(selectAllButton)
@@ -351,7 +351,10 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
                         if category == "Root":
                             candidate_entries: list[mobase.FileTreeEntry] = []
                             for root_entry in entries:
-                                if isinstance(root_entry, mobase.IFileTree) and root_entry.isDir():
+                                if (
+                                    isinstance(root_entry, mobase.IFileTree)
+                                    and root_entry.isDir()
+                                ):
                                     candidate_entries.extend(list(root_entry))
                                 else:
                                     candidate_entries.append(root_entry)

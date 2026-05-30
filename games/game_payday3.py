@@ -209,10 +209,10 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect( # type: ignore # type: ignore
+        selectAllButton.clicked.connect(  # type: ignore # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
         )
-        selectNoneButton.clicked.connect( # type: ignore # type: ignore
+        selectNoneButton.clicked.connect(  # type: ignore # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
         )
         selectButtons.addWidget(selectAllButton)
@@ -338,7 +338,10 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
                         if category == "Root":
                             candidate_entries: list[mobase.FileTreeEntry] = []
                             for root_entry in entries:
-                                if isinstance(root_entry, mobase.IFileTree) and root_entry.isDir():
+                                if (
+                                    isinstance(root_entry, mobase.IFileTree)
+                                    and root_entry.isDir()
+                                ):
                                     candidate_entries.extend(list(root_entry))
                                 else:
                                     candidate_entries.append(root_entry)
