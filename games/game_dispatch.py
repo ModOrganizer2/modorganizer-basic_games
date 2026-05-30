@@ -61,7 +61,7 @@ class Dispatch(BasicGame, mobase.IPluginFileMapper):
                 QFileInfo(
                     self.gameDirectory(),
                     self.GameBinary,
-                )
+                ),
             ),
         ]
 
