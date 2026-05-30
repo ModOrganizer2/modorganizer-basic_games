@@ -95,19 +95,6 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         self.processedBasenames: set[str] = set()  # Track already-grouped files
         self.category_groups: dict[str, list[mobase.FileTreeEntry]] = {}
 
-    def moveOverwriteMerge(self, source: str, destination: str):
-        if not os.path.exists(destination):
-            shutil.move(source, destination)
-            return
-        if os.path.isfile(source):
-            os.replace(source, destination)
-            return
-        for item in os.listdir(source):
-            s_item = os.path.join(source, item)
-            d_item = os.path.join(destination, item)
-            self.moveOverwriteMerge(s_item, d_item)
-        os.rmdir(source)
-
     def sanitizeFolderName(self, name: str) -> str:
         invalid_chars = '+&<>:"|?*\\/'
         for char in invalid_chars:
@@ -164,18 +151,19 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
                 targettree.move(entry, destination, mobase.IFileTree.MERGE)
         elif installtype == "os":
             entry = entries[0]
-            for subentry in entry:
-                mod_file = subentry.name()
-                mod_name_val = entry.name()
-                mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
-                insideMods = os.path.join(mod_path, destination)
-                os.makedirs(insideMods, exist_ok=True)
-                src = os.path.join(mod_path, mod_file)
-                dst = os.path.join(mod_path, destination, mod_file)
-                shutil.move(
-                    src,
-                    dst,
-                )
+            if isinstance(entry, mobase.IFileTree):
+                for subentry in entry:
+                    mod_file = subentry.name()
+                    mod_name_val = entry.name()
+                    mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
+                    insideMods = os.path.join(mod_path, destination)
+                    os.makedirs(insideMods, exist_ok=True)
+                    src = os.path.join(mod_path, mod_file)
+                    dst = os.path.join(mod_path, destination, mod_file)
+                    shutil.move(
+                        src,
+                        dst,
+                    )
             return None
 
     def addModDetectionCandidate(
@@ -221,12 +209,12 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect(
+        selectAllButton.clicked.connect( # type: ignore # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
-        )  # type: ignore
-        selectNoneButton.clicked.connect(
+        )
+        selectNoneButton.clicked.connect( # type: ignore # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
-        )  # type: ignore
+        )
         selectButtons.addWidget(selectAllButton)
         selectButtons.addWidget(selectNoneButton)
         layout.addLayout(selectButtons)
@@ -348,9 +336,9 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
                         candidate_entries = entries
 
                         if category == "Root":
-                            candidate_entries = []
+                            candidate_entries: list[mobase.FileTreeEntry] = []
                             for root_entry in entries:
-                                if root_entry.isDir():
+                                if isinstance(root_entry, mobase.IFileTree) and root_entry.isDir():
                                     candidate_entries.extend(list(root_entry))
                                 else:
                                     candidate_entries.append(root_entry)
