@@ -30,13 +30,23 @@ class NoitaModDataChecker(mobase.ModDataChecker):
             self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
+    def sanitizeFolderName(self, name: str) -> tuple[str, bool]:
+        invalid_chars = '+&<>:"|?*\\/'
+        for char in invalid_chars:
+            name = name.replace(char, "")
+        name = "".join(c for c in name if ord(c) >= 32)
+        name = name.rstrip(". ")
+        if not name:
+            return "FOLDERNAME", True
+        return name, False
+
     def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "")
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = mod.name()
+        modname = self.sanitizeFolderName(mod.name())[0]
         if filetree.exists(GameModsPath + "/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, GameModsPath + "/FOLDERNAME")
@@ -73,15 +83,15 @@ class NoitaModDataChecker(mobase.ModDataChecker):
         return retVal
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        self.needsNameFix = False
         GameModsPath = getattr(self.organizer.managedGame(), "GameModsPath", "")
-        treefixed = 0
+
         if filetree.exists("mod.xml", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, GameModsPath + "/FOLDERNAME/")
-            if treefixed == 1:
+            if self.allMoveTo(filetree, GameModsPath + "/FOLDERNAME/"):
                 self.needsNameFix = True
-        if self.fileExistsInNextSubDir(filetree, "mod.xml"):
+        elif self.fileExistsInNextSubDir(filetree, "mod.xml") and len(filetree) == 1:
             filetree.move(filetree[0], GameModsPath + "/", mobase.IFileTree.MERGE)
-            treefixed = 1
+
         return filetree
 
 
@@ -149,7 +159,10 @@ class NoitaGame(BasicGame):
         return efls
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        modsPath = self.dataDirectory().absolutePath()
+        modsPath = os.path.join(
+            self.dataDirectory().absolutePath(),
+            self.GameModsPath,
+        )
         if not os.path.exists(modsPath):
-            os.mkdir(modsPath)
+            os.makedirs(modsPath)
         super().initializeProfile(directory, settings)

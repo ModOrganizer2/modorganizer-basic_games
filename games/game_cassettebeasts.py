@@ -94,7 +94,7 @@ class CassetteBeastsSaveGame(BasicGameSaveGame):
             with open(filepath, "rb") as infile:
                 infile.read(4)
 
-                blocksize, raw_size = struct.unpack("III", infile.read(12))
+                _, blocksize, raw_size = struct.unpack("III", infile.read(12))
 
                 num_blocks = math.ceil(raw_size / blocksize)
 

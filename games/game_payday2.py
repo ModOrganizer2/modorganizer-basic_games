@@ -30,7 +30,6 @@ class Content(IntEnum):
 
 
 class Payday2ModDataContent(mobase.ModDataContent):
-    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
         (Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
@@ -73,7 +72,6 @@ class Payday2ModDataContent(mobase.ModDataContent):
 
 class ModDetectionCandidate(TypedDict):
     tree: mobase.IFileTree | mobase.FileTreeEntry
-    name: str
     display: str
     destination: str
 
@@ -104,7 +102,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         "units",
     ]
 
-    def sanitizeFolderName(self, name: str) -> str:
+    def sanitizeFolderName(self, name: str) -> tuple[str, bool]:
         # Remove invalid characters for Windows folder names
         invalid_chars = '+&<>:"|?*\\/'
         for char in invalid_chars:
@@ -115,9 +113,8 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         name = name.rstrip(". ")
         # If name is empty after sanitization, use a default
         if not name:
-            name = "FOLDERNAME"
-            self.needsNameFix = True
-        return name
+            return "FOLDERNAME", True
+        return name, False
 
     def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
@@ -137,7 +134,8 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
             return
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = self.sanitizeFolderName(mod.name())
+        modname = self.sanitizeFolderName(mod.name())[0]
+
         if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
@@ -199,17 +197,14 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
     def addModDetectionCandidate(
         self,
         tree: mobase.IFileTree,
-        name: str,
+        displayname: str,
         category: str,
         destination: str,
     ) -> None:
-        tree_name = tree.name()
-
         self.modDetectionCandidates.append(
             {
                 "tree": tree,
-                "name": tree_name,
-                "display": f"{name} ({category})",
+                "display": f"{displayname} ({category})",
                 "destination": destination,
             }
         )
@@ -259,7 +254,9 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         self, tree: mobase.IFileTree | mobase.FileTreeEntry
     ) -> bool:
         if isinstance(tree, mobase.IFileTree):
-            sanitizedName = self.sanitizeFolderName(tree.name())
+            sanitizedName, needsFix = self.sanitizeFolderName(tree.name())
+            self.needsNameFix = self.needsNameFix or needsFix
+
             hasDisallowedPath = False
             disallowedFolders = {"assets", "levels", "lua", "map_replacements"}
             tree_path = tree.path()
@@ -277,7 +274,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        self.sanitizeFolderName(tree.name()),
+                        sanitizedName,
                         "SuperBLT",
                         "mods/" + sanitizedName + "/",
                     )
@@ -287,7 +284,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        self.sanitizeFolderName(tree.name()),
+                        sanitizedName,
                         "Map Core",
                         "maps/" + sanitizedName + "/",
                     )
@@ -299,7 +296,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        self.sanitizeFolderName(tree.name()),
+                        sanitizedName,
                         "Beard Lib",
                         "assets/mod_overrides/" + sanitizedName + "/",
                     )
@@ -309,7 +306,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
                         if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
                             self.addModDetectionCandidate(
                                 tree,
-                                self.sanitizeFolderName(tree.name()),
+                                sanitizedName,
                                 "Override",
                                 "assets/mod_overrides/" + sanitizedName + "/",
                             )
@@ -323,6 +320,7 @@ class Payday2ModDataChecker(mobase.ModDataChecker):
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        self.needsNameFix = False
         self.modDetectionCandidates = []
         newtree = filetree.createOrphanTree("Fixed Tree")
         self.collectModCandidates(filetree)
@@ -357,7 +355,7 @@ class Payday2Game(BasicGame):
     GameDataPath = "%GAME_PATH%"
     GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/PAYDAY 2"
     GameSavesDirectory = "%USERPROFILE%/AppData/Local/PAYDAY 2/saves"
-    _forced_libraries = ["IPHLPAPI.dll", "WSOCK32.dll"]
+    _forced_libraries = ["iphlpapi.dll", "wsock32.dll"]
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -386,14 +384,14 @@ class Payday2Game(BasicGame):
             key = self._organizer.modList().getMod(key)
             tree = key.fileTree()
             for e in tree:
-                if e.name() in self._forced_libraries:
+                if e.name().casefold() in self._forced_libraries:
                     # add file
                     file_path_source = key.absolutePath() + "/" + e.path()
                     file_path_target = game_path + e.name()
-                    if value == 35:
+                    if value == mobase.ModState.ACTIVE:
                         shutil.copyfile(file_path_source, file_path_target)
                     # remove file
-                    if value == 33:
+                    else:
                         if os.path.exists(file_path_target):
                             os.remove(file_path_target)
 

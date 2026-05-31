@@ -31,23 +31,33 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
             self.moveOverwriteMerge(s_item, d_item)
         os.rmdir(source)
 
+    def readManifestId(self, manifest_path: str) -> str | None:
+        try:
+            with open(manifest_path, encoding="utf-8") as manifest_file:
+                mod_data = json.load(manifest_file)
+        except (OSError, json.JSONDecodeError):
+            return None
+
+        mod_id = mod_data.get("id")
+        if isinstance(mod_id, str) and mod_id:
+            return mod_id
+        return None
+
     def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
         GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        if filetree.exists(
-            GameSMMPath + "/Mods/FOLDERNAME", mobase.IFileTree.DIRECTORY
-        ):
+        foldername_path = GameSMMPath + "/Mods/FOLDERNAME"
+        if filetree.exists(foldername_path, mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
-            json_path = os.path.join(
-                path, GameSMMPath + "/Mods/FOLDERNAME/manifest.json"
-            )
-            mod_data = json.load(open(json_path, encoding="utf-8"))
-            modname = mod_data["id"]
-            old_path = os.path.join(path, GameSMMPath + "/Mods/FOLDERNAME")
-            new_path = os.path.join(path, GameSMMPath + f"/Mods/{modname}")
+            json_path = os.path.join(path, foldername_path, "manifest.json")
+            modname = self.readManifestId(json_path)
+            if not modname:
+                return
+            old_path = os.path.join(path, foldername_path)
+            new_path = os.path.join(path, GameSMMPath, "Mods", modname)
             self.moveOverwriteMerge(old_path, new_path)
             fixed = True
         if not fixed:
@@ -57,30 +67,26 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
+        validList = {"simple mod framework"}
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.isDir():
+                if e.name().casefold() not in validList:
+                    return mobase.ModDataChecker.FIXABLE
         if filetree.exists("Simple Mod Framework", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
-    def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
-        for branch in filetree:
-            if isinstance(branch, mobase.IFileTree):
-                for e in branch:
-                    if e.name() == name:
-                        return True
-        return False
-
     def allMoveTo(
         self, sourcetree: mobase.IFileTree, targettree: mobase.IFileTree, toMoveTo: str
-    ):
+    ) -> bool:
         entriesToMove: list[mobase.FileTreeEntry] = []
-        retVal = 0
         for e in sourcetree:
             entriesToMove.append(e)
         for e in entriesToMove:
             targettree.move(e, toMoveTo, mobase.IFileTree.MERGE)
-            retVal = 1
-        targettree.remove(sourcetree)
-        return retVal
+        if sourcetree is not targettree:
+            targettree.remove(sourcetree)
+        return bool(entriesToMove)
 
     def firstTree(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         for e in filetree:
@@ -90,22 +96,28 @@ class Hitman3ModDataChecker(mobase.ModDataChecker):
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         GameSMMPath = getattr(self.organizer.managedGame(), "GameSMMPath", "")
-        treefixed = 0
+
         if filetree.exists("manifest.json", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(
-                filetree, filetree, GameSMMPath + "/Mods/FOLDERNAME/"
-            )
-            if treefixed == 1:
+            if self.allMoveTo(
+                filetree,
+                filetree,
+                GameSMMPath + "/Mods/FOLDERNAME/",
+            ):
                 self.needsNameFix = True
+
         elif len(filetree) == 1:
-            firsttreelayer: mobase.IFileTree | None = self.firstTree(filetree)
-            if firsttreelayer is not None:
-                if firsttreelayer.exists("manifest.json", mobase.IFileTree.FILE):
-                    treefixed = self.allMoveTo(
-                        firsttreelayer, filetree, GameSMMPath + "/Mods/FOLDERNAME/"
-                    )
-                    if treefixed == 1:
-                        self.needsNameFix = True
+            firsttreelayer = self.firstTree(filetree)
+
+            if firsttreelayer is not None and firsttreelayer.exists(
+                "manifest.json", mobase.IFileTree.FILE
+            ):
+                if self.allMoveTo(
+                    firsttreelayer,
+                    filetree,
+                    GameSMMPath + "/Mods/FOLDERNAME/",
+                ):
+                    self.needsNameFix = True
+
         return filetree
 
 
@@ -129,72 +141,84 @@ class Hitman3Game(BasicGame):
 
     def updateSmmMeta(self, mods: dict[str, mobase.ModState]):
         SMM_Path = os.path.join(self.dataDirectory().absolutePath(), self.GameSMMPath)
-        SMM_Config_Json = SMM_Path + "/config.json"
+        SMM_Config_Json = os.path.join(SMM_Path, "config.json")
+
+        if not os.path.exists(SMM_Config_Json):
+            return None
+
         for key, value in mods.items():
-            key = self._organizer.modList().getMod(key)
-            tree = key.fileTree()
+            mod = self._organizer.modList().getMod(key)
+            tree = mod.fileTree()
             subtree = tree.find(self.GameSMMPath + "/Mods", mobase.IFileTree.DIRECTORY)
-            if isinstance(subtree, mobase.IFileTree):
-                for e in subtree:
-                    if isinstance(e, mobase.IFileTree):
-                        if e.exists("manifest.json", mobase.IFileTree.FILE):
-                            json_path = (
-                                key.absolutePath() + "/" + e.path() + "/manifest.json"
-                            )
-                            mod_data = json.load(open(json_path, encoding="utf-8"))
-                            modname = mod_data["id"]
-                            if value == 35:
-                                with open(SMM_Config_Json, "r") as config_json:
-                                    config_json_content = config_json.read()
-                                    config_json.close()
-                                good_code = '"knownMods": []'
-                                if good_code in config_json_content:
-                                    bad_code = "{runtimePath:'..\\Runtime',retailPath:'..\\Retail',skipIntro:false,outputToSeparateDirectory:false,loadOrder:[''],modOptions:{},outputConfigToAppDataOnDeploy:true,knownMods:[''],developerMode:false,reportErrors:false}"
-                                    config_json_content = bad_code
-                                if modname not in config_json_content:
-                                    substr = "knownMods:["
-                                    config_json_content = config_json_content.replace(
-                                        substr, substr + "'" + modname + "',"
-                                    )
-                                    substr = "loadOrder:["
-                                    config_json_content = config_json_content.replace(
-                                        substr, substr + "'" + modname + "',"
-                                    )
-                                    substr = ",],modOptions"
-                                    config_json_content = config_json_content.replace(
-                                        substr, "],modOptions"
-                                    )
-                                    substr = ",],developer"
-                                    config_json_content = config_json_content.replace(
-                                        substr, "],developer"
-                                    )
-                                    with open(SMM_Config_Json, "w") as config_json:
-                                        config_json.write(config_json_content)
-                                        config_json.close()
-                                return None
-                            if value == 33:
-                                with open(SMM_Config_Json, "r") as config_json:
-                                    config_json_content = config_json.read()
-                                    config_json.close()
-                                if modname in config_json_content:
-                                    config_json_content = config_json_content.replace(
-                                        "'" + modname + "',", ""
-                                    )
-                                    config_json_content = config_json_content.replace(
-                                        ",,", ","
-                                    )
-                                    substr = ",],modOptions"
-                                    config_json_content = config_json_content.replace(
-                                        substr, "],modOptions"
-                                    )
-                                    substr = ",],developer"
-                                    config_json_content = config_json_content.replace(
-                                        substr, "],developer"
-                                    )
-                                    with open(SMM_Config_Json, "w") as config_json:
-                                        config_json.write(config_json_content)
-                                        config_json.close()
-                                return None
+            if not isinstance(subtree, mobase.IFileTree):
+                continue
+
+            for e in subtree:
+                if not isinstance(e, mobase.IFileTree):
+                    continue
+                if not e.exists("manifest.json", mobase.IFileTree.FILE):
+                    continue
+
+                json_path = os.path.join(mod.absolutePath(), e.path(), "manifest.json")
+                try:
+                    with open(json_path, encoding="utf-8") as manifest_file:
+                        mod_data = json.load(manifest_file)
+                except (OSError, json.JSONDecodeError):
+                    continue
+
+                modname = mod_data.get("id")
+                if not isinstance(modname, str) or not modname:
+                    continue
+
+                try:
+                    with open(SMM_Config_Json, "r", encoding="utf-8") as config_json:
+                        config_json_content = config_json.read()
+                except OSError:
+                    return None
+
+                good_code = '"knownMods": []'
+                if good_code in config_json_content:
+                    config_json_content = "{runtimePath:'..\\Runtime',retailPath:'..\\Retail',skipIntro:false,outputToSeparateDirectory:false,loadOrder:[''],modOptions:{},outputConfigToAppDataOnDeploy:true,knownMods:[''],developerMode:false,reportErrors:false}"
+
+                quoted_modname = "'" + modname + "'"
+                changed = False
+                if value == mobase.ModState.ACTIVE:
+                    if quoted_modname not in config_json_content:
+                        substr = "knownMods:["
+                        config_json_content = config_json_content.replace(
+                            substr, substr + quoted_modname + ","
+                        )
+                        substr = "loadOrder:["
+                        config_json_content = config_json_content.replace(
+                            substr, substr + quoted_modname + ","
+                        )
+                        changed = True
+                else:
+                    old_content = config_json_content
+                    config_json_content = config_json_content.replace(
+                        quoted_modname + ",", ""
+                    )
+                    config_json_content = config_json_content.replace(
+                        "," + quoted_modname, ""
+                    )
+                    changed = config_json_content != old_content
+
+                if changed:
+                    config_json_content = config_json_content.replace(",,", ",")
+                    config_json_content = config_json_content.replace(
+                        ",],modOptions", "],modOptions"
+                    )
+                    config_json_content = config_json_content.replace(
+                        ",],developer", "],developer"
+                    )
+                    try:
+                        with open(
+                            SMM_Config_Json, "w", encoding="utf-8"
+                        ) as config_json:
+                            config_json.write(config_json_content)
+                    except OSError:
+                        return None
+        return None
 
     def executables(self):
         return [

@@ -19,9 +19,7 @@ from ..basic_game import BasicGame
 
 class ModDetectionCandidate(TypedDict):
     tree: mobase.IFileTree | mobase.FileTreeEntry
-    name: str
     display: str
-    destination: str
 
 
 class RoadToVostokModDataChecker(mobase.ModDataChecker):
@@ -29,19 +27,6 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
         self.modDetectionCandidates: list[ModDetectionCandidate] = []
-
-    def moveOverwriteMerge(self, source: str, destination: str):
-        if not os.path.exists(destination):
-            shutil.move(source, destination)
-            return
-        if os.path.isfile(source):
-            os.replace(source, destination)
-            return
-        for item in os.listdir(source):
-            s_item = os.path.join(source, item)
-            d_item = os.path.join(destination, item)
-            self.moveOverwriteMerge(s_item, d_item)
-        os.rmdir(source)
 
     def sanitizeFolderName(self, name: str) -> str:
         # Remove invalid characters for Windows folder names
@@ -55,7 +40,6 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
         # If name is empty after sanitization, use a default
         if not name:
             name = "FOLDERNAME"
-            self.needsNameFix = True
         return name
 
     def dataLooksValid(
@@ -92,16 +76,11 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
         tree: mobase.IFileTree | mobase.FileTreeEntry,
         name: str,
         category: str,
-        destination: str,
     ) -> None:
-        tree_name = tree.name()
-
         self.modDetectionCandidates.append(
             {
                 "tree": tree,
-                "name": tree_name,
                 "display": f"{name} ({category})",
-                "destination": destination,
             }
         )
 
@@ -154,7 +133,6 @@ class RoadToVostokModDataChecker(mobase.ModDataChecker):
                 tree,
                 self.sanitizeFolderName(tree.name()),
                 "VMZ Archive",
-                "mods/",
             )
             return True
         return False

@@ -14,23 +14,22 @@ from ..basic_game import BasicGame
 
 
 class Content(IntEnum):
-    TEXTURE = auto()
-    MESH = auto()
+    IMAGE = auto()
+    MUSIC = auto()
     SCRIPT = auto()
     SOUND = auto()
     STRING = auto()
-    CONFIG = auto()
+    LEVEL = auto()
 
 
 class ZumaModDataContent(mobase.ModDataContent):
-    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
-        (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
-        (Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
+        (Content.IMAGE, "Textures", ":/MO/gui/content/texture"),
+        (Content.MUSIC, "Music", ":/MO/gui/content/music"),
         (Content.SCRIPT, "Scripts", ":/MO/gui/content/script"),
         (Content.SOUND, "Sounds", ":/MO/gui/content/sound"),
         (Content.STRING, "Strings", ":/MO/gui/content/string"),
-        (Content.CONFIG, "Configs", ":/MO/gui/content/inifile"),
+        (Content.LEVEL, "Levels", ":/MO/gui/content/bsa"),
     ]
 
     def getAllContents(self) -> list[mobase.ModDataContent.Content]:
@@ -41,19 +40,19 @@ class ZumaModDataContent(mobase.ModDataContent):
 
     def walkContent(self, path: str, entry: mobase.FileTreeEntry):
         if entry.isFile():
-            match entry.suffix().lower():
-                case "texture":
-                    self.contents.append(Content.TEXTURE)
-                case "model":
-                    self.contents.append(Content.MESH)
-                case "lua":
+            match entry.suffix().casefold():
+                case "gif" | "jpg" | "jpeg" | "bmp" | "tga" | "png":
+                    self.contents.append(Content.IMAGE)
+                case "mo3":
+                    self.contents.append(Content.MUSIC)
+                case "xml":
                     self.contents.append(Content.SCRIPT)
-                case "stream":
+                case "ogg":
                     self.contents.append(Content.SOUND)
                 case "txt":
                     self.contents.append(Content.STRING)
-                case "json":
-                    self.contents.append(Content.CONFIG)
+                case "dat":
+                    self.contents.append(Content.LEVEL)
                 case _:
                     pass
         return mobase.IFileTree.WalkReturn.CONTINUE
@@ -71,6 +70,16 @@ class ZumaModDataChecker(mobase.ModDataChecker):
         self.organizer.modList().onModInstalled(self.fixInstalledMod)
         self.needsNameFix = False
 
+    def sanitizeFolderName(self, name: str) -> tuple[str, bool]:
+        invalid_chars = '+&<>:"|?*\\/'
+        for char in invalid_chars:
+            name = name.replace(char, "")
+        name = "".join(c for c in name if ord(c) >= 32)
+        name = name.rstrip(". ")
+        if not name:
+            return "FOLDERNAME", True
+        return name, False
+
     def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
             shutil.move(source, destination)
@@ -87,23 +96,27 @@ class ZumaModDataChecker(mobase.ModDataChecker):
     def fixInstalledMod(self, mod: mobase.IModInterface):
         if not self.needsNameFix:
             return
+
+        game_levels_path = str(
+            getattr(self.organizer.managedGame(), "GameLevelsPath", "levels")
+        )
         filetree: mobase.IFileTree = mod.fileTree()
-        fixed = False
-        modname = mod.name()
-        if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
-            path = mod.absolutePath()
-            old_path = os.path.join(path, "mods/FOLDERNAME")
-            new_path = os.path.join(path, f"mods/{modname}")
-            self.moveOverwriteMerge(old_path, new_path)
-            fixed = True
-        if not fixed:
+        placeholder_path = f"{game_levels_path}/FOLDERNAME"
+
+        if not filetree.exists(placeholder_path, mobase.IFileTree.DIRECTORY):
             return
+
+        modname = self.sanitizeFolderName(mod.name())[0]
+        path = mod.absolutePath()
+        old_path = os.path.join(path, placeholder_path)
+        new_path = os.path.join(path, game_levels_path, modname)
+        self.moveOverwriteMerge(old_path, new_path)
         self.needsNameFix = False
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        validFolders = [
+        valid_folders = {
             "images",
             "levels",
             "music",
@@ -111,22 +124,17 @@ class ZumaModDataChecker(mobase.ModDataChecker):
             "fonts",
             "properties",
             "userdata",
-        ]
-        validFiles = ["exe"]
+        }
+
         for e in filetree:
-            if e.isDir():
-                for folder in validFolders:
-                    if filetree.exists(folder, mobase.IFileTree.DIRECTORY):
-                        return mobase.ModDataChecker.VALID
-            elif e.isFile():
-                for ext in validFiles:
-                    if e.suffix().lower() == ext:
-                        return mobase.ModDataChecker.VALID
-            else:
-                pass
+            if e.isDir() and e.name().casefold() in valid_folders:
+                return mobase.ModDataChecker.VALID
+            if e.isFile() and e.suffix().casefold() == "exe":
+                return mobase.ModDataChecker.VALID
+
         return mobase.ModDataChecker.FIXABLE
 
-    def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str):
+    def fileExistsInNextSubDir(self, filetree: mobase.IFileTree, name: str) -> bool:
         for branch in filetree:
             if isinstance(branch, mobase.IFileTree):
                 for e in branch:
@@ -134,21 +142,20 @@ class ZumaModDataChecker(mobase.ModDataChecker):
                         return True
         return False
 
-    def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
+    def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str) -> bool:
         entriesToMove: list[mobase.FileTreeEntry] = []
-        retVal = 0
         for e in filetree:
             entriesToMove.append(e)
         for e in entriesToMove:
             filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
-            retVal = 1
-        return retVal
+        return bool(entriesToMove)
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
-        GameLevelsPath: str = str(
+        self.needsNameFix = False
+        game_levels_path: str = str(
             getattr(self.organizer.managedGame(), "GameLevelsPath", "levels")
         )
-        validFolders = [
+        valid_folders = {
             "images",
             "levels",
             "music",
@@ -156,41 +163,38 @@ class ZumaModDataChecker(mobase.ModDataChecker):
             "fonts",
             "properties",
             "userdata",
-        ]
+        }
         entriesToMove: list[mobase.FileTreeEntry] = []
-        treefixed = 0
+
         if filetree.exists("map.txt", mobase.IFileTree.FILE):
-            treefixed = self.allMoveTo(filetree, GameLevelsPath + "/FOLDERNAME/")
-            if treefixed == 1:
+            if self.allMoveTo(filetree, game_levels_path + "/FOLDERNAME/"):
                 self.needsNameFix = True
         elif self.fileExistsInNextSubDir(filetree, "map.txt"):
-            filetree.move(filetree[0], GameLevelsPath, mobase.IFileTree.MERGE)
-            treefixed = 1
+            filetree.move(filetree[0], game_levels_path, mobase.IFileTree.MERGE)
         else:
-            moveonce = 0
+            moveonce = False
             for branch in filetree:
                 if isinstance(branch, mobase.IFileTree):
                     for entry in branch:
-                        for folder in validFolders:
-                            if entry.name() == folder:
-                                moveonce = 1
-            if moveonce == 1:
+                        if entry.name().casefold() in valid_folders:
+                            moveonce = True
+            if moveonce:
                 for branch in filetree:
                     if isinstance(branch, mobase.IFileTree):
                         for entry in branch:
                             entriesToMove.append(entry)
-        if entriesToMove:
-            for e in entriesToMove:
-                filetree.move(e, "", mobase.IFileTree.MERGE)
-                treefixed = 1
-        for branch in filetree:
-            if isinstance(branch, mobase.IFileTree):
-                if len(branch) == 0:
-                    filetree.remove(branch)
+
+        for e in entriesToMove:
+            filetree.move(e, "", mobase.IFileTree.MERGE)
+
+        for branch in list(filetree):
+            if isinstance(branch, mobase.IFileTree) and len(branch) == 0:
+                filetree.remove(branch)
+
         return filetree
 
 
-PROGRAM_DATA = str(os.getenv("ProgramData"))
+PROGRAM_DATA = os.getenv("ProgramData", "")
 
 
 class ZumaGame(BasicGame, mobase.IPluginFileMapper):
@@ -206,7 +210,7 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
     GameLevelsPath = "levels"
     GameLevelsXml = "levels/levels.xml"
     ProfileLevelsXml = "levels.xml"
-    GameDocumentsDirectory = PROGRAM_DATA + "/Steam/Zuma/userdata"
+    GameDocumentsDirectory = os.path.join(PROGRAM_DATA, "Steam", "Zuma", "userdata")
     GameSaveExtension = "sav"
 
     def __init__(self):
@@ -220,101 +224,229 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
         self._register_feature(ZumaModDataContent())
         self._register_feature(BasicGameSaveGameInfo())
         organizer.modList().onModStateChanged(self.updateLevels)
+        organizer.modList().onModMoved(lambda name, old, new: self.rebuildLevels())
+        organizer.modList().onModRemoved(lambda name: self.rebuildLevels())
         return True
 
-    def updateLevels(self, mods: dict[str, mobase.ModState]):
-        profile_levels_path = (
-            self._organizer.profilePath() + "/" + self.ProfileLevelsXml
+    def normalizeZumaXmlText(self, text: str) -> str:
+        # The shipped file is XML-like rather than strict XML. Normalize only the
+        # profile copy we generate: quote unquoted values and keep the last value
+        # for duplicate attributes, matching the waythe game seems to work
+        text = re.sub(
+            r'(\s[A-Za-z_:][\w:.-]*)=([^"\'\s>/][^\s>/]*)',
+            r'\1="\2"',
+            text,
+        )
+
+        tag_pattern = re.compile(
+            r"<(?![!?/])([A-Za-z_][\w:.-]*)([^<>]*?)(/?)>", re.DOTALL
+        )
+        attr_pattern = re.compile(r'([A-Za-z_:][\w:.-]*)\s*=\s*"([^"]*)"')
+
+        def normalize_tag(match: re.Match[str]) -> str:
+            tag_name = match.group(1)
+            attr_text = match.group(2)
+            self_closing = match.group(3)
+
+            attrs: dict[str, str] = {}
+            order: list[str] = []
+            for attr_match in attr_pattern.finditer(attr_text):
+                key = attr_match.group(1)
+                value = attr_match.group(2)
+                if key in attrs:
+                    order.remove(key)
+                attrs[key] = value
+                order.append(key)
+
+            if not attrs:
+                return match.group(0)
+
+            attrs_text = " ".join(f'{key}="{attrs[key]}"' for key in order)
+            return f"<{tag_name} {attrs_text}{' /' if self_closing else ''}>"
+
+        return tag_pattern.sub(normalize_tag, text)
+
+    def readTextFile(self, path: str) -> str:
+        with open(path, "r", encoding="utf-8") as file:
+            return file.read()
+
+    def writeTextFile(self, path: str, content: str) -> None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(content)
+
+    def attrValue(self, tag: str, attr: str) -> str | None:
+        match = re.search(rf'\b{re.escape(attr)}="([^"]*)"', tag)
+        if match:
+            return match.group(1)
+        return None
+
+    def commaValues(self, value: str) -> list[str]:
+        return [part.strip() for part in value.split(",") if part.strip()]
+
+    def replaceCommaAttribute(
+        self, content: str, attr: str, values_to_prepend: list[str]
+    ) -> str:
+        if not values_to_prepend:
+            return content
+
+        pattern = re.compile(rf'({re.escape(attr)}\s*=\s*")([^"]*)(")')
+        match = pattern.search(content)
+        if not match:
+            return content
+
+        existing = self.commaValues(match.group(2))
+        new_values = [value for value in values_to_prepend if value not in existing]
+        if not new_values:
+            return content
+
+        combined = new_values + existing
+        replacement = match.group(1) + ",".join(combined) + match.group(3)
+        return content[: match.start()] + replacement + content[match.end() :]
+
+    def insertBeforeFirstTag(
+        self, content: str, tag_name: str, insert_text: str
+    ) -> str:
+        if not insert_text.strip():
+            return content
+
+        match = re.search(rf"\n\s*<{tag_name}\b", content)
+        if match:
+            return (
+                content[: match.start()]
+                + "\n\n"
+                + insert_text.strip()
+                + content[match.start() :]
+            )
+
+        closing_match = re.search(r"\n\s*</Levels>", content)
+        if closing_match:
+            return (
+                content[: closing_match.start()]
+                + "\n\n"
+                + insert_text.strip()
+                + content[closing_match.start() :]
+            )
+
+        return content.rstrip() + "\n\n" + insert_text.strip() + "\n"
+
+    def mergeMapTextIntoLevels(self, levels_content: str, map_content: str) -> str:
+        map_content = self.normalizeZumaXmlText(map_content)
+
+        graphics_tags = re.findall(r"<Graphics\b.*?</Graphics>", map_content, re.DOTALL)
+        level_tags = re.findall(r"<Level\b[^>]*/>", map_content, re.DOTALL)
+
+        existing_graphics_ids = set(
+            re.findall(r"<Graphics\b[^>]*\bid=\"([^\"]+)\"", levels_content)
+        )
+        existing_level_graphics = set(
+            re.findall(r"<Level\b[^>]*\bgraphics=\"([^\"]+)\"", levels_content)
+        )
+        existing_stage1 = []
+        stage1_match = re.search(r'stage1\s*=\s*"([^"]*)"', levels_content)
+        if stage1_match:
+            existing_stage1 = self.commaValues(stage1_match.group(1))
+
+        graphics_to_insert: list[str] = []
+        for tag in graphics_tags:
+            graphics_id = self.attrValue(tag, "id")
+            if graphics_id and graphics_id not in existing_graphics_ids:
+                graphics_to_insert.append(tag.strip())
+                existing_graphics_ids.add(graphics_id)
+
+        levels_to_insert: list[str] = []
+        stage_ids_to_add: list[str] = []
+        for tag in level_tags:
+            graphics_id = self.attrValue(tag, "graphics")
+            if graphics_id and graphics_id not in existing_level_graphics:
+                levels_to_insert.append(tag.strip())
+                existing_level_graphics.add(graphics_id)
+                if (
+                    graphics_id not in existing_stage1
+                    and graphics_id not in stage_ids_to_add
+                ):
+                    stage_ids_to_add.append(graphics_id)
+
+        if not stage_ids_to_add:
+            for tag in graphics_tags:
+                graphics_id = self.attrValue(tag, "id")
+                if (
+                    graphics_id
+                    and graphics_id not in existing_stage1
+                    and graphics_id not in stage_ids_to_add
+                ):
+                    stage_ids_to_add.append(graphics_id)
+
+        levels_content = self.insertBeforeFirstTag(
+            levels_content, "Graphics", "\n\n".join(graphics_to_insert)
+        )
+        levels_content = self.insertBeforeFirstTag(
+            levels_content, "Level", "\n".join(levels_to_insert)
+        )
+
+        # Custom maps are inserted into stage1 because the game loads stage1 as
+        # soon as the user presses Start Game.
+        levels_content = self.replaceCommaAttribute(
+            levels_content, "stage1", stage_ids_to_add
+        )
+        levels_content = self.replaceCommaAttribute(
+            levels_content, "diffi1", ["lvl42" for _ in stage_ids_to_add]
+        )
+
+        return levels_content
+
+    def activeModsByPriority(self) -> list[tuple[str, mobase.IModInterface]]:
+        mod_list = self._organizer.modList()
+        active_mods: list[tuple[str, mobase.IModInterface]] = []
+
+        for name in mod_list.allModsByProfilePriority():
+            if mod_list.state(name) != mobase.ModState.ACTIVE:
+                continue
+            mod = mod_list.getMod(name)
+            active_mods.append((name, mod))
+
+        return active_mods
+
+    def rebuildLevels(self) -> None:
+        profile_levels_path = os.path.join(
+            self._organizer.profilePath(), self.ProfileLevelsXml
         )
         game_levels_path = os.path.join(
             self.dataDirectory().absolutePath(), self.GameLevelsXml
         )
-        for key, value in mods.items():
-            key = self._organizer.modList().getMod(key)
-            tree = key.fileTree()
+
+        if not os.path.exists(game_levels_path):
+            return
+
+        levels_content = self.readTextFile(game_levels_path)
+        active_mods = self.activeModsByPriority()
+
+        # A full levels.xml mod acts as a replacement base. If more than one is
+        # active, the later one in profile priority order wins.
+        for _name, mod in active_mods:
+            tree = mod.fileTree()
             if tree.exists("levels/levels.xml", mobase.IFileTree.FILE):
-                levels_txt_path = os.path.join(key.absolutePath(), "levels/levels.xml")
-                profile_levels_path = (
-                    self._organizer.profilePath() + "/" + self.ProfileLevelsXml
+                levels_xml_path = os.path.join(
+                    mod.absolutePath(), "levels", "levels.xml"
                 )
-                if value == 35:
-                    with open(levels_txt_path, "r") as levels_txt:
-                        levels_txt_content = levels_txt.read()
-                        levels_txt.close()
-                    with open(profile_levels_path, "w") as profile_levels:
-                        profile_levels.write(levels_txt_content)
-                        profile_levels.close()
-                if value == 33:
-                    with open(game_levels_path, "r") as game_levels:
-                        game_levels_content = game_levels.read()
-                        game_levels.close()
-                    with open(profile_levels_path, "w") as profile_levels:
-                        profile_levels.write(game_levels_content)
-                        profile_levels.close()
-        for key, value in mods.items():
-            key = self._organizer.modList().getMod(key)
-            map_txt_path = os.path.join(key.absolutePath(), "levels/map.txt")
-            tree = key.fileTree()
+                if os.path.exists(levels_xml_path):
+                    levels_content = self.readTextFile(levels_xml_path)
+
+        levels_content = self.normalizeZumaXmlText(levels_content)
+
+        for _name, mod in active_mods:
+            tree = mod.fileTree()
             if tree.exists("levels/map.txt", mobase.IFileTree.FILE):
-                with open(map_txt_path, "r") as map_txt:
-                    map_txt_content = map_txt.read()
-                    map_txt.close()
-                graphics_pattern = r"(?=<Graphics)(.*?)(?<=Graphics>)"
-                levels_pattern = r"(?=<Level)(.*?)(?<=\/>)"
-                id_pattern = r'(?<=id=")(.*?)(?=")'
-                graphics_tag = re.findall(graphics_pattern, map_txt_content, re.DOTALL)
-                levels_tag = re.findall(levels_pattern, map_txt_content, re.DOTALL)
-                id_name = re.findall(id_pattern, map_txt_content, re.DOTALL)
-                with open(profile_levels_path, "r+") as profile_levels:
-                    profile_levels_content = profile_levels.read()
-                    profile_levels.seek(0)
-                    if value == 35:
-                        insert_graphics_string = ""
-                        for graphic in graphics_tag:
-                            insert_graphics_string += "\n\n" + graphic
-                        insert_graphics_string += "\n\n<Graphics"
-                        profile_levels_content = profile_levels_content.replace(
-                            "\n\n<Graphics", insert_graphics_string, 1
-                        )
-                        insert_level_string = ""
-                        for level in levels_tag:
-                            insert_level_string = "\n" + level
-                        insert_level_string += "\n<Level grap"
-                        profile_levels_content = profile_levels_content.replace(
-                            "\n<Level grap", insert_level_string, 1
-                        )
-                        for id in id_name:
-                            substr = 'stage1 = "'
-                            insertstr = substr + id + ","
-                            profile_levels_content = profile_levels_content.replace(
-                                substr, insertstr, 1
-                            )
-                            substr = 'diffi1 = "'
-                            insertstr = substr + "lvl42,"
-                            profile_levels_content = profile_levels_content.replace(
-                                substr, insertstr, 1
-                            )
-                    elif value == 33:
-                        for graphic in graphics_tag:
-                            profile_levels_content = profile_levels_content.replace(
-                                "\n\n" + graphic, ""
-                            )
-                        for level in levels_tag:
-                            profile_levels_content = profile_levels_content.replace(
-                                "\n" + level, ""
-                            )
-                        for id in id_name:
-                            profile_levels_content = profile_levels_content.replace(
-                                id + ",", ""
-                            )
-                            profile_levels_content = profile_levels_content.replace(
-                                'diffi1 = "lvl42,', 'diffi1 = "'
-                            )
-                    else:
-                        return
-                    profile_levels.truncate(0)
-                    profile_levels.write(profile_levels_content)
-                    profile_levels.close()
+                map_txt_path = os.path.join(mod.absolutePath(), "levels", "map.txt")
+                if os.path.exists(map_txt_path):
+                    levels_content = self.mergeMapTextIntoLevels(
+                        levels_content, self.readTextFile(map_txt_path)
+                    )
+
+        self.writeTextFile(profile_levels_path, levels_content)
+
+    def updateLevels(self, mods: dict[str, mobase.ModState]):
+        self.rebuildLevels()
 
     def executables(self):
         return [
@@ -359,7 +491,9 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         modsPath = self.dataDirectory().absolutePath()
-        profile_levels_path = directory.absolutePath() + "/" + self.ProfileLevelsXml
+        profile_levels_path = os.path.join(
+            directory.absolutePath(), self.ProfileLevelsXml
+        )
         game_levels_path = os.path.join(
             self.dataDirectory().absolutePath(), self.GameLevelsXml
         )
@@ -367,12 +501,11 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
             not os.path.exists(profile_levels_path)
             or os.path.getsize(profile_levels_path) == 0
         ):
-            with open(game_levels_path, "r") as game_levels:
-                profile_levels_content = game_levels.read()
-                game_levels.close()
-            with open(profile_levels_path, "w") as profile_levels:
-                profile_levels.write(profile_levels_content)
-                profile_levels.close()
+            if os.path.exists(game_levels_path):
+                profile_levels_content = self.normalizeZumaXmlText(
+                    self.readTextFile(game_levels_path)
+                )
+                self.writeTextFile(profile_levels_path, profile_levels_content)
         if not os.path.exists(modsPath):
             os.mkdir(modsPath)
         super().initializeProfile(directory, settings)
@@ -380,7 +513,7 @@ class ZumaGame(BasicGame, mobase.IPluginFileMapper):
     def mappings(self) -> list[mobase.Mapping]:
         return [
             mobase.Mapping(
-                self._organizer.profilePath() + "/" + self.ProfileLevelsXml,
+                os.path.join(self._organizer.profilePath(), self.ProfileLevelsXml),
                 self.gameDirectory().absolutePath() + "/" + self.GameLevelsXml,
                 False,
                 False,

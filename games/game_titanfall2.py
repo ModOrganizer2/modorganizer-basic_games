@@ -24,7 +24,6 @@ class Content(IntEnum):
 
 
 class Titanfall2ModDataContent(mobase.ModDataContent):
-    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.MATERIAL, "Materials", ":/MO/gui/content/interface"),
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
@@ -105,10 +104,11 @@ class Titanfall2ModDataChecker(mobase.ModDataChecker):
         ):
             path = mod.absolutePath()
             json_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME/mod.json")
-            with open(json_path, "r") as json_data:
+            with open(json_path, "r", encoding="utf-8") as json_data:
                 mod_data = json.load(json_data)
-                json_data.close()
-            modname = mod_data["name"]
+            modname = mod_data.get("name") or mod_data.get("Name")
+            if not modname:
+                return
             old_path = os.path.join(path, GameNorthstarPath + "FOLDERNAME")
             new_path = os.path.join(path, GameNorthstarPath + f"{modname}")
             self.moveOverwriteMerge(old_path, new_path)
@@ -242,15 +242,20 @@ class Titanfall2Game(BasicGame):
                             )
                             with open(json_path, "r", encoding="utf-8") as f:
                                 mod_data = json.load(f)
-                            modname = mod_data["Name"]
+                            modname = mod_data.get("Name") or mod_data.get("name")
+                            if not modname:
+                                continue
                             if "Version" not in mod_data:
                                 modversion = "0.0.0"
                             else:
                                 modversion = mod_data["Version"]
-                            if value == 35 and modname not in Northstar:
+                            if (
+                                value == mobase.ModState.ACTIVE
+                                and modname not in Northstar
+                            ):
                                 Northstar[modname] = {modversion: True}
-                            if value == 33 and modname in Northstar:
-                                Northstar = Northstar.pop(modname)
+                            elif modname in Northstar:
+                                Northstar.pop(modname, None)
                             with open(
                                 Northstar_Config_Json, "w", encoding="utf-8"
                             ) as f:
@@ -298,7 +303,12 @@ class Titanfall2Game(BasicGame):
         return efls
 
     def northstarDirectory(self) -> QDir:
-        return QDir(self.gameDirectory().absolutePath() + self.GameNorthstarPath)
+        return QDir(
+            os.path.join(
+                self.gameDirectory().absolutePath(),
+                self.GameNorthstarPath,
+            )
+        )
 
     def iniFiles(self):
         return ["profile.cfg"]
@@ -310,7 +320,7 @@ class Titanfall2Game(BasicGame):
             + "/R2Northstar/"
             + self.NorthstarModJson
         )
-        blank_mod_json = '{"Version": 1,"Northstar.Client": {"1.31.6": true},"Northstar.CustomServers": {"1.31.6": true},"Northstar.Custom": {"1.31.6": true}}'
+        blank_mod_json = '{"Version": 1,"Northstar.Client": {"1.00.0": true},"Northstar.CustomServers": {"1.00.0": true},"Northstar.Custom": {"1.00.0": true}}'
         if (
             not os.path.exists(northstar_json_path)
             or os.path.getsize(northstar_json_path) == 0
@@ -330,7 +340,7 @@ class Titanfall2Game(BasicGame):
             self.dataDirectory().absolutePath(), self.GameNorthstarPath
         )
         if not os.path.exists(modsPath):
-            os.mkdir(modsPath)
+            os.makedirs(modsPath, exist_ok=True)
         super().initializeProfile(directory, settings)
 
     def mappings(self) -> list[mobase.Mapping]:

@@ -27,28 +27,30 @@ class EmuVRModDataChecker(mobase.ModDataChecker):
         GameDataUGCMods = (
             getattr(self.organizer.managedGame(), "GameDataUGCMods", "") + "/"
         )
-        for branch in filetree:
-            mod_name = filetree.name()
-            if mod_name == "":
-                mod_name = branch.name()
-            mod_path = os.path.join(self.organizer.modsPath(), mod_name)
-            if (
-                not filetree.createOrphanTree("OrphanTree")
-                and os.path.exists(mod_path)
-                and branch.suffix().casefold() == "ugc"
-            ):
-                os.makedirs(os.path.join(mod_path, GameDataUGCMods), exist_ok=True)
-                shutil.move(
-                    os.path.join(mod_path, branch.name()),
-                    os.path.join(mod_path, GameDataUGCMods, branch.name()),
-                )
-            else:
+
+        # If the tree has no name, MO2 is working with a normal virtual tree and
+        # entries can be moved virtually. Non-zipped installer paths set a tree name,
+        # so those files need to be moved on disk instead.
+        if filetree.name() == "":
+            for branch in list(filetree):
                 if isinstance(branch, mobase.IFileTree):
-                    for e in branch:
+                    for e in list(branch):
                         if e.isFile() and e.suffix().casefold() == "ugc":
                             filetree.move(e, GameDataUGCMods, mobase.IFileTree.MERGE)
-                elif branch.suffix().casefold() == "ugc":
+                elif branch.isFile() and branch.suffix().casefold() == "ugc":
                     filetree.move(branch, GameDataUGCMods, mobase.IFileTree.MERGE)
+        else:
+            mod_name = filetree.name()
+            mod_path = os.path.join(self.organizer.modsPath(), mod_name)
+            target_dir = os.path.join(mod_path, GameDataUGCMods)
+
+            for branch in list(filetree):
+                if branch.isFile() and branch.suffix().casefold() == "ugc":
+                    os.makedirs(target_dir, exist_ok=True)
+                    src = os.path.join(mod_path, branch.name())
+                    dst = os.path.join(target_dir, branch.name())
+                    shutil.move(src, dst)
+
         return filetree
 
 
@@ -126,7 +128,9 @@ class EmuVRGame(BasicGame):
         return efls
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        modsPath = self.dataDirectory().absolutePath()
-        if not os.path.exists(modsPath):
-            os.mkdir(modsPath)
+        modsPath = os.path.join(
+            self.dataDirectory().absolutePath(),
+            self.GameDataUGCMods,
+        )
+        os.makedirs(modsPath, exist_ok=True)
         super().initializeProfile(directory, settings)

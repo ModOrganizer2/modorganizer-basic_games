@@ -30,7 +30,6 @@ class Content(IntEnum):
 
 
 class RaidWW2ModDataContent(mobase.ModDataContent):
-    content: list[int] = []
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.TEXTURE, "Textures", ":/MO/gui/content/texture"),
         (Content.MESH, "Meshes", ":/MO/gui/content/mesh"),
@@ -73,7 +72,6 @@ class RaidWW2ModDataContent(mobase.ModDataContent):
 
 class ModDetectionCandidate(TypedDict):
     tree: mobase.IFileTree | mobase.FileTreeEntry
-    name: str
     display: str
     destination: str
 
@@ -105,7 +103,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         "units",
     ]
 
-    def sanitizeFolderName(self, name: str) -> str:
+    def sanitizeFolderName(self, name: str) -> tuple[str, bool]:
         # Remove invalid characters for Windows folder names
         invalid_chars = '+&<>:"|?*\\/'
         for char in invalid_chars:
@@ -116,9 +114,8 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         name = name.rstrip(". ")
         # If name is empty after sanitization, use a default
         if not name:
-            name = "FOLDERNAME"
-            self.needsNameFix = True
-        return name
+            return "FOLDERNAME", True
+        return name, False
 
     def moveOverwriteMerge(self, source: str, destination: str):
         if not os.path.exists(destination):
@@ -138,7 +135,8 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
             return
         filetree: mobase.IFileTree = mod.fileTree()
         fixed = False
-        modname = self.sanitizeFolderName(mod.name())
+        modname = self.sanitizeFolderName(mod.name())[0]
+
         if filetree.exists("mods/FOLDERNAME", mobase.IFileTree.DIRECTORY):
             path = mod.absolutePath()
             old_path = os.path.join(path, "mods/FOLDERNAME")
@@ -152,6 +150,12 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
+        validList = {"mods"}
+        for e in filetree:
+            if isinstance(e, mobase.IFileTree) and e.isDir():
+                if e.name().casefold() not in validList:
+                    return mobase.ModDataChecker.FIXABLE
+
         if filetree.exists("mods", mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
@@ -159,17 +163,14 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
     def addModDetectionCandidate(
         self,
         tree: mobase.IFileTree,
-        name: str,
+        displayname: str,
         category: str,
         destination: str,
     ) -> None:
-        tree_name = tree.name()
-
         self.modDetectionCandidates.append(
             {
                 "tree": tree,
-                "name": tree_name,
-                "display": f"{name} ({category})",
+                "display": f"{displayname} ({category})",
                 "destination": destination,
             }
         )
@@ -218,15 +219,17 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
     def collectModCandidates(
         self, tree: mobase.IFileTree | mobase.FileTreeEntry
     ) -> bool:
-        hasDisallowedPath = False
-        disallowedFolders = {"assets", "lua", "map_replacements"}
-        tree_path = tree.path()
-        tree_path_lower = tree_path.replace("\\", "/").casefold()
-        if disallowedFolders & set(tree_path_lower.split("/")):
-            hasDisallowedPath = True
-        if not hasDisallowedPath:
-            if isinstance(tree, mobase.IFileTree):
-                sanitizedName = self.sanitizeFolderName(tree.name())
+        if isinstance(tree, mobase.IFileTree):
+            sanitizedName, needsFix = self.sanitizeFolderName(tree.name())
+            self.needsNameFix = self.needsNameFix or needsFix
+
+            hasDisallowedPath = False
+            disallowedFolders = {"assets", "lua", "map_replacements"}
+            tree_path = tree.path()
+            tree_path_lower = tree_path.replace("\\", "/").casefold()
+            if disallowedFolders & set(tree_path_lower.split("/")):
+                hasDisallowedPath = True
+            if not hasDisallowedPath:
                 if (
                     tree.exists("mod.txt", mobase.IFileTree.FILE)
                     or tree.exists("mod.xml", mobase.IFileTree.FILE)
@@ -244,7 +247,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
                 ):
                     self.addModDetectionCandidate(
                         tree,
-                        self.sanitizeFolderName(tree.name()),
+                        sanitizedName,
                         "Beard Lib",
                         "mods/" + sanitizedName + "/",
                     )
@@ -254,7 +257,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
                         if tree.exists(validFolder, mobase.IFileTree.DIRECTORY):
                             self.addModDetectionCandidate(
                                 tree,
-                                self.sanitizeFolderName(tree.name()),
+                                sanitizedName,
                                 "Override",
                                 "mods/" + sanitizedName + "/",
                             )
@@ -282,6 +285,7 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         return bool(entriesToMove)
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
+        self.needsNameFix = False
         self.modDetectionCandidates = []
         newtree = filetree.createOrphanTree("Fixed Tree")
         self.collectModCandidates(filetree)
@@ -297,10 +301,9 @@ class RaidWW2ModDataChecker(mobase.ModDataChecker):
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
             if isinstance(candidate["tree"], mobase.IFileTree):
-                if self.moveTreeContent(
+                self.moveTreeContent(
                     candidate["tree"], newtree, candidate["destination"]
-                ):
-                    self.needsNameFix = True
+                )
 
         return newtree if len(newtree) > 0 else filetree
 
@@ -316,7 +319,7 @@ class RaidWW2Game(BasicGame):
     GameBinary = "raid_win64_release.exe"
     GameDataPath = "%GAME_PATH%"
     GameDocumentsDirectory = "%LOCALAPPDATA%/RAID WW2"
-    _forced_libraries = ["IPHLPAPI.dll", "WSOCK32.dll"]
+    _forced_libraries = ["iphlpapi.dll", "wsock32.dll"]
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
@@ -341,14 +344,14 @@ class RaidWW2Game(BasicGame):
             key = self._organizer.modList().getMod(key)
             tree = key.fileTree()
             for e in tree:
-                if e.name() in self._forced_libraries:
+                if e.name().casefold() in self._forced_libraries:
                     # add file
                     file_path_source = key.absolutePath() + "/" + e.path()
                     file_path_target = game_path + e.name()
-                    if value == 35:
+                    if value == mobase.ModState.ACTIVE:
                         shutil.copyfile(file_path_source, file_path_target)
                     # remove file
-                    if value == 33:
+                    else:
                         if os.path.exists(file_path_target):
                             os.remove(file_path_target)
 
@@ -386,9 +389,9 @@ class RaidWW2Game(BasicGame):
         return ["renderer_settings.xml"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
-        base_data_dir = self.gameDirectory().absolutePath()
+        base_data_dir = self.dataDirectory().absolutePath()
 
-        modsDirectory = QDir(base_data_dir + "/" + self.GameDataPath)
+        modsDirectory = QDir(base_data_dir)
 
         if not modsDirectory.exists():
             os.makedirs(modsDirectory.absolutePath())
