@@ -133,19 +133,21 @@ class UpdateChecker(QObject):
             if e.code == 404:
                 raise Exception(
                     f"GitHub repository {self.repo_owner}/{self.repo_name} not found (404)."
-                )
+                ) from e
             elif e.code == 403:
                 raise Exception(
                     "GitHub API rate limit exceeded (403). Please try again later."
-                )
+                ) from e
             else:
-                raise Exception(f"HTTP error occurred: {e.code} {e.reason}")
+                raise Exception(f"HTTP error occurred: {e.code} {e.reason}") from e
         except urllib.error.URLError as e:
             raise Exception(
                 f"Network error: {e.reason}. Server unavailable or internet connection issue."
-            )
-        except socket.timeout:
-            raise Exception("Connection timed out while trying to fetch releases.")
+            ) from e
+        except socket.timeout as e:
+            raise Exception(
+                "Connection timed out while trying to fetch releases."
+            ) from e
 
         releases = json.loads(data)
         return releases
@@ -238,7 +240,7 @@ class UpdateChecker(QObject):
                     changelogs.append((ver, tag, body, rel.get("published_at", "")))
             changelogs.sort(reverse=True)
             notes_md = ""
-            for i, (ver, tag, body, published_at) in enumerate(changelogs):
+            for i, (_ver, tag, body, published_at) in enumerate(changelogs):
                 notes_md += f"## Changes in {tag} []()  Date: {get_date_from_iso(published_at)} ([commits](https://github.com/{self.repo_owner}/{self.repo_name}/commits/{tag}))\n{body}"
                 if i < len(changelogs) - 1:
                     notes_md += "\n***\n"
@@ -435,21 +437,23 @@ class UpdateChecker(QObject):
                 shutil.copyfileobj(response, out_file)
         except urllib.error.HTTPError as e:
             if e.code == 404:
-                raise Exception(f"Download URL not found (404): {url}")
+                raise Exception(f"Download URL not found (404): {url}") from e
             elif e.code == 403:
                 raise Exception(
                     "Rate limit exceeded or access denied. Please try again later."
-                )
+                ) from e
             else:
                 raise Exception(
                     f"HTTP error occurred while downloading asset: {e.code} {e.reason}"
-                )
+                ) from e
         except urllib.error.URLError as e:
             raise Exception(
                 f"Network error while downloading asset: {e.reason}. Server unavailable or internet connection issue."
-            )
-        except socket.timeout:
-            raise Exception("Connection timed out while trying to download asset.")
+            ) from e
+        except socket.timeout as e:
+            raise Exception(
+                "Connection timed out while trying to download asset."
+            ) from e
 
     def _extract_update_files(self, zip_path, tmpdir):
         with zipfile.ZipFile(zip_path, "r") as zip_ref:

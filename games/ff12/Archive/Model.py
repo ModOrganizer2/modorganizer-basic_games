@@ -103,7 +103,7 @@ class ArchiveModel(QAbstractItemModel):
             current_path = ""
             current_node = self._root_node
 
-            for i, part in enumerate(path_parts[:-1]):
+            for part in path_parts[:-1]:
                 if current_path:
                     current_path += "/" + part
                 else:
@@ -150,7 +150,7 @@ class ArchiveModel(QAbstractItemModel):
             else:
                 new_indexes.append(QModelIndex())
 
-        for old_index, new_index in zip(persistent_indexes, new_indexes):
+        for old_index, new_index in zip(persistent_indexes, new_indexes, strict=False):
             self.changePersistentIndex(old_index, new_index)
 
         self.layoutChanged.emit(
