@@ -338,9 +338,7 @@ class UpdateChecker(QObject):
         notes_md = self._collect_changelogs(latest_release)
         current_version = f"v{self.current_version[0]}.{self.current_version[1]}.{self.current_version[2]}"
         latest_tag = latest_release.get("tag_name", "")
-        latest_date_str = get_date_time_from_iso(
-            latest_release.get("published_at", "")
-        )
+        latest_date_str = get_date_time_from_iso(latest_release.get("published_at", ""))
         _app = QApplication.instance() or QApplication(sys.argv)
         UpdateDialog = self._create_update_dialog(
             notes_md, current_version, latest_tag, latest_date_str
