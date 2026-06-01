@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from PyQt6.QtCore import QCoreApplication, QModelIndex, QStandardPaths, Qt
+from PyQt6.QtCore import (
+    QAbstractItemModel,
+    QCoreApplication,
+    QModelIndex,
+    QPoint,
+    QStandardPaths,
+    Qt,
+)
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -11,7 +18,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from .Model import ArchiveColumn, TreeNode
+from .Model import ArchiveColumn, ArchiveModel, TreeNode
 
 
 class ArchiveView(QTreeView):
@@ -23,11 +30,13 @@ class ArchiveView(QTreeView):
         self.setSortingEnabled(True)
         self.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self._show_context_menu)
-        self._last_export_dir = None
-        self._model = None
+        self.customContextMenuRequested.connect(  # pyright: ignore[reportUnknownMemberType]
+            self._show_context_menu
+        )
+        self._last_export_dir: str | None = None
+        self._model: ArchiveModel | None = None
 
-    def _setup_view(self):
+    def _setup_view(self) -> None:
         """Setup view appearance and default sorting."""
         if self._model is None:
             return
@@ -37,13 +46,13 @@ class ArchiveView(QTreeView):
         self.setColumnWidth(ArchiveColumn.SIZE, 90)
         self.sortByColumn(ArchiveColumn.NAME, Qt.SortOrder.AscendingOrder)
 
-    def setModel(self, model):
+    def setModel(self, model: QAbstractItemModel | None) -> None:
         """Setup view after model is set."""
         super().setModel(model)
-        self._model = model
+        self._model = model if isinstance(model, ArchiveModel) else None
         self._setup_view()
 
-    def _show_context_menu(self, position):
+    def _show_context_menu(self, position: QPoint) -> None:
         """Show context menu at the given position."""
         if self._model is None:
             return
@@ -53,15 +62,15 @@ class ArchiveView(QTreeView):
         selected_indexes = self._get_selected_indexes()
         if selected_indexes:
             export_action = QAction("Export", self)
-            export_action.triggered.connect(
+            export_action.triggered.connect(  # pyright: ignore[reportUnknownMemberType]
                 lambda: self._export_selection(selected_indexes)
             )
-            menu.addAction(export_action)
+            menu.addAction(export_action)  # pyright: ignore[reportUnknownMemberType]
 
         if menu.actions():
             menu.exec(self.mapToGlobal(position))
 
-    def _export_selection(self, indexes):
+    def _export_selection(self, indexes: list[QModelIndex]) -> None:
         start_dir = self._last_export_dir or QStandardPaths.writableLocation(
             QStandardPaths.StandardLocation.DesktopLocation
         )
@@ -87,9 +96,15 @@ class ArchiveView(QTreeView):
         progress.show()
 
         exported_count = 0
-        failed_files = []
+        failed_files: list[str] = []
 
-        with self._model._reader as reader:
+        assert self._model is not None
+        reader = self._model.get_reader()
+        if reader is None:
+            progress.close()
+            return
+
+        with reader:
             for i, file_node in enumerate(files_to_export):
                 if progress.wasCanceled():
                     break
@@ -98,8 +113,8 @@ class ArchiveView(QTreeView):
                 progress.setValue(i)
                 QCoreApplication.processEvents()
 
+                relative_path = file_node.path()
                 try:
-                    relative_path = file_node.path()
                     output_file = export_path / Path(relative_path)
                     output_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -131,19 +146,21 @@ class ArchiveView(QTreeView):
             )
 
     def _get_selected_indexes(self) -> list[QModelIndex]:
-        indexes = self.selectionModel().selectedIndexes()
+        sm = self.selectionModel()
+        assert sm is not None
+        indexes = sm.selectedIndexes()
 
-        rows = {}
+        rows: dict[int, QModelIndex] = {}
         for index in indexes:
             if index.column() == 0:
                 rows[index.row()] = index
 
         return list(rows.values())
 
-    def _get_selected_files(self, indexes) -> list[TreeNode]:
-        files = []
+    def _get_selected_files(self, indexes: list[QModelIndex]) -> list[TreeNode]:
+        files: list[TreeNode] = []
 
-        def collect(node):
+        def collect(node: TreeNode) -> None:
             if node.is_dir:
                 for child in node.children:
                     collect(child)
@@ -151,7 +168,7 @@ class ArchiveView(QTreeView):
                 files.append(node)
 
         for index in indexes:
-            node = self._model.get_node(index)
+            node = self._model.get_node(index) if self._model else None
             if node:
                 collect(node)
         return files

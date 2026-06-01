@@ -25,7 +25,7 @@ class FF12SaveGame(BasicGameSaveGame):
     def getSaveGroupIdentifier(self) -> str:
         return "Default"
 
-    def getSlot(self) -> str:
+    def getSlot(self) -> int:
         return int(self._filepath.stem[6:9])
 
     def getSize(self) -> int:
@@ -41,7 +41,7 @@ class FF12SaveGame(BasicGameSaveGame):
 def getSaveMetadata(savepath: Path, save: mobase.ISaveGame) -> Mapping[str, str]:
     assert isinstance(save, FF12SaveGame)
     return {
-        "Slot": save.getSlot(),
+        "Slot": str(save.getSlot()),
         "Size": f"{save.getSize() / 1024:.2f} KB",
         "Created At": format_date(save.getBirthTime()),
         "Last Saved": format_date(save.getCreationTime()),

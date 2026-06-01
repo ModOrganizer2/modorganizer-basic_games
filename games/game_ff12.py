@@ -50,7 +50,7 @@ class FF12TZAGame(BasicGame):
         super().init(organizer)
         SettingsManager(organizer, self.name())
         self._register_feature(FF12ModDataChecker())
-        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
+        self._register_feature(BasicLocalSavegames(self))
         self._register_feature(BasicGameSaveGameInfo(get_metadata=getSaveMetadata))
         organizer.onPluginSettingChanged(self._on_plugin_setting_changed_callback)
         organizer.onUserInterfaceInitialized(
@@ -114,10 +114,13 @@ class FF12TZAGame(BasicGame):
         )
 
         steam_id = settings_manager().get_setting(SettingName.STEAM_ID_64)
-        if steam_id:
+        if isinstance(steam_id, str) and steam_id:
             docs_path = QDir(docs_path.absoluteFilePath(steam_id))
 
         return docs_path
+
+    def absolutePath(self) -> str:
+        return self.savesDirectory().absolutePath()
 
     def executables(self):
         # Windows isn't necessarily installed in "C:\Windows\".
@@ -224,11 +227,19 @@ class FF12TZAGame(BasicGame):
         if settings_manager().get_setting(SettingName.DISABLE_AUTO_UPDATES) is True:
             return
 
-        remind_time = settings_manager().get_setting(SettingName.SKIP_UPDATE_UNTIL_DATE)
+        remind_time_raw = settings_manager().get_setting(
+            SettingName.SKIP_UPDATE_UNTIL_DATE
+        )
+        remind_time = remind_time_raw if isinstance(remind_time_raw, int) else 0
         now_secs = int(QDateTime.currentDateTime().toSecsSinceEpoch())
 
-        if remind_time and now_secs is not None and remind_time > now_secs:
+        if remind_time > now_secs:
             return
+
+        skip_version_raw = settings_manager().get_setting(
+            SettingName.SKIP_UPDATE_VERSION
+        )
+        skip_version = skip_version_raw if isinstance(skip_version_raw, str) else None
 
         update_checker = UpdateChecker(
             "FF12 Plugin",
@@ -241,9 +252,7 @@ class FF12TZAGame(BasicGame):
             window,
             update_targets=["game_ff12.py", "ff12"],
             remove_targets=["ff12"],
-            skip_version=settings_manager().get_setting(
-                SettingName.SKIP_UPDATE_VERSION
-            ),
+            skip_version=skip_version,
             plugin_dir=os.path.dirname(__file__),
         )
 

@@ -39,7 +39,7 @@ class FF12ModDataChecker(BasicModDataChecker):
                 if status is mobase.ModDataChecker.INVALID:
                     status = mobase.ModDataChecker.VALID
 
-            elif rp.move_match(name) is not None:
+            elif rp.move_match(name):
                 status = mobase.ModDataChecker.FIXABLE
 
             elif rp.unfold.match(name) and is_directory(entry):
@@ -48,7 +48,7 @@ class FF12ModDataChecker(BasicModDataChecker):
                 if new_status is not mobase.ModDataChecker.VALID:
                     status = new_status
 
-            elif rp.delete.match(name) is not None:
+            elif rp.delete.match(name):
                 status = mobase.ModDataChecker.FIXABLE
 
             else:

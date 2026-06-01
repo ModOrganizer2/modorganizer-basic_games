@@ -1,4 +1,5 @@
 from enum import IntEnum, auto
+from typing import Any, cast
 
 from PyQt6.QtCore import QAbstractItemModel, QFileInfo, QModelIndex, Qt
 from PyQt6.QtWidgets import QFileIconProvider
@@ -7,15 +8,22 @@ from .Reader import ArchiveReader
 
 
 class TreeNode:
-    def __init__(self, name: str, parent=None, is_dir=False, size=0, entry=None):
+    def __init__(
+        self,
+        name: str,
+        parent: "TreeNode | None" = None,
+        is_dir: bool = False,
+        size: int = 0,
+        entry: Any | None = None,
+    ):
         self.name = name
         self.parent = parent
         self.is_dir = is_dir
         self.size = size
-        self.children = []
+        self.children: list[TreeNode] = []
         self.entry = entry
 
-        if parent:
+        if parent is not None:
             parent.children.append(self)
 
     def child_count(self) -> int:
@@ -37,7 +45,7 @@ class TreeNode:
             return self.parent.path() + "/" + self.name
         return self.name
 
-    def sort_children(self, column: int, order: Qt.SortOrder):
+    def sort_children(self, column: int, order: Qt.SortOrder) -> None:
         """Sort children by the specified column and order.
         Directories always come before files.
         Directories only reorder when column == NAME.
@@ -78,25 +86,28 @@ class ArchiveColumn(IntEnum):
 
 
 class ArchiveModel(QAbstractItemModel):
-    def __init__(self, parent=None):
+    def __init__(self, parent: Any | None = None):
         super().__init__(parent)
-        self._reader = None
+        self._reader: ArchiveReader | None = None
         self._icon_provider = QFileIconProvider()
         self._root_node = TreeNode("", None, True)
         self._sort_column = ArchiveColumn.NAME
         self._sort_order = Qt.SortOrder.AscendingOrder
 
-    def set_data(self, reader: ArchiveReader):
+    def set_data(self, reader: ArchiveReader) -> None:
         self.beginResetModel()
         self._reader = reader
         self._build_tree()
         self._sort_tree()
         self.endResetModel()
 
-    def _build_tree(self):
+    def _build_tree(self) -> None:
         """Build the tree structure from archive entries."""
+        if self._reader is None:
+            return
+
         dir_nodes: dict[str, TreeNode] = {"": self._root_node}
-        sorted_entries = sorted(self._reader._entries.items(), key=lambda x: x[0])
+        sorted_entries = sorted(self._reader._entries.items(), key=lambda x: x[0])  # pyright: ignore[reportPrivateUsage]
 
         for name, entry in sorted_entries:
             path_parts = name.split("/")
@@ -119,18 +130,22 @@ class ArchiveModel(QAbstractItemModel):
             filename = path_parts[-1]
             TreeNode(filename, current_node, False, entry.original_size, entry)
 
-    def _sort_tree(self):
+    def _sort_tree(self) -> None:
         """Sort the entire tree."""
         self._root_node.sort_children(self._sort_column, self._sort_order)
 
-    def sort(self, column: int, order: Qt.SortOrder):
+    def sort(
+        self,
+        column: int,
+        order: Qt.SortOrder = Qt.SortOrder.AscendingOrder,
+    ) -> None:
         """Implement sorting with proper persistent index handling"""
         persistent_indexes = self.persistentIndexList()
 
-        old_nodes = []
+        old_nodes: list[TreeNode | None] = []
         for index in persistent_indexes:
             if index.isValid():
-                old_nodes.append(index.internalPointer())
+                old_nodes.append(cast(TreeNode, index.internalPointer()))
             else:
                 old_nodes.append(None)
 
@@ -142,7 +157,7 @@ class ArchiveModel(QAbstractItemModel):
         self._sort_order = order
         self._sort_tree()
 
-        new_indexes = []
+        new_indexes: list[QModelIndex] = []
         for node in old_nodes:
             if node is not None:
                 new_index = self._find_index_for_node(node)
@@ -162,9 +177,9 @@ class ArchiveModel(QAbstractItemModel):
         if target_node == self._root_node:
             return QModelIndex()
 
-        path = []
-        current = target_node
-        while current and current != self._root_node:
+        path: list[TreeNode] = []
+        current: TreeNode | None = target_node
+        while current is not None and current != self._root_node:
             path.append(current)
             current = current.parent
 
@@ -176,25 +191,28 @@ class ArchiveModel(QAbstractItemModel):
 
         return current_index
 
-    def rowCount(self, parent: QModelIndex) -> int:
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if not parent.isValid():
             parent_node = self._root_node
         else:
-            parent_node = parent.internalPointer()
+            parent_node = cast(TreeNode, parent.internalPointer())
 
         return parent_node.child_count()
 
-    def columnCount(self, parent: QModelIndex) -> int:
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        _ = parent
         return len(ArchiveColumn)
 
-    def index(self, row: int, column: int, parent: QModelIndex) -> QModelIndex:
+    def index(
+        self, row: int, column: int, parent: QModelIndex = QModelIndex()
+    ) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
         if not parent.isValid():
             parent_node = self._root_node
         else:
-            parent_node = parent.internalPointer()
+            parent_node = cast(TreeNode, parent.internalPointer())
 
         child_node = parent_node.child(row)
         if child_node:
@@ -202,11 +220,11 @@ class ArchiveModel(QAbstractItemModel):
 
         return QModelIndex()
 
-    def parent(self, index: QModelIndex) -> QModelIndex:
-        if not index.isValid():
+    def parent(self, child: QModelIndex) -> QModelIndex:  # pyright: ignore[reportIncompatibleMethodOverride]
+        if not child.isValid():
             return QModelIndex()
 
-        child_node = index.internalPointer()
+        child_node = cast(TreeNode, child.internalPointer())
         parent_node = child_node.parent
 
         if parent_node == self._root_node or parent_node is None:
@@ -214,11 +232,13 @@ class ArchiveModel(QAbstractItemModel):
 
         return self.createIndex(parent_node.row(), 0, parent_node)
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole):
+    def data(
+        self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole
+    ) -> Any | None:
         if not index.isValid():
             return None
 
-        node = index.internalPointer()
+        node = cast(TreeNode, index.internalPointer())
         column = index.column()
 
         if role == Qt.ItemDataRole.DisplayRole:
@@ -267,10 +287,13 @@ class ArchiveModel(QAbstractItemModel):
 
         return None
 
+    def get_reader(self) -> ArchiveReader | None:
+        return self._reader
+
     def get_node(self, index: QModelIndex) -> TreeNode | None:
         """Get the TreeNode for a given index."""
         if index.isValid():
-            return index.internalPointer()
+            return cast(TreeNode, index.internalPointer())
         return None
 
     @staticmethod

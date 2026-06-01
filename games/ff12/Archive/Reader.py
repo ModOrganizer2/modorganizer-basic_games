@@ -2,13 +2,14 @@ import io
 import struct
 import zlib
 from pathlib import Path
-from typing import BinaryIO, Dict, List
+from types import TracebackType
+from typing import BinaryIO
 
 from PyQt6.QtCore import qWarning
 
 
 class ArchiveEntry:
-    def __init__(self, original_size: int, data_offset: int, block_sizes: List[int]):
+    def __init__(self, original_size: int, data_offset: int, block_sizes: list[int]):
         self.original_size = original_size
         self.data_offset = data_offset
         self.block_sizes = block_sizes
@@ -19,7 +20,7 @@ class ArchiveReader:
 
     def __init__(self, path: Path):
         self._filename = path
-        self._entries: Dict[str, ArchiveEntry] = {}
+        self._entries: dict[str, ArchiveEntry] = {}
         self._file_handle: BinaryIO | None = None
 
         self._load_metadata()
@@ -50,20 +51,27 @@ class ArchiveReader:
         self.open()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Enable 'with' statement to automatically open and close the file handle."""
         self.close()
 
     def _load_metadata(self):
         """Load the archive metadata"""
-        with self as file:
-            file = file._file_handle
+        with self:
+            file = self._file_handle
+            if file is None:
+                return
             try:
                 header_data = file.read(16)
                 if len(header_data) < 16:
                     raise EOFError("File too short for header")
 
-                magic, header_size, file_count = struct.unpack("<IIQ", header_data)
+                magic, _header_size, file_count = struct.unpack("<IIQ", header_data)
                 if magic != 0x4B595253:
                     raise ValueError("Invalid archive format")
 
@@ -97,10 +105,12 @@ class ArchiveReader:
             except Exception as e:
                 qWarning(f"Failed to load archive metadata: {e}")
 
-    def _read_file_metadata(self, file: BinaryIO, count: int) -> List[tuple]:
+    def _read_file_metadata(
+        self, file: BinaryIO, count: int
+    ) -> list[tuple[int, int, int, int]]:
         """Read metadata for file entries"""
         file_struct = struct.Struct("<IIQQQ")
-        file_metadata = []
+        file_metadata: list[tuple[int, int, int, int]] = []
 
         for _ in range(count):
             data = file.read(file_struct.size)
@@ -129,7 +139,7 @@ class ArchiveReader:
 
         return path_data
 
-    def _get_block_count(self, file_metadata: List[tuple]) -> int:
+    def _get_block_count(self, file_metadata: list[tuple[int, int, int, int]]) -> int:
         """Calculate total number of blocks across all files"""
         count = 0
         for _, original_size, _, _ in file_metadata:
@@ -139,7 +149,7 @@ class ArchiveReader:
             count += blocks
         return count
 
-    def _read_block_sizes(self, file: BinaryIO, count: int) -> List[int]:
+    def _read_block_sizes(self, file: BinaryIO, count: int) -> list[int]:
         """Read block sizes for all files"""
         data = file.read(count * 2)
         if len(data) < count * 2:
@@ -147,7 +157,7 @@ class ArchiveReader:
 
         return list(struct.unpack(f"<{count}H", data))
 
-    def unpack_file(self, file_path: str, out_path: str):
+    def unpack_file(self, file_path: str, out_path: str | Path):
         """Unpack a file from the archive"""
         if self._file_handle is None:
             raise ValueError("Archive file handle is not open")

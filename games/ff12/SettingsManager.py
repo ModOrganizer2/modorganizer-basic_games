@@ -12,7 +12,7 @@ class SettingName(StrEnum):
 
 
 class SettingsManager:
-    _instance = None
+    _instance: "SettingsManager | None" = None
 
     def __init__(self, organizer: mobase.IOrganizer, game_name: str):
         self._organizer = organizer
@@ -20,17 +20,17 @@ class SettingsManager:
         SettingsManager._instance = self
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> "SettingsManager":
         if SettingsManager._instance is None:
             raise RuntimeError("SettingsManager not initialized.")
         return SettingsManager._instance
 
-    def get_setting(self, key: str):
+    def get_setting(self, key: str) -> mobase.MoVariant:
         return self._organizer.pluginSetting(self._game_name, key)
 
-    def set_setting(self, key: str, value):
+    def set_setting(self, key: str, value: mobase.MoVariant) -> None:
         self._organizer.setPluginSetting(self._game_name, key, value)
 
 
-def settings_manager():
+def settings_manager() -> SettingsManager:
     return SettingsManager.get_instance()
