@@ -21,7 +21,9 @@ class ParalivesGame(BasicGame):
     GameBinary = "Paralives.exe"
 
     # TODO
-    GameDocumentsDirectory = "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/ModOrganizer"
+    GameDocumentsDirectory = (
+        "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/ModOrganizer"
+    )
     GameSavesDirectory = (
         "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/MySavedGames.mod"
     )
