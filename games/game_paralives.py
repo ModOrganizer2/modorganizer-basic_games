@@ -1,4 +1,4 @@
-from ..basic_features import BasicModDataChecker, GlobPatterns
+# from ..basic_features import BasicModDataChecker, GlobPatterns
 from ..basic_game import BasicGame
 
 
@@ -39,57 +39,57 @@ class ParalivesGame(BasicGame):
 
     def __init__(self):
         super().__init__()
-        self._featureMap[mobase.ModDataChecker] = BasicModDataChecker(
-            #describe what operation, and what matches to perform them on
-            GlobPatterns(
-                #valid files findable in a mod
-                valid=[
-                    "meta.ini",  # Included in installed mod folder.
-                    "BepInEx",
-                    "doorstop_libs",
-                    "unstripped_corlib",
-                    "doorstop_config.ini",
-                    "start_game_bepinex.sh",
-                    "start_server_bepinex.sh",
-                    "winhttp.dll",
-                    #
-                    "InSlimVML",
-                    "Paralives_Data",
-                    "inslimvml.ini",
-                    #
-                    "unstripped_managed",
-                    #
-                    "AdvancedBuilder",
-                ],
-                # mod authors will add these but they 
-                # are not needed for deployment and will often 
-                # conflict with each other anyway.
-                delete=[
-                    #readmes, helpers, etc
-                    "*.txt",
-                    "*.md",
-                    "README",
-                    "icon.png",
-                    "license",
-                    #package crap
-                    "manifest.json",
-                    #debug crap
-                    "*.dll.mdb",
-                    "*.pdb",
-                ],
-                #TODO: check basic_games to see if expanded variables work here
-                #we need to move these files into the 
-                # bepinex dirs instead of the default location
-                move={
-                    # part of BepInEx script mod support
-                    "plugins": "BepInEx/",
-                    "*.dll": "BepInEx/plugins/",
-                    "*.xml": "BepInEx/plugins/",
-                    "config": "BepInEx/",
-                    "*.cfg": "BepInEx/config/",
-                }
-            )
-        )
+        # self._featureMap[mobase.ModDataChecker] = BasicModDataChecker(
+        #     #describe what operation, and what matches to perform them on
+        #     GlobPatterns(
+        #         #valid files findable in a mod
+        #         valid=[
+        #             "meta.ini",  # Included in installed mod folder.
+        #             "BepInEx",
+        #             "doorstop_libs",
+        #             "unstripped_corlib",
+        #             "doorstop_config.ini",
+        #             "start_game_bepinex.sh",
+        #             "start_server_bepinex.sh",
+        #             "winhttp.dll",
+        #             #
+        #             "InSlimVML",
+        #             "Paralives_Data",
+        #             "inslimvml.ini",
+        #             #
+        #             "unstripped_managed",
+        #             #
+        #             "AdvancedBuilder",
+        #         ],
+        #         # mod authors will add these but they 
+        #         # are not needed for deployment and will often 
+        #         # conflict with each other anyway.
+        #         delete=[
+        #             #readmes, helpers, etc
+        #             "*.txt",
+        #             "*.md",
+        #             "README",
+        #             "icon.png",
+        #             "license",
+        #             #package crap
+        #             "manifest.json",
+        #             #debug crap
+        #             "*.dll.mdb",
+        #             "*.pdb",
+        #         ],
+        #         #TODO: check basic_games to see if expanded variables work here
+        #         #we need to move these files into the 
+        #         # bepinex dirs instead of the default location
+        #         move={
+        #             # part of BepInEx script mod support
+        #             "plugins": "BepInEx/",
+        #             "*.dll": "BepInEx/plugins/",
+        #             "*.xml": "BepInEx/plugins/",
+        #             "config": "BepInEx/",
+        #             "*.cfg": "BepInEx/config/",
+        #         }
+        #     )
+        # )
 
     #TODO: savegame handling (since it lives in the same folder as the content mods but is NOT a content mod)
 
