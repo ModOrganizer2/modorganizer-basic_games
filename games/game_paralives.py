@@ -3,28 +3,30 @@ from ..basic_game import BasicGame
 
 
 class ParalivesGame(BasicGame):
-    #Plugin name
+    # Plugin name
     Name = "Paralives"
     Author = "Julian Noel"
     Version = "0.1.0"
 
-    #actual game name
+    # actual game name
     GameName = "Paralives"
 
     # Internal game ID used by MO2
     GameShortName = "paralives"
-    
+
     # The nexus mods page identifier (if applicable)
     GameNexusName = "paralives"
-    
+
     # The main executable MO2 will look for to verify the folder
     GameBinary = "Paralives.exe"
 
-    #TODO
+    # TODO
     GameDocumentsDirectory = "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives"
-    GameSavesDirectory = "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/MySavedGames.mod"
+    GameSavesDirectory = (
+        "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/MySavedGames.mod"
+    )
 
-    #framework includes special variables like %GAME_DOCUMENTS% to override the 
+    # framework includes special variables like %GAME_DOCUMENTS% to override the
     # default relative path semantics; absolute paths will be treated as absolutes
     # relatives will be done relative to the actual game directory
     GameDataPath = "%GAME_DOCUMENTS%"
@@ -34,8 +36,7 @@ class ParalivesGame(BasicGame):
     # maybe - it's actually really hard to find this
     GameNexusId = 9002
 
-
-    #TODO: save handling (it is in the localappdata folder but should be excluded)
+    # TODO: save handling (it is in the localappdata folder but should be excluded)
 
     def __init__(self):
         super().__init__()
@@ -61,8 +62,8 @@ class ParalivesGame(BasicGame):
         #             #
         #             "AdvancedBuilder",
         #         ],
-        #         # mod authors will add these but they 
-        #         # are not needed for deployment and will often 
+        #         # mod authors will add these but they
+        #         # are not needed for deployment and will often
         #         # conflict with each other anyway.
         #         delete=[
         #             #readmes, helpers, etc
@@ -78,7 +79,7 @@ class ParalivesGame(BasicGame):
         #             "*.pdb",
         #         ],
         #         #TODO: check basic_games to see if expanded variables work here
-        #         #we need to move these files into the 
+        #         #we need to move these files into the
         #         # bepinex dirs instead of the default location
         #         move={
         #             # part of BepInEx script mod support
@@ -91,5 +92,4 @@ class ParalivesGame(BasicGame):
         #     )
         # )
 
-    #TODO: savegame handling (since it lives in the same folder as the content mods but is NOT a content mod)
-
+    # TODO: savegame handling (since it lives in the same folder as the content mods but is NOT a content mod)
