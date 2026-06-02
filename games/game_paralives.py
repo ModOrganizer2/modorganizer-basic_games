@@ -6,7 +6,7 @@ class ParalivesGame(BasicGame):
     # Plugin name
     Name = "Paralives"
     Author = "Julian Noel"
-    Version = "0.1.0"
+    Version = "0.1.1"
 
     # actual game name
     GameName = "Paralives"
@@ -21,7 +21,7 @@ class ParalivesGame(BasicGame):
     GameBinary = "Paralives.exe"
 
     # TODO
-    GameDocumentsDirectory = "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives"
+    GameDocumentsDirectory = "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/ModOrganizer"
     GameSavesDirectory = (
         "%USERPROFILE%/AppData/LocalLow/Paralives/Paralives/MySavedGames.mod"
     )
