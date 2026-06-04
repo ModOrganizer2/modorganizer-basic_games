@@ -407,7 +407,7 @@ class GothamKnightsGame(BasicGame):
     GameName = "Gotham Knights"
     GameLauncher = "GothamKnights.exe"
     GameShortName = "GothamKnights"
-    GameSteamId = 215200
+    GameSteamId = 1496790
     GameBinary = "Mercury/Binaries/Win64/GothamKnights.exe"
     GameDataPath = "Mercury"
     GameDataUE4SSRoot = "Binaries/Win64"
