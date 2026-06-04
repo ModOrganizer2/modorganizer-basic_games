@@ -402,7 +402,6 @@ class EnotriaModDataChecker(mobase.ModDataChecker):
 class EnotriaGame(BasicGame):
     Name = "Enotria The Last Song Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Enotria The Last Song"
     GameLauncher = "Enotria.exe"

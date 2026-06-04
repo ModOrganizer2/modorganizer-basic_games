@@ -402,7 +402,6 @@ class MarvelRivalsModDataChecker(mobase.ModDataChecker):
 class MarvelRivalsGame(BasicGame):
     Name = "Marvel Rivals Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Marvel Rivals"
     GameLauncher = "Marvel.exe"

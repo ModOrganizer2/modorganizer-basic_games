@@ -402,7 +402,6 @@ class LittleNightmares1ModDataChecker(mobase.ModDataChecker):
 class LittleNightmares1Game(BasicGame):
     Name = "Little Nightmares Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Little Nightmares"
     GameShortName = "littlenightmares"

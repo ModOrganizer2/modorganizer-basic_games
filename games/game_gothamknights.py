@@ -402,7 +402,6 @@ class GothamKnightsModDataChecker(mobase.ModDataChecker):
 class GothamKnightsGame(BasicGame):
     Name = "Gotham Knights Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Gotham Knights"
     GameLauncher = "GothamKnights.exe"

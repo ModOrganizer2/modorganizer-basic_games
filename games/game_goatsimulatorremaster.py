@@ -402,7 +402,6 @@ class GoatSimulatorRemasteredModDataChecker(mobase.ModDataChecker):
 class GoatSimulatorRemasteredGame(BasicGame):
     Name = "Goat Simulator Remastered Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Goat Simulator Remastered"
     GameLauncher = "Goatsim_UE4.exe"

@@ -402,7 +402,6 @@ class LittleNightmares2ModDataChecker(mobase.ModDataChecker):
 class LittleNightmares2Game(BasicGame):
     Name = "Little Nightmares 2 Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameLauncher = "EnhancedEdition/Little_Nightmares_II_Enhanced.exe"
     GameName = "Little Nightmares 2"

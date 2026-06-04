@@ -402,7 +402,6 @@ class GoatSimulator3ModDataChecker(mobase.ModDataChecker):
 class GoatSimulator3Game(BasicGame):
     Name = "Goat Simulator 3 Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Goat Simulator 3"
     GameLauncher = "Goat2.exe"

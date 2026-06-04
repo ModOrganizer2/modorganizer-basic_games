@@ -402,7 +402,6 @@ class BatmanLegacyModDataChecker(mobase.ModDataChecker):
 class BatmanLegacyGame(BasicGame):
     Name = "Lego Batman Legacy of the Dark Knight Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Lego Batman Legacy of the Dark Knight"
     GameLauncher = "LEGOBatmanLotDK.exe"

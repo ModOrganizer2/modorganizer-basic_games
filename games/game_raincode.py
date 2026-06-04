@@ -401,7 +401,6 @@ class RainCodePlusModDataChecker(mobase.ModDataChecker):
 class RainCodePlusGame(BasicGame):
     Name = "Master Detective Archives: RAIN CODE Plus Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Master Detective Archives: RAIN CODE Plus"
     GameLauncher = "RainCodePlus.exe"

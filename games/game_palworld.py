@@ -401,7 +401,6 @@ class PalworldModDataChecker(mobase.ModDataChecker):
 class PalworldGame(BasicGame):
     Name = "Palworld Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Palworld"
     GameLauncher = "Palworld.exe"

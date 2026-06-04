@@ -402,7 +402,6 @@ class WindroseModDataChecker(mobase.ModDataChecker):
 class WindroseGame(BasicGame):
     Name = "Windrose Support Plugin"
     Author = "ModWorkshop"
-    CategorySource = "modworkshop"
     Version = "1"
     GameName = "Windrose"
     GameLauncher = "Windrose.exe"
