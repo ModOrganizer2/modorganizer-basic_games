@@ -6,15 +6,17 @@ from ..basic_game import BasicGame
 
 
 class StardewValleyModDataChecker(mobase.ModDataChecker):
-    def __init__(self):
+    def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
+        self.__organizer = organizer
 
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
         for e in filetree:
-            if isinstance(e, mobase.IFileTree) and e.exists(
-                "manifest.json", mobase.IFileTree.FILE
+            if isinstance(e, mobase.IFileTree) and (
+                e.exists("manifest.json", mobase.IFileTree.FILE)
+                or self.__organizer.findFiles(e.name(), "manifest.json")
             ):
                 return mobase.ModDataChecker.VALID
 
@@ -24,7 +26,7 @@ class StardewValleyModDataChecker(mobase.ModDataChecker):
 class StardewValleyGame(BasicGame):
     Name = "Stardew Valley Support Plugin"
     Author = "Syer10"
-    Version = "0.1.0a"
+    Version = "0.1.1a"
 
     GameName = "Stardew Valley"
     GameShortName = "stardewvalley"
@@ -43,7 +45,7 @@ class StardewValleyGame(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer):
         super().init(organizer)
-        self._register_feature(StardewValleyModDataChecker())
+        self._register_feature(StardewValleyModDataChecker(organizer))
         return True
 
     def executables(self):
