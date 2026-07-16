@@ -60,6 +60,9 @@ class DaggerfallSaveGame(BasicGameSaveGame):
     def allFiles(self):
         return list(map(str, self._filepath.glob("*")))
 
+    def getSaveGroupIdentifier(self):
+        return self.saveInfo["characterName"]
+
 
 def parse_daggerfall_save_metadata(save_path: Path, save: mobase.ISaveGame):
     saveInfo = json.loads(open(save_path / "SaveInfo.txt", "r").read())
