@@ -1,17 +1,17 @@
-import mobase
 import json
 from datetime import datetime, timedelta
-
-from PyQt6.QtCore import QDir
 from pathlib import Path
 
+from PyQt6.QtCore import QDir
+
+import mobase
+
+from ..basic_features import BasicLocalSavegames
 from ..basic_features.basic_save_game_info import (
     BasicGameSaveGame,
     BasicGameSaveGameInfo,
 )
-
 from ..basic_game import BasicGame
-from ..basic_features import BasicLocalSavegames
 
 
 class DaggerfallUnityModDataChecker(mobase.ModDataChecker):
@@ -52,7 +52,7 @@ class DaggerfallSaveGame(BasicGameSaveGame):
         self.saveInfo = json.loads(open(self._filepath / "SaveInfo.txt", "r").read())
 
     def getName(self) -> str:
-        return f'[{self.saveInfo["characterName"]}] {self.saveInfo["saveName"]}'
+        return f"[{self.saveInfo['characterName']}] {self.saveInfo['saveName']}"
 
     def getFilepath(self):
         return self._filepath.as_posix()
