@@ -38,7 +38,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class LittleNightmares1ModDataContent(mobase.ModDataContent):
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -87,7 +87,7 @@ class ModDetectionCandidate(TypedDict):
     installtype: str
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class LittleNightmares1ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -162,6 +162,7 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
 
                 for subentry in entry:
                     mod_file = subentry.name()
+
                     if subentry.isDir() and mod_file.casefold() == destination_root:
                         continue
 
@@ -398,21 +399,24 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
+class LittleNightmares1Game(BasicGame):
+    Name = "Little Nightmares Support Plugin"
     Author = "ModWorkshop"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "Little Nightmares"
+    GameShortName = "littlenightmares"
+    GameSteamId = 424840
+    GameBinary = "Atlas/Binaries/Win64/LittleNightmares.exe"
+    GameDataPath = "Atlas"
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
-    GameSavesDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/SaveGames"
+    GameDocumentsDirectory = (
+        "%LOCALAPPDATA%/Little Nightmares Enhanced Edition/Saved/Config/Windows"
+    )
+    GameSavesDirectory = (
+        "%LOCALAPPDATA%/Little Nightmares Enhanced Edition/Saved/SaveGames"
+    )
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -420,9 +424,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = LittleNightmares1ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(LittleNightmares1ModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -446,7 +450,7 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "Little Nightmares",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
         ]

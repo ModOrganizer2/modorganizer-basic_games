@@ -38,7 +38,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class RainCodePlusModDataContent(mobase.ModDataContent):
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -87,7 +87,7 @@ class ModDetectionCandidate(TypedDict):
     installtype: str
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class RainCodePlusModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -398,21 +398,21 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
+class RainCodePlusGame(BasicGame):
+    Name = "Master Detective Archives: RAIN CODE Plus Support Plugin"
     Author = "ModWorkshop"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "Master Detective Archives: RAIN CODE Plus"
+    GameLauncher = "RainCodePlus.exe"
+    GameShortName = "masterdetectivearchivesraincodeplus"
+    GameSteamId = 2903950
+    GameBinary = "RainCodePlus/Binaries/Win64/RainCodePlus-Win64-Shipping.exe"
+    GameDataPath = "RainCodePlus"
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
-    GameSavesDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/SaveGames"
+    GameDocumentsDirectory = "%LOCALAPPDATA%/RainCodePlus/Saved/Config/Windows"
+    GameSavesDirectory = "%LOCALAPPDATA%/RainCodePlus/Saved/SaveGames"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -420,9 +420,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = RainCodePlusModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(RainCodePlusModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -446,7 +446,7 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "Master Detective Archives: RAIN CODE Plus",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
         ]

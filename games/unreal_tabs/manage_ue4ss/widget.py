@@ -43,6 +43,8 @@ class UE4SSTabWidget(QWidget):
     def update_mod_files(
         self, mods: dict[str, mobase.ModState] | mobase.IModInterface | str
     ):
+        game = self._organizer.managedGame()
+        game_data_ue4ss_mods = getattr(game, "GameDataUE4SSMods", None)
         mod_list: list[mobase.IModInterface] = []
         if isinstance(mods, dict):
             for mod in mods.keys():
@@ -54,11 +56,11 @@ class UE4SSTabWidget(QWidget):
 
         for mod in mod_list:
             tree = mod.fileTree()
-            ue4ss_files = tree.find("UE4SS")
-            if not ue4ss_files:
-                ue4ss_files = tree.find(
-                    "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-                )
+            ue4ss_files = (
+                tree.find(game_data_ue4ss_mods)
+                if isinstance(game_data_ue4ss_mods, str)
+                else None
+            )
             if isinstance(ue4ss_files, mobase.IFileTree):
                 for entry in ue4ss_files:
                     if isinstance(entry, mobase.IFileTree):
@@ -72,8 +74,10 @@ class UE4SSTabWidget(QWidget):
         self._parse_mod_files()
 
     def _parse_mod_files(self):
-        from ...game_oblivion_remaster import OblivionRemasteredGame
-
+        game = self._organizer.managedGame()
+        data_ue4ss_mods = getattr(game, "GameDataUE4SSMods", None)
+        data_path = game.dataDirectory()
+        ue4ss_dir = None
         mod_list: set[str] = set()
         for mod in self._organizer.modList().allMods():
             if (
@@ -81,15 +85,17 @@ class UE4SSTabWidget(QWidget):
                 & mobase.ModState.ACTIVE
             ):
                 tree = self._organizer.modList().getMod(mod).fileTree()
-                ue4ss_files = tree.find("UE4SS")
-                if not ue4ss_files:
-                    ue4ss_files = tree.find(
-                        "Root/OblivionRemastered/Binaries/Win64/ue4ss/Mods"
-                    )
+                ue4ss_files = (
+                    tree.find(data_ue4ss_mods)
+                    if isinstance(data_ue4ss_mods, str)
+                    else None
+                )
                 if isinstance(ue4ss_files, mobase.IFileTree):
                     for entry in ue4ss_files:
                         if isinstance(entry, mobase.IFileTree):
-                            if entry.find("scripts/main.lua"):
+                            if entry.find("scripts/main.lua") or entry.find(
+                                "dlls/main.dll"
+                            ):
                                 mod_list.add(entry.name())
                             if enabled_txt := entry.find("enabled.txt"):
                                 try:
@@ -104,18 +110,24 @@ class UE4SSTabWidget(QWidget):
                                     )
                                 except FileNotFoundError:
                                     pass
-
-        game = self._organizer.managedGame()
-        if isinstance(game, OblivionRemasteredGame):
-            if game.ue4ssDirectory().exists():
-                for dir_info in game.ue4ssDirectory().entryInfoList(
+        if data_path and data_ue4ss_mods:
+            ue4ss_dir = QDir(data_path.absolutePath() + "/" + data_ue4ss_mods)
+            if ue4ss_dir.exists():
+                for dir_info in ue4ss_dir.entryInfoList(
                     QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
                 ):  # type: ignore
-                    if QFileInfo(
-                        QDir(dir_info.absoluteFilePath()).absoluteFilePath(
-                            "scripts/main.lua"
-                        )
-                    ).exists():
+                    if (
+                        QFileInfo(
+                            QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                                "scripts/main.lua"
+                            )
+                        ).exists()
+                        or QFileInfo(
+                            QDir(dir_info.absoluteFilePath()).absoluteFilePath(
+                                "dlls/main.dll"
+                            )
+                        ).exists()
+                    ):
                         mod_list.add(dir_info.fileName())
                     if QFileInfo(
                         QDir(dir_info.absoluteFilePath()).absoluteFilePath(

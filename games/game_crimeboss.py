@@ -38,7 +38,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class CrimeBossModDataContent(mobase.ModDataContent):
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -87,13 +87,28 @@ class ModDetectionCandidate(TypedDict):
     installtype: str
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class CrimeBossModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
+        self.organizer.modList().onModInstalled(self.fixInstalledMod)
+        self.needsNameFix = False
         self.modDetectionCandidates: list[ModDetectionCandidate] = []
         self.processedBasenames: set[str] = set()  # Track already-grouped files
         self.category_groups: dict[str, list[mobase.FileTreeEntry]] = {}
+
+    def moveOverwriteMerge(self, source: str, destination: str):
+        if not os.path.exists(destination):
+            shutil.move(source, destination)
+            return
+        if os.path.isfile(source):
+            os.replace(source, destination)
+            return
+        for item in os.listdir(source):
+            s_item = os.path.join(source, item)
+            d_item = os.path.join(destination, item)
+            self.moveOverwriteMerge(s_item, d_item)
+        os.rmdir(source)
 
     def sanitizeFolderName(self, name: str) -> str:
         invalid_chars = '+&<>:"|?*\\/'
@@ -102,10 +117,36 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         name = "".join(c for c in name if ord(c) >= 32)
         name = name.rstrip(". ")
         if not name:
-            name = "Mod"
+            name = "FOLDERNAME"
         return name
 
+    def fixInstalledMod(self, mod: mobase.IModInterface):
+        if not self.needsNameFix:
+            return
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
+        )
+        filetree: mobase.IFileTree = mod.fileTree()
+        fixed = False
+        modname = mod.name()
+        if filetree.exists(
+            GameDataNativeMods + "/FOLDERNAME", mobase.IFileTree.DIRECTORY
+        ):
+            path = mod.absolutePath()
+            old_path = os.path.join(path, GameDataNativeMods + "/FOLDERNAME")
+            new_path = os.path.join(path, GameDataNativeMods + f"/{modname}")
+            self.moveOverwriteMerge(old_path, new_path)
+            fixed = True
+        if not fixed:
+            return
+        self.needsNameFix = False
+
     def hasLooseInstallableFiles(self, filetree: mobase.IFileTree) -> bool:
+        """Return True if loose installable files exist at the mod root.
+
+        This lets merge installs re-run the fixer when a valid mod already has
+        Content/Paks/~Mods, but a new .pak/.utoc/.ucas/.bk2 was merged at root.
+        """
         for entry in filetree:
             if entry.isFile() and entry.suffix().casefold() in {
                 "pak",
@@ -123,18 +164,24 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
             self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
         GameDataPakMods = getattr(self.organizer.managedGame(), "GameDataPakMods", "")
-        GameDataMovieMods = getattr(
-            self.organizer.managedGame(), "GameDataMovieMods", ""
+        GameDataMovies = getattr(self.organizer.managedGame(), "GameDataMovies", "")
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
         )
+
+        print("dataLooksValid called")
+        print("hasLooseInstallableFiles =", self.hasLooseInstallableFiles(filetree))
 
         if self.hasLooseInstallableFiles(filetree):
             return mobase.ModDataChecker.FIXABLE
 
         if filetree.exists(GameDataPakMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
-        if filetree.exists(GameDataMovieMods, mobase.IFileTree.DIRECTORY):
+        if filetree.exists(GameDataMovies, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         if filetree.exists(GameDataUE4SSMods, mobase.IFileTree.DIRECTORY):
+            return mobase.ModDataChecker.VALID
+        if filetree.exists(GameDataNativeMods, mobase.IFileTree.DIRECTORY):
             return mobase.ModDataChecker.VALID
         return mobase.ModDataChecker.FIXABLE
 
@@ -145,29 +192,51 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         targettree: mobase.IFileTree,
         destination: str,
     ) -> None:
+        print("RUNNING moveTreeContent")
         if installtype == "virtual":
+            print("INSTALLTYPE:", installtype)
             for entry in entries:
                 targettree.move(entry, destination, mobase.IFileTree.MERGE)
         elif installtype == "os":
             entry = entries[0]
+            print("INSTALLTYPE:", installtype)
             if isinstance(entry, mobase.IFileTree):
-                mod_name_val = entry.name()
-                mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
-                insideMods = os.path.join(mod_path, destination)
-                os.makedirs(insideMods, exist_ok=True)
-
                 destination_root = (
-                    destination.replace("\\", "/").split("/", 1)[0].casefold()
+                    destination.strip("/\\")
+                    .replace("\\", "/")
+                    .split("/", 1)[0]
+                    .casefold()
                 )
-
                 for subentry in entry:
                     mod_file = subentry.name()
-                    if subentry.isDir() and mod_file.casefold() == destination_root:
+                    mod_name_val = entry.name()
+                    mod_path = os.path.join(self.organizer.modsPath(), mod_name_val)
+
+                    # On merge installs, the existing fixed structure is also
+                    # present in this tree. Do not move it into itself; only move
+                    # the newly-added loose files/folders.
+                    if (
+                        destination_root
+                        and subentry.isDir()
+                        and mod_file.casefold() == destination_root
+                    ):
+                        print("SKIPPING already-fixed destination root:", mod_file)
                         continue
 
+                    insideMods = os.path.join(mod_path, destination)
+                    print("----")
+                    print("MOD:", mod_name_val)
+                    print("FILE:", mod_file)
+                    print("SRC:", os.path.join(mod_path, mod_file))
+                    print("DST:", os.path.join(mod_path, destination, mod_file))
+                    print("TREE:", [e.name() for e in entry])
+                    os.makedirs(insideMods, exist_ok=True)
                     src = os.path.join(mod_path, mod_file)
                     dst = os.path.join(mod_path, destination, mod_file)
-                    shutil.move(src, dst)
+                    shutil.move(
+                        src,
+                        dst,
+                    )
             return None
 
     def addModDetectionCandidate(
@@ -178,13 +247,13 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         destination: str,
         installtype: str,
     ) -> None:
-        tree_name = self.sanitizeFolderName(trees[0].name() if trees else "Unknown")
+        candidate_name = self.sanitizeFolderName(name)
 
         self.modDetectionCandidates.append(
             {
                 "trees": trees,
-                "name": tree_name,
-                "display": f"{name} ({category})",
+                "name": candidate_name,
+                "display": f"{candidate_name} ({category})",
                 "destination": destination,
                 "installtype": installtype,
             }
@@ -213,12 +282,12 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect(  # type: ignore # type: ignore
+        selectAllButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
-        )
-        selectNoneButton.clicked.connect(  # type: ignore # type: ignore
+        )  # type: ignore
+        selectNoneButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
-        )
+        )  # type: ignore
         selectButtons.addWidget(selectAllButton)
         selectButtons.addWidget(selectNoneButton)
         layout.addLayout(selectButtons)
@@ -251,6 +320,9 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
             if isinstance(item, QListWidgetItem):
                 item.setCheckState(state)
 
+    def normalizedPathParts(self, path: str) -> set[str]:
+        return set(path.replace("\\", "/").casefold().split("/"))
+
     def collectModCandidates(
         self,
         path: str,
@@ -260,6 +332,7 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         category = None
         entryext = "None"
         basename = "Unknown"
+
         GameDataUE4SSRootDir = getattr(
             self.organizer.managedGame(), "GameDataUE4SSRoot", ""
         )
@@ -267,8 +340,9 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         GameDataPakModsDir = getattr(
             self.organizer.managedGame(), "GameDataPakMods", ""
         )
-        GameDataMovieModsDir = getattr(
-            self.organizer.managedGame(), "GameDataMovieMods", ""
+        GameDataMoviesDir = getattr(self.organizer.managedGame(), "GameDataMovies", "")
+        GameDataNativeModsDir = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
         )
 
         if installtype == "os" and isinstance(entry, mobase.IFileTree):
@@ -279,6 +353,14 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
             entryext = entry.suffix().casefold()
             basename = os.path.splitext(entry.name())[0]
 
+        path_parts = self.normalizedPathParts(entry.path())
+
+        # Native Unreal mods contain their own Content tree. Once we are inside
+        # that tree, do not create additional candidates for nested files such as
+        # .pak/.utoc/.ucas.
+        if "content" in path_parts:
+            return mobase.IFileTree.WalkReturn.CONTINUE
+
         if isinstance(entry, mobase.IFileTree) and entry.isDir():
             if entry.exists("ue4ss.dll", mobase.IFileTree.FILE) or entry.exists(
                 "dsound.dll", mobase.IFileTree.FILE
@@ -287,13 +369,11 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
             elif entry.exists(
                 "Scripts", mobase.IFileTree.DIRECTORY
             ) and not entry.exists("ue4ss.dll", mobase.IFileTree.FILE):
-                disallowedFolders = {"mods"}
-                tree_path = entry.path()
-                tree_path_lower = tree_path.replace("\\", "/").casefold()
-                if not disallowedFolders & set(tree_path_lower.split("/")):
+                if "mods" not in path_parts:
                     category = "UE4SS"
+            elif entry.exists("Content", mobase.IFileTree.DIRECTORY):
+                category = "Native"
 
-        # Check single file for correct extentions
         match entryext:
             case "pak" | "utoc" | "ucas":
                 category = "Paks"
@@ -310,36 +390,37 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
 
             self.category_groups[basename].append(entry)
 
-            # Add grouped entries as candidates
-            for basename, entries in self.category_groups.items():
-                if basename not in self.processedBasenames:
-                    self.processedBasenames.add(basename)
+            for group_key, entries in self.category_groups.items():
+                if group_key not in self.processedBasenames:
+                    self.processedBasenames.add(group_key)
                     sanitized_name = self.sanitizeFolderName(entries[0].name())
+                    group_category = group_key.rsplit(" ", 1)[-1]
 
-                    if category == "UE4SS":
+                    if group_category == "UE4SS":
                         destination = GameDataUE4SSModsDir + "/"
-                    elif category == "Root":
+                    elif group_category == "Root":
                         destination = GameDataUE4SSRootDir + "/"
-                    elif category == "Paks":
+                    elif group_category == "Paks":
                         destination = GameDataPakModsDir + "/"
-                    elif category == "Movie":
-                        destination = GameDataMovieModsDir + "/"
+                    elif group_category == "Movie":
+                        destination = GameDataMoviesDir + "/"
+                    elif group_category == "Native":
+                        destination = GameDataNativeModsDir + "/FOLDERNAME/"
                     else:
                         destination = "/"
 
                     if installtype == "os":
-                        # Single file/entry
                         self.addModDetectionCandidate(
                             [entry],
                             sanitized_name,
-                            f"{category} Mod",
+                            f"{group_category} Mod",
                             destination,
                             installtype,
                         )
                     else:
                         candidate_entries = entries
 
-                        if category == "Root":
+                        if group_category in {"Root", "Native"}:
                             candidate_entries: list[mobase.FileTreeEntry] = []
                             for root_entry in entries:
                                 if (
@@ -353,12 +434,22 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
                         self.addModDetectionCandidate(
                             candidate_entries,
                             sanitized_name,
-                            f"{category} Mod",
+                            f"{group_category} Mod",
                             destination,
                             installtype,
                         )
 
         return mobase.IFileTree.WalkReturn.CONTINUE
+
+    def allMoveTo(self, filetree: mobase.IFileTree, toMoveTo: str):
+        entriesToMove: list[mobase.FileTreeEntry] = []
+        retVal = 0
+        for e in filetree:
+            entriesToMove.append(e)
+        for e in entriesToMove:
+            filetree.move(e, toMoveTo, mobase.IFileTree.MERGE)
+            retVal = 1
+        return retVal
 
     def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         self.modDetectionCandidates = []
@@ -366,6 +457,7 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         self.category_groups = {}
         UnZippedInstallation = False
         newtree = filetree.createOrphanTree("Fixed Tree")
+        originaltree = filetree
 
         if filetree.name() != "":
             # Initial Check on Main Directory
@@ -383,36 +475,69 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
             if selectedIndexes is None:
                 return None
 
+        # Fallback: handle root-level native mods with FOLDERNAME substitution.
+        if not selectedIndexes and originaltree.exists(
+            "Content", mobase.IFileTree.DIRECTORY
+        ):
+            GameDataNativeMods = getattr(
+                self.organizer.managedGame(), "GameDataNativeMods", ""
+            )
+            self.needsNameFix = True
+            self.allMoveTo(originaltree, GameDataNativeMods + "/FOLDERNAME/")
+            return originaltree
+
         if not UnZippedInstallation:
             filetree = newtree
 
+        GameDataNativeMods = getattr(
+            self.organizer.managedGame(), "GameDataNativeMods", ""
+        )
+        selected_native_indexes = {
+            index
+            for index in selectedIndexes
+            if self.modDetectionCandidates[index]["destination"].endswith(
+                "/FOLDERNAME/"
+            )
+        }
+        multiple_native = len(selected_native_indexes) > 1
+
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
+            destination = candidate["destination"]
+
+            if index in selected_native_indexes:
+                if multiple_native:
+                    destination = GameDataNativeMods + f"/{candidate['name']}/"
+                else:
+                    self.needsNameFix = True
+
             self.moveTreeContent(
                 candidate["installtype"],
                 candidate["trees"],
                 filetree,
-                candidate["destination"],
+                destination,
             )
 
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
-    Author = "ModWorkshop"
+class CrimeBossGame(BasicGame):
+    Name = "Crime Boss Support Plugin"
+    Author = "ModWorkshop, MaskPlague and Silarn"
+    CategorySource = "modworkshop"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "Crime Boss Rockay City"
+    GameShortName = "crimeboss"
+    GameSteamId = 2933080
+    GameBinary = "CrimeBoss/Binaries/Win64/CrimeBoss-Win64-Shipping.exe"
+    GameDataPath = "CrimeBoss"
     GameDataUE4SSRoot = "Binaries/Win64"
+    GameDataNativeMods = "Mods"
     GameDataPakMods = "Content/Paks/~Mods"
-    GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
-    GameSavesDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/SaveGames"
+    GameDataMovies = "Content/Movies"
+    GameDocumentsDirectory = (
+        "%USERPROFILE%/Saved Games/CrimeBoss/Steam/Saved/Config/WindowsNoEditor"
+    )
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -420,9 +545,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = CrimeBossModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(CrimeBossModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -446,7 +571,7 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "Crime Boss: Rockay City",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
         ]
@@ -465,8 +590,6 @@ class SilentHill2Game(BasicGame):
         tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
             self._organizer.virtualFileTree()
         )
-        if type(tree) is not mobase.IFileTree:
-            return efls
         for e in tree:
             relpath = e.pathFrom(tree)
             if relpath and e.hasSuffix("dll") and relpath not in self.baseDlls:
@@ -496,7 +619,7 @@ class SilentHill2Game(BasicGame):
                 mods_json.write(json.dumps(mods_data, indent=4))
 
     def iniFiles(self):
-        return ["GameUserSettings.ini", "Engine.ini", "Input.ini"]
+        return ["GameUserSettings.ini", "Input.ini"]
 
     def initializeProfile(self, directory: QDir, settings: mobase.ProfileSetting):
         self.writeDefaultMods(directory)
@@ -505,7 +628,8 @@ class SilentHill2Game(BasicGame):
 
         paksDirectory = QDir(base_data_dir + "/" + self.GameDataPakMods)
         ue4ssDirectory = QDir(base_data_dir + "/" + self.GameDataUE4SSRoot + "/Mods")
-        movieDirectory = QDir(base_data_dir + "/" + self.GameDataMovieMods)
+        movieDirectory = QDir(base_data_dir + "/" + self.GameDataMovies)
+        nativeDirectory = QDir(base_data_dir + "/" + self.GameDataNativeMods)
 
         if not paksDirectory.exists():
             os.makedirs(paksDirectory.absolutePath())
@@ -513,4 +637,6 @@ class SilentHill2Game(BasicGame):
             os.makedirs(ue4ssDirectory.absolutePath())
         if not movieDirectory.exists():
             os.makedirs(movieDirectory.absolutePath())
+        if not nativeDirectory.exists():
+            os.makedirs(nativeDirectory.absolutePath())
         super().initializeProfile(directory, settings)

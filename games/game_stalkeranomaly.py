@@ -104,28 +104,28 @@ class StalkerAnomalyModDataContent(mobase.ModDataContent):
         if entry.isFile():
             ext = entry.suffix().lower()
             if ext in ["dds", "thm"]:
-                self.content.append(Content.TEXTURE)
+                self.contents.append(Content.TEXTURE)
                 if path.startswith("gamedata/textures/ui"):
-                    self.content.append(Content.INTERFACE)
+                    self.contents.append(Content.INTERFACE)
             elif ext in ["omf", "ogf"]:
-                self.content.append(Content.MESH)
+                self.contents.append(Content.MESH)
             elif ext in ["script"]:
-                self.content.append(Content.SCRIPT)
+                self.contents.append(Content.SCRIPT)
                 if "_mcm" in name:
-                    self.content.append(Content.MCM)
+                    self.contents.append(Content.MCM)
             elif ext in ["ogg"]:
-                self.content.append(Content.SOUND)
+                self.contents.append(Content.SOUND)
             elif ext in ["ltx", "xml"]:
-                self.content.append(Content.CONFIG)
+                self.contents.append(Content.CONFIG)
                 if path.startswith("gamedata/configs/ui"):
-                    self.content.append(Content.INTERFACE)
+                    self.contents.append(Content.INTERFACE)
 
         return mobase.IFileTree.WalkReturn.CONTINUE
 
     def getContentsFor(self, filetree: mobase.IFileTree) -> list[int]:
-        self.content = []
+        self.contents: list[int] = []
         filetree.walk(self.walkContent, "/")
-        return self.content
+        return self.contents
 
 
 class StalkerAnomalySaveGame(BasicGameSaveGame):
