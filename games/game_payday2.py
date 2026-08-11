@@ -351,7 +351,7 @@ class Payday2Game(BasicGame):
     GameName = "Payday 2"
     GameShortName = "payday-2"
     GameSteamId = 218620
-    GameBinary = "payday2_win32_release.exe"
+    GameBinary = "PAYDAY2.exe"
     GameDataPath = "%GAME_PATH%"
     GameDocumentsDirectory = "%USERPROFILE%/AppData/Local/PAYDAY 2"
     GameSavesDirectory = "%USERPROFILE%/AppData/Local/PAYDAY 2/saves"
