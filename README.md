@@ -17,7 +17,7 @@ Download the archive for your MO2 version and extract it directly into your MO2 
 
 - Mod Organizer **2.3.2**: [Download](https://github.com/ModOrganizer2/modorganizer-basic_games/releases/download/v0.0.3/basic_games-0.0.3.zip)
   and extract in your `plugins/` folder (see below).
-- Mod Organizer **2.4**: Basic games is included in Mod Organizer 2.4.
+- Mod Organizer **2.4 and later**: Basic games is already included.
   - If you want to use new game plugins that have not been included in the
     release, [download the latest archive](https://github.com/ModOrganizer2/modorganizer-basic_games/archive/master.zip) and extract the files
     in the existing `basic_games` folder, overwriting existing files.
@@ -52,6 +52,7 @@ You can rename `modorganizer-basic_games-xxx` to whatever you want (e.g., `basic
 | Darkest Dungeon — [GOG](https://www.gog.com/game/darkest_dungeon) / [STEAM](https://store.steampowered.com/app/262060/Darkest_Dungeon/) | [erri120](https://github.com/erri120) | [game_darkestdungeon.py](games/game_darkestdungeon.py) | <ul><li>save slot parsing</li><li>mod data checker</li></ul> |
 | Dark Messiah of Might & Magic — [STEAM](https://store.steampowered.com/app/2100/Dark_Messiah_of_Might__Magic/) | [Holt59](https://github.com/holt59/) | [game_darkmessiahofmightandmagic.py](games/game_darkmessiahofmightandmagic.py) | <ul><li>save game preview</li></ul> |
 | Dark Souls — [STEAM](https://store.steampowered.com/app/211420/DARK_SOULS_Prepare_To_Die_Edition/) | [Holt59](https://github.com/holt59/) | [game_darksouls.py](games/game_darkestdungeon.py) |  |
+| Dispatch — [STEAM](https://store.steampowered.com/app/2592160/Dispatch/) | [Syer10](https://github.com/Syer10) | [game_dispatch.py](games/game_dispatch.py) | |
 | Divinity: Original Sin (Classic) — [STEAM](https://store.steampowered.com/app/230230/Divinity_Original_Sin_Classic/) | [LostDragonist](https://github.com/LostDragonist/) | [game_divinityoriginalsin.py](games/game_divinityoriginalsin.py) | <ul><li>save game preview</li></ul> |
 | Divinity: Original Sin (Enhanced Edition) — [STEAM](https://store.steampowered.com/app/373420/Divinity_Original_Sin__Enhanced_Edition/) | [LostDragonist](https://github.com/LostDragonist/) | [game_divinityoriginalsinee.py](games/game_divinityoriginalsinee.py) | <ul><li>save game preview</li><li>mod data checker</li></ul> |
 | Dragon's Dogma: Dark Arisen — [GOG](https://www.gog.com/game/dragons_dogma_dark_arisen) / [STEAM](https://store.steampowered.com/app/367500/Dragons_Dogma_Dark_Arisen/) | [EzioTheDeadPoet](https://github.com/EzioTheDeadPoet) | [game_dragonsdogmadarkarisen.py](games/game_dragonsdogmadarkarisen.py) | |
@@ -217,7 +218,7 @@ Game IDs can be found here:
 
 We recommend using a dedicated Python environment to write a new basic game plugins.
 
-1. Install the required version of Python --- Currently Python 3.11 (MO2 2.5).
+1. Install the required version of Python --- Currently Python 3.13 (MO2 2.6).
 2. Remove the repository at `${MO2_INSTALL}/plugins/basic_games`.
 3. Clone this repository at the location of the old plugin (
   `${MO2_INSTALL}/plugins/basic_games`).
@@ -225,7 +226,7 @@ We recommend using a dedicated Python environment to write a new basic game plug
 
   ```bash
   # create a virtual environment (recommended)
-  py -3.11 -m venv .\venv
+  py -3.13 -m venv .\venv
   .\venv\scripts\Activate.ps1
 
   # "install" poetry and the development package

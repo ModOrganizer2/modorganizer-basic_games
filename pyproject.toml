@@ -7,26 +7,25 @@ description = ""
 authors = []
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.13,<4.0"
 dynamic = ["dependencies"]
 
 [tool.poetry]
 package-mode = false
 
 [tool.poetry.dependencies]
-psutil = "^5.8.0"
-vdf = "3.4"
-lzokay = "1.1.5"
-pyqt6 = "6.7.0"
-pyyaml = "^6.0.2"
+psutil = "^7.2.2"
+vdf = "^3.4"
+lzokay = "^2.1.0"
+pyqt6 = "6.11.0"
+pyyaml = "^6.0.3"
 
 [tool.poetry.group.dev.dependencies]
 mobase-stubs = "^2.5.2"
-pyqt6 = "^6.7.0"
-pyright = "^1.1.402"
-ruff = "^0.12.2"
-types-psutil = "<6"
-poethepoet = "^0.36.0"
+pyright = "^1.1.409"
+ruff = "^0.15.14"
+types-psutil = "^7.2.2.20260518"
+poethepoet = "^0.46.0"
 
 [build-system]
 requires = ["poetry-core (>=2.0)"]
@@ -42,6 +41,9 @@ lint-pyright = "pyright ."
 lint.sequence = ["lint-ruff", "lint-ruff-format", "lint-pyright"]
 lint.ignore_fail = "return_non_zero"
 
+[tool.ruff]
+extend-exclude = ["typings"]
+
 [tool.ruff.lint]
 extend-select = ["B", "Q", "I"]
 
@@ -52,7 +54,7 @@ extend-immutable-calls = ["PyQt6.QtCore.QModelIndex"]
 known-first-party = ["mobase"]
 
 [tool.pyright]
-exclude = ["lib", "**/.*", "venv"]
+exclude = ["lib", "**/.*", "venv", "typings"]
 typeCheckingMode = "strict"
 reportMissingTypeStubs = true
 reportMissingModuleSource = false

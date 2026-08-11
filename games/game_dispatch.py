@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PyQt6.QtCore import QDir
+from PyQt6.QtCore import QDir, QFileInfo
 
 import mobase
 
@@ -28,7 +28,7 @@ class DispatchModDataChecker(BasicModDataChecker):
 class Dispatch(BasicGame, mobase.IPluginFileMapper):
     Name = "Dispatch Support Plugin"
     Author = "Syer10"
-    Version = "0.1.0"
+    Version = "0.1.1"
 
     GameName = "Dispatch"
     GameShortName = "dispatch"
@@ -56,7 +56,13 @@ class Dispatch(BasicGame, mobase.IPluginFileMapper):
 
     def executables(self):
         return [
-            mobase.ExecutableInfo("Dispatch", self.GameBinary),
+            mobase.ExecutableInfo(
+                "Dispatch",
+                QFileInfo(
+                    self.gameDirectory(),
+                    self.GameBinary,
+                ),
+            ),
         ]
 
     ## SAVE

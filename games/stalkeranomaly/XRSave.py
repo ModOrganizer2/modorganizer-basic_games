@@ -2,9 +2,9 @@ import io
 import struct
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, Optional, cast
+from typing import BinaryIO, Optional
 
-import lzokay  # pyright: ignore[reportMissingTypeStubs]
+import lzokay
 
 from .XRIO import XRReader, XRStream
 from .XRObject import XRCreatureActor, XRFlag
@@ -108,14 +108,7 @@ class XRSave:
         if (start == -1) and (version >= 6):
             file.seek(12)
             data = file.read(size - 12)
-            return XRStream(
-                cast(
-                    bytes,
-                    lzokay.decompress(  # pyright: ignore[reportUnknownMemberType]
-                        data, source
-                    ),
-                )
-            )
+            return XRStream(lzokay.decompress(data, source))
 
         return None
 
