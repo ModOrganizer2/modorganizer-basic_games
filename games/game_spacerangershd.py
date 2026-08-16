@@ -293,22 +293,26 @@ class SpaceRangersHDGame(BasicGame, mobase.IPluginFileMapper, mobase.IPluginDiag
     def aboutToRun(self, app: str) -> bool:
         # The active MO2 profile's modlist.txt is the source of truth for order and
         # enabled state; write it back into ModCFG.txt, then equalize Priority in the
-        # MO2 copies so the engine's load order matches what MO2 shows. The ``if
-        # order:`` guard keeps the game folder untouched when no mod is enabled.
+        # MO2 copies so the engine's load order matches what MO2 shows. CurrentMod is
+        # rewritten even to an empty list, so disabling the last enabled mod removes
+        # it from ModCFG.txt too. Only when the profile has no modlist.txt at all is
+        # there no MO2 state to sync — then the game folder is left untouched (a
+        # standalone run without MO2 keeps the native mods it already knows about).
         profile = self._organizer.profile()
         modlist_path = Path(profile.absolutePath()) / "modlist.txt"
+        if not modlist_path.exists():
+            return True
         order = enabled_names(read_modlist(modlist_path))
-        if order:
-            # modlist.txt holds MO2 folder names; map them back to engine
-            # ``Category\\Mod`` paths before writing CurrentMod. Names that don't
-            # follow the convention are skipped (never written into CurrentMod).
-            engine_order = [
-                path
-                for name in order
-                if (path := mod_name_to_engine_path(name)) is not None
-            ]
-            write_current_mod(self._modcfg_path(), engine_order)
-            self._set_enabled_priority(order)
+        # modlist.txt holds MO2 folder names; map them back to engine
+        # ``Category\\Mod`` paths before writing CurrentMod. Names that don't
+        # follow the convention are skipped (never written into CurrentMod).
+        engine_order = [
+            path
+            for name in order
+            if (path := mod_name_to_engine_path(name)) is not None
+        ]
+        write_current_mod(self._modcfg_path(), engine_order)
+        self._set_enabled_priority(order)
         return True
 
     def _set_enabled_priority(self, enabled: list[str]) -> None:
