@@ -447,7 +447,7 @@ class GothicIRemakeGame(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Lego Batman Legacy of the Dark Knight",
+                "Gothic 1 Remake",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
         ]
