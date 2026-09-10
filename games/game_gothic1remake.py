@@ -400,14 +400,14 @@ class GothicIRemakeModDataChecker(mobase.ModDataChecker):
 
 
 class GothicIRemakeGame(BasicGame):
-    Name = "Gothic I Remake Support Plugin"
+    Name = "Gothic 1 Remake Support Plugin"
     Author = "ModWorkshop"
     Version = "1"
-    GameName = "Gothic I Remake"
+    GameName = "Gothic 1 Remake"
     GameLauncher = "G1R-Win64-Shipping.exe"
     GameShortName = "gothic1remake"
     GameSteamId = 1297900
-    GameBinary = "GothicIRemake/Binaries/Win64/G1R-Win64-Shipping.exe"
+    GameBinary = "G1R/Binaries/Win64/G1R-Win64-Shipping.exe"
     GameDataPath = "G1R"
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataPakMods = "Content/Paks/~Mods"
