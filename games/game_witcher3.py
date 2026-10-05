@@ -27,6 +27,8 @@ class Witcher3Game(BasicGame):
     GameSteamId = [499450, 292030]
     GameGogId = [1640424747, 1495134320, 1207664663, 1207664643]
     GameBinary = "bin/x64/witcher3.exe"
+    # Next-gen installs may ship only the DX12 build (no bin/x64).
+    _DX12_BINARY = "bin/x64_dx12/witcher3.exe"
     GameDataPath = "Mods"
     GameSaveExtension = "sav"
     GameDocumentsDirectory = "%DOCUMENTS%/The Witcher 3"
@@ -40,6 +42,15 @@ class Witcher3Game(BasicGame):
         super().init(organizer)
         self._register_feature(BasicGameSaveGameInfo(lambda s: s.with_suffix(".png")))
         return True
+
+    def binaryName(self) -> str:
+        game_dir = self.gameDirectory()
+        if not game_dir.exists(self.GameBinary) and game_dir.exists(self._DX12_BINARY):
+            return self._DX12_BINARY
+        return super().binaryName()
+
+    def looksValid(self, directory: QDir):
+        return directory.exists(self.GameBinary) or directory.exists(self._DX12_BINARY)
 
     def iniFiles(self):
         return ["user.settings", "input.settings"]
