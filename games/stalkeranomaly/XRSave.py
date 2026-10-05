@@ -2,7 +2,7 @@ import io
 import struct
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 import lzokay
 
@@ -99,7 +99,7 @@ class XRSave:
         else:
             self.save_fmt = "Unknown"
 
-    def readFile(self, file: BinaryIO) -> Optional[XRStream]:
+    def readFile(self, file: BinaryIO) -> XRStream | None:
         size = self.filepath.stat().st_size
         if size < 8:
             return None
@@ -125,7 +125,6 @@ class XRSave:
             actor.read_update(update)
             if actor:
                 self.player = actor
-        return None
 
     def getFaction(self) -> str:
         player = self.player

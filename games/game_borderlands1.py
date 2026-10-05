@@ -6,8 +6,8 @@ from mobase import FileTreeEntry, IFileTree, ModDataChecker
 from ..basic_features import BasicModDataChecker
 from ..basic_game import BasicGame
 
-_extention_pattern = re.compile("\\.(upk|umap|u|int|dll|exe)$", re.I)
-_mapslot_pattern = re.compile("^Mapslot\\d\\d?\\.umap$", re.I)
+_extention_pattern = re.compile("\\.(upk|umap|u|int|dll|exe)$", re.IGNORECASE)
+_mapslot_pattern = re.compile("^Mapslot\\d\\d?\\.umap$", re.IGNORECASE)
 
 _mod_dirs = {
     "Binaries".casefold(): "/",

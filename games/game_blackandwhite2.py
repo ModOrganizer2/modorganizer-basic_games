@@ -278,8 +278,6 @@ class BlackAndWhite2Game(BasicGame):
             if installation_path.exists():
                 self.setGamePath(installation_path.parent)
 
-        return
-
     def executables(self) -> list[mobase.ExecutableInfo]:
         execs = super().executables()
 

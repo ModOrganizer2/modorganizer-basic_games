@@ -63,8 +63,7 @@ class ArkhamCityGame(BasicGame):
                 steamSaves = child.joinpath("200260", "remote")
                 if steamSaves.is_dir():
                     return QDir(str(steamSaves))
-            else:
-                return docSaves
+            return docSaves
         else:
             return docSaves
 

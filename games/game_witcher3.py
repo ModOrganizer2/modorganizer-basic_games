@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 from PyQt6.QtCore import QDir
 
@@ -55,7 +54,7 @@ class Witcher3Game(BasicGame):
     def iniFiles(self):
         return ["user.settings", "input.settings"]
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
         return [
             Witcher3SaveGame(path)

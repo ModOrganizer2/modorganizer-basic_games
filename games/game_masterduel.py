@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Optional
 
 from PyQt6.QtCore import QDir, QFileInfo
 
@@ -41,7 +40,7 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
     def dataDirectory(self) -> QDir:
         return QDir(self.userDataDir())
 
-    _userDataDirCached: Optional[str] = None
+    _userDataDirCached: str | None = None
 
     # Gets the LocalData/xxxxxxxxx directory. This directory has a different,
     # unique, 8-character hex name for each user.
@@ -58,11 +57,11 @@ class MasterDuelGame(BasicGame, mobase.IPluginFileMapper):
         self._userDataDirCached = dir.absolutePath()
         return self._userDataDirCached
 
-    def mappings(self) -> List[mobase.Mapping]:
+    def mappings(self) -> list[mobase.Mapping]:
         modsPath = Path(self._organizer.modsPath())
         unityMods = self.getUnityDataMods()
 
-        mappings: List[mobase.Mapping] = []
+        mappings: list[mobase.Mapping] = []
 
         for modName in unityMods:
             m = mobase.Mapping()

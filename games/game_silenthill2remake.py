@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import mobase
 
 from ..basic_features import BasicModDataChecker, GlobPatterns
@@ -23,7 +21,7 @@ class SilentHill2RemakeModDataChecker(BasicModDataChecker):
 
     def _find_tree(
         self, filetree: mobase.IFileTree
-    ) -> Tuple[str | None, mobase.FileTreeEntry | None]:
+    ) -> tuple[str | None, mobase.FileTreeEntry | None]:
         """
         Search the given filetree for a directory name that matches any component
         of self.mod_path (case-insensitive).

@@ -62,7 +62,7 @@ class CyberpunkModDataChecker(BasicModDataChecker):
         )
 
 
-def time_from_seconds(s: int | float) -> str:
+def time_from_seconds(s: float) -> str:
     m, s = divmod(int(s), 60)
     h, m = divmod(int(m), 60)
     return f"{h:02}:{m:02}:{s:02}"
@@ -496,7 +496,7 @@ class Cyberpunk2077Game(BasicGame):
             return True
         app_path = Path(app_path_str)
         if app_path == self._get_redmod_binary():
-            if m := re.search(r"%modlist%", args, re.I):
+            if m := re.search(r"%modlist%", args, re.IGNORECASE):
                 # Manual deployment: replace %modlist% variable
                 (
                     modlist_path,
@@ -592,7 +592,7 @@ class Cyberpunk2077Game(BasicGame):
             ):
                 # Only load order changed: recreate redmod deploys
                 # Fix for redmod not detecting change of load order.
-                # Faster than -force https://github.com/E1337Kat/cyberpunk2077_ext_redux/issues/297  # noqa: E501
+                # Faster than -force https://github.com/E1337Kat/cyberpunk2077_ext_redux/issues/297
                 qInfo("Redmod order changed, recreate deployed files")
                 self._clean_deployed_redmod(modlist_path)
             qInfo(f"Deploying redmod with modlist: {modlist_path}")

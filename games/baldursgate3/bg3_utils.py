@@ -1,6 +1,5 @@
 import functools
 import shutil
-import typing
 from pathlib import Path
 from time import sleep
 
@@ -193,7 +192,7 @@ class BG3Utils:
     def construct_modsettings_xml(
         self,
         exec_path: str = "",
-        working_dir: typing.Optional[QDir] = None,
+        working_dir: QDir | None = None,
         args: str = "",
         force_reparse_metadata: bool = False,
     ) -> bool:

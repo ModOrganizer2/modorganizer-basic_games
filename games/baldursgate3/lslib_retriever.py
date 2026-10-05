@@ -19,13 +19,13 @@ class LSLibRetriever:
     def _needed_lslib_files(self):
         return {
             self._utils.tools_dir / x
-            for x in {
+            for x in (
                 "CommandLineArgumentsParser.dll",
                 "Divine.dll",
                 "Divine.dll.config",
                 "Divine.exe",
                 "Divine.runtimeconfig.json",
-            }
+            )
         }
 
     def download_lslib_if_missing(self, force: bool = False) -> bool:

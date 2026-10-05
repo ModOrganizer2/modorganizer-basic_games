@@ -1,5 +1,3 @@
-# -*- encoding: utf-8 -*-
-
 # Heavily influenced by https://github.com/erri120/GameFinder
 
 import os
@@ -101,4 +99,4 @@ def find_games() -> dict[str, Path]:
 if __name__ == "__main__":
     games = find_games()
     for k, v in games.items():
-        print("Found game with id {} at {}.".format(k, v))
+        print(f"Found game with id {k} at {v}.")

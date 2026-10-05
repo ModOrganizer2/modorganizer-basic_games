@@ -1,7 +1,7 @@
 import math
 import random
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 import mobase
 
@@ -139,7 +139,7 @@ class FinalFantasy7RebirthGame(BasicGame, mobase.IPluginFileMapper):
     def _get_settings(self, key: str) -> mobase.MoVariant:
         return self._organizer.pluginSetting(self.name(), key)
 
-    def mappings(self) -> List[mobase.Mapping]:
+    def mappings(self) -> list[mobase.Mapping]:
         mod_path = Path(self.gameDirectory().absolutePath()) / "End/Content/Paks/~Mods"
         file_path = Path(self.gameDirectory().absolutePath()) / "End/Binaries/Win64"
         load_enabled = self._get_settings("enforce_mod_load_order")

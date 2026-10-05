@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 from __future__ import annotations
 
 import itertools
@@ -98,4 +97,4 @@ def find_games(errors: ErrorList | None = None) -> dict[str, Path]:
 if __name__ == "__main__":
     games = find_games()
     for k, v in games.items():
-        print("Found game with id {} at {}.".format(k, v))
+        print(f"Found game with id {k} at {v}.")

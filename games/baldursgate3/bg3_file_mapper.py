@@ -1,7 +1,7 @@
 import functools
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 from PyQt6.QtCore import QDir, QLoggingCategory, qDebug, qInfo, qWarning
 from PyQt6.QtWidgets import QApplication
@@ -75,7 +75,7 @@ class BG3FileMapper(mobase.IPluginFileMapper):
     def map_files(
         self,
         path: Path,
-        dest: Optional[Path] = None,
+        dest: Path | None = None,
         pattern: str = "*",
         rel: bool = True,
         only_convert: bool = False,

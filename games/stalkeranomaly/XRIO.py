@@ -1,9 +1,7 @@
-# -*- encoding: utf-8 -*-
 from __future__ import annotations
 
 import io
 import struct
-from typing import Optional, Tuple
 
 from .XRMath import IVec3
 
@@ -16,7 +14,7 @@ class XRReader:
     def __len__(self) -> int:
         return len(self._buffer)
 
-    def _read(self, size: int) -> Tuple[bytes, int]:
+    def _read(self, size: int) -> tuple[bytes, int]:
         pos = min(len(self._buffer), self._pos + size)
         buffer = self._buffer[self._pos : pos]
         return (buffer, pos)
@@ -107,7 +105,7 @@ class XRStream(XRReader):
         super().__init__(buffer)
         self.last_pos: int = 0
 
-    def find_chunk(self, id: int) -> Optional[int]:
+    def find_chunk(self, id: int) -> int | None:
         dw_type = 0
         dw_size = 0
         success = False
@@ -140,7 +138,7 @@ class XRStream(XRReader):
 
         return dw_size
 
-    def open_chunk(self, id: int) -> Optional[XRStream]:
+    def open_chunk(self, id: int) -> XRStream | None:
         size = self.find_chunk(id)
         if size and size != 0:
             data = self.read(size)

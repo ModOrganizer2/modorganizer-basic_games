@@ -101,13 +101,13 @@ class PaksTabWidget(QWidget):
         shaken_paks_p: list[str] = []
         paks_list = self.load_paks_list()
         for pak in paks_list:
-            if pak in sorted_paks.keys():
+            if pak in sorted_paks:
                 if pak.casefold().endswith("_p"):
                     shaken_paks_p.append(pak)
                 else:
                     shaken_paks.append(pak)
                 sorted_paks.pop(pak)
-        for pak in sorted_paks.keys():
+        for pak in sorted_paks:
             if pak.casefold().endswith("_p"):
                 shaken_paks_p.append(pak)
             else:

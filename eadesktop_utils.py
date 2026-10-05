@@ -1,15 +1,12 @@
-# -*- encoding: utf-8 -*-
-
 import configparser
 import os
 import sys
 import xml.etree.ElementTree as et
 from configparser import NoOptionError
 from pathlib import Path
-from typing import Dict
 
 
-def find_games(errors: list[tuple[str, Exception]] | None = None) -> Dict[str, Path]:
+def find_games(errors: list[tuple[str, Exception]] | None = None) -> dict[str, Path]:
     """
     Find the list of EA Desktop games installed.
 
@@ -17,7 +14,7 @@ def find_games(errors: list[tuple[str, Exception]] | None = None) -> Dict[str, P
         A mapping from EA Desktop content IDs to install locations for available
         EA Desktop games.
     """
-    games: Dict[str, Path] = {}
+    games: dict[str, Path] = {}
 
     local_app_data_path = os.path.expandvars("%LocalAppData%")
     ea_desktop_settings_path = Path(local_app_data_path).joinpath(
@@ -82,4 +79,4 @@ def find_games(errors: list[tuple[str, Exception]] | None = None) -> Dict[str, P
 if __name__ == "__main__":
     games = find_games()
     for k, v in games.items():
-        print("Found game with id {} at {}.".format(k, v))
+        print(f"Found game with id {k} at {v}.")

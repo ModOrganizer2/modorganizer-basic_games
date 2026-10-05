@@ -40,9 +40,7 @@ class OblivionRemasteredModDataChecker(mobase.ModDataChecker):
         status = mobase.ModDataChecker.INVALID
         # These represent common mod structures that include UE4SS base files.
         # These should generally be pruned or moved into a Root Builder path.
-        if filetree.find("ue4ss/UE4SS.dll") is not None:
-            return mobase.ModDataChecker.FIXABLE
-        elif (
+        if filetree.find("ue4ss/UE4SS.dll") is not None or (
             filetree.find("OblivionRemastered/Binaries/Win64/ue4ss/UE4SS.dll")
             is not None
         ):

@@ -1,10 +1,8 @@
-# -*- encoding: utf-8 -*-
-
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Self, Sequence
+from typing import Any, Self
 
 from PyQt6.QtCore import QDateTime, QLocale, Qt
 from PyQt6.QtGui import QImage, QPixmap

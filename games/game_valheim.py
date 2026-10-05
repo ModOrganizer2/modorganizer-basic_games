@@ -6,7 +6,7 @@ import shutil
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 
 from PyQt6.QtCore import QDir
 
@@ -109,7 +109,7 @@ class DebugTable:
                 self._table.append(dict.fromkeys(self._column_keys, ""))
             self._table[-1][k] = str(v)
 
-    def print(self, output_file: Optional[TextIO] = None):
+    def print(self, output_file: TextIO | None = None):
         if self._table:
             for line in self._table:
                 print("|", " | ".join(line.values()), "|", file=output_file)
@@ -128,11 +128,13 @@ class OverwriteSync:
     partial_match: PartialMatch = PartialMatch(exclude={"valheim", "mod"})
     content_match: ContentMatch = ContentMatch(
         file_glob_patterns=["*.cfg"],
-        content_regex=re.compile(r"\A.*plugin (?P<mod>.+) v[\d.]+?$", re.I | re.M),
+        content_regex=re.compile(
+            r"\A.*plugin (?P<mod>.+) v[\d.]+?$", re.IGNORECASE | re.MULTILINE
+        ),
         match_group="mod",
     )
 
-    _debug = DebugTable("overwrite_file | mod | target_path | matches".split(" | "))
+    _debug = DebugTable(["overwrite_file", "mod", "target_path", "matches"])
 
     def __init__(self, organizer: mobase.IOrganizer, game: mobase.IPluginGame) -> None:
         self.organizer = organizer
@@ -325,13 +327,10 @@ class ValheimGame(BasicGame):
                         "start_server_bepinex.sh",
                         "winhttp.dll",
                         "changelog.txt",
-                        #
                         "InSlimVML",
                         "valheim_Data",
                         "inslimvml.ini",
-                        #
                         "unstripped_managed",
-                        #
                         "AdvancedBuilder",
                     ],
                     ignore=[
@@ -349,7 +348,6 @@ class ValheimGame(BasicGame):
                     ],
                     move={
                         "*_VML.dll": "InSlimVML/Mods/",
-                        #
                         "plugins": "BepInEx/",
                         "Jotunn": "BepInEx/plugins/",
                         "*.dll": "BepInEx/plugins/",
@@ -357,13 +355,10 @@ class ValheimGame(BasicGame):
                         "Translations": "BepInEx/plugins/",
                         "config": "BepInEx/",
                         "*.cfg": "BepInEx/config/",
-                        #
                         "CustomTextures": "BepInEx/plugins/",
                         "*.png": "BepInEx/plugins/CustomTextures/",
-                        #
                         "Builds": "AdvancedBuilder/",
                         "*.vbuild": "AdvancedBuilder/Builds/",
-                        #
                         "*.assets": "valheim_Data/",
                     },
                 )

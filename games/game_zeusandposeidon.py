@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import mobase
 
 from ..basic_game import BasicGame
@@ -12,8 +10,8 @@ class ZeusAndPoseidonModDataChecker(mobase.ModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        folders: List[mobase.IFileTree] = []
-        files: List[mobase.FileTreeEntry] = []
+        folders: list[mobase.IFileTree] = []
+        files: list[mobase.FileTreeEntry] = []
 
         for entry in filetree:
             if isinstance(entry, mobase.IFileTree):
@@ -34,7 +32,7 @@ class ZeusAndPoseidonModDataChecker(mobase.ModDataChecker):
 
         return mobase.ModDataChecker.INVALID
 
-    def fix(self, filetree: mobase.IFileTree) -> Optional[mobase.IFileTree]:
+    def fix(self, filetree: mobase.IFileTree) -> mobase.IFileTree | None:
         first_entry = filetree[0]
         if not isinstance(first_entry, mobase.IFileTree):
             return None

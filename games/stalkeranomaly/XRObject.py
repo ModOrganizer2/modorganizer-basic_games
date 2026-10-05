@@ -1,8 +1,5 @@
-# -*- encoding: utf-8 -*-
-
 import io
 from enum import IntFlag
-from typing import List
 
 from .XRIO import XRReader
 from .XRMath import IFlag, IVec3
@@ -40,7 +37,7 @@ class XRAbstract:
         self.version = 0
         self.game_type = IFlag(0)
         self.script_version = 0
-        self.client_data: List[int] = []
+        self.client_data: list[int] = []
         self.spawn_id = 0
         self.ini_str = ""
 

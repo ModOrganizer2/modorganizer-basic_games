@@ -5,9 +5,9 @@ import re
 import shutil
 import subprocess
 import traceback
+from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
-from typing import Callable
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
@@ -172,8 +172,7 @@ class BG3PakParser:
                                 except OSError as e:
                                     qDebug(f"Error accessing file {file_path}: {e}")
                                     break
-                        else:
-                            build_pak = False
+                        build_pak = False
                     except OSError as e:
                         qDebug(f"Error accessing file {pak_path}: {e}")
                         build_pak = False
