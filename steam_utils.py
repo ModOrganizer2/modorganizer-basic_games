@@ -17,7 +17,7 @@ class SteamGame:
         return str(self)
 
     def __str__(self):
-        return "{} ({})".format(self.appid, self.installdir)
+        return f"{self.appid} ({self.installdir})"
 
 
 class _AppState(TypedDict):
@@ -77,7 +77,7 @@ class LibraryFolder:
         return str(self)
 
     def __str__(self):
-        return "LibraryFolder at {}: {}".format(self.path, self.games)
+        return f"LibraryFolder at {self.path}: {self.games}"
 
 
 def parse_library_info(library_vdf_path: Path) -> list[LibraryFolder]:
@@ -129,7 +129,7 @@ def parse_library_info(library_vdf_path: Path) -> list[LibraryFolder]:
             library_folders.append(LibraryFolder(Path(path)))
         except Exception as e:
             print(
-                'Failed to read steam library from "{}", {}'.format(path, repr(e)),
+                f'Failed to read steam library from "{path}", {e!r}',
                 file=sys.stderr,
             )
 
@@ -184,4 +184,4 @@ def find_games() -> dict[str, Path]:
 if __name__ == "__main__":
     games = find_games()
     for k, v in games.items():
-        print("Found game with id {} at {}.".format(k, v))
+        print(f"Found game with id {k} at {v}.")

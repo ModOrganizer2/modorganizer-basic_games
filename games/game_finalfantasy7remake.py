@@ -1,6 +1,6 @@
 import math
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List
 
 import mobase
 
@@ -46,7 +46,7 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
             if self._organizer.modList().state(mod) & mobase.ModState.ACTIVE:
                 yield mods_parent_path / mod
 
-    def _active_mod_mappings(self, mod_paths: List[Path]) -> Iterable[mobase.Mapping]:
+    def _active_mod_mappings(self, mod_paths: list[Path]) -> Iterable[mobase.Mapping]:
         if not mod_paths:
             return
         pak_priority_digits = math.floor(math.log10(len(mod_paths))) + 1
@@ -65,7 +65,7 @@ class FinalFantasy7RemakeGame(BasicGame, mobase.IPluginFileMapper):
                         child.is_dir(),
                     )
 
-    def mappings(self) -> List[mobase.Mapping]:
+    def mappings(self) -> list[mobase.Mapping]:
         return [
             # Not applying load order modifications to overwrites is OK
             # since the UX is better this way and it will generally work out anyways

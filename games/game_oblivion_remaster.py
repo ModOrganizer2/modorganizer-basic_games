@@ -287,8 +287,9 @@ class OblivionRemasteredGame(
         ue4ss_mods_json = QFileInfo(profile.absoluteFilePath("mods.json"))
         if not ue4ss_mods_txt.exists():
             with open(ue4ss_mods_txt.absoluteFilePath(), "w") as mods_txt:
-                for mod in DEFAULT_UE4SS_MODS:
-                    mods_txt.write(f"{mod['mod_name']} : 1\n")
+                mods_txt.writelines(
+                    f"{mod['mod_name']} : 1\n" for mod in DEFAULT_UE4SS_MODS
+                )
         if not ue4ss_mods_json.exists():
             mods_data: list[UE4SSModInfo] = []
             for mod in DEFAULT_UE4SS_MODS:

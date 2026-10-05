@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 from PyQt6.QtCore import QDir
 
@@ -95,7 +94,7 @@ class VampireTheMasqueradeBloodlinesGame(BasicGame):
     def iniFiles(self):
         return ["autoexec.cfg", "user.cfg"]
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         ext = self._mappings.savegameExtension.get()
         return [
             VampireSaveGame(path)

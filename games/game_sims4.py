@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from enum import IntEnum
 from re import match
-from typing import Any, List, Set, cast
+from typing import Any, cast
 
 from mobase import (
     FileTreeEntry,
@@ -124,7 +124,7 @@ class TS4ModDataChecker(ModDataChecker):
 
 
 class TS4ModDataContent(ModDataContent):
-    def getAllContents(self: ModDataContent) -> List[ModDataContent.Content]:
+    def getAllContents(self: ModDataContent) -> list[ModDataContent.Content]:
         return [
             ModDataContent.Content(
                 Content.PACKAGE, "Package", ":/MO/gui/content/plugin"
@@ -132,8 +132,8 @@ class TS4ModDataContent(ModDataContent):
             ModDataContent.Content(Content.SCRIPT, "Script", ":/MO/gui/content/script"),
         ]
 
-    def getContentsFor(self: ModDataContent, filetree: IFileTree) -> List[int]:
-        contents: Set[int] = set()
+    def getContentsFor(self: ModDataContent, filetree: IFileTree) -> list[int]:
+        contents: set[int] = set()
 
         def getContentForEntry(path: str, entry: FileTreeEntry):
             nonlocal contents

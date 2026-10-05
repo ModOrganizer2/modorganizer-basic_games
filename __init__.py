@@ -23,7 +23,7 @@ BasicGame.setup()
 
 def createPlugins():
     # List of game class from python:
-    game_plugins: typing.List[IPlugin] = []
+    game_plugins: list[IPlugin] = []
 
     # We are going to list all game plugins:
     curpath = os.path.abspath(os.path.dirname(__file__))
@@ -43,9 +43,9 @@ def createPlugins():
         try:
             module = importlib.import_module(".games." + module_p[:-3], __package__)
         except ImportError as e:
-            print("Failed to import module {}: {}".format(module_p, e), file=sys.stderr)
+            print(f"Failed to import module {module_p}: {e}", file=sys.stderr)
         except Exception as e:
-            print("Failed to import module {}: {}".format(module_p, e), file=sys.stderr)
+            print(f"Failed to import module {module_p}: {e}", file=sys.stderr)
 
         # Lookup game plugins:
         for name in dir(module):
@@ -60,7 +60,7 @@ def createPlugins():
                         game_plugins.append(obj())
                     except Exception as e:
                         print(
-                            "Failed to instantiate {}: {}".format(name, e),
+                            f"Failed to instantiate {name}: {e}",
                             file=sys.stderr,
                         )
     for path in pathlib.Path(escaped_games_path).rglob("plugins/__init__.py"):

@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from functools import cmp_to_key
-from typing import Sequence
 
 from PyQt6.QtCore import (
     QByteArray,

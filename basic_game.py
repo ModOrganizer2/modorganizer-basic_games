@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from PyQt6.QtCore import QDir, QFileInfo, QStandardPaths
 from PyQt6.QtGui import QIcon
@@ -49,7 +50,7 @@ _T = TypeVar("_T")
 
 class BasicGameMapping(Generic[_T]):
     # The game:
-    _game: "BasicGame"
+    _game: BasicGame
 
     # Name of the attribute for exposure:
     _exposed_name: str
@@ -61,7 +62,7 @@ class BasicGameMapping(Generic[_T]):
     _required: bool
 
     # Callable returning a default value (if not required):
-    _default: Callable[["BasicGame"], _T]
+    _default: Callable[[BasicGame], _T]
 
     # Function to apply to the value:
     _apply_fn: Callable[[_T | str], _T] | None
@@ -256,7 +257,7 @@ class BasicGameMappings:
             game,
             "Description",
             "description",
-            lambda g: "Adds basic support for game {}.".format(g.gameName()),
+            lambda g: f"Adds basic support for game {g.gameName()}.",
         )
         self.gameName = BasicGameMapping(game, "GameName", "gameName")
         self.gameShortName = BasicGameMapping(game, "GameShortName", "gameShortName")
@@ -416,7 +417,7 @@ class BasicGame(mobase.IPluginGame):
     _gamePath: str
 
     def __init__(self):
-        super(BasicGame, self).__init__()
+        super().__init__()
 
         if not hasattr(self, "_fromName"):
             self._fromName = self.__class__.__name__

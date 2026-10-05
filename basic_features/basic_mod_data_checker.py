@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import fnmatch
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable, Literal
+from typing import Literal
 
 import mobase
 
@@ -28,7 +29,7 @@ class OptionalRegexPattern:
         give the `glob_list` index.
         """
         return re.compile(
-            "|".join(f"({fnmatch.translate(f)})" for f in glob_list), re.I
+            "|".join(f"({fnmatch.translate(f)})" for f in glob_list), re.IGNORECASE
         )
 
     def match(self, value: str) -> bool:
@@ -48,7 +49,7 @@ class RegexPatterns:
         self.valid = OptionalRegexPattern(globs.valid)
 
         self.move = {
-            key: re.compile(fnmatch.translate(key), re.I) for key in globs.move
+            key: re.compile(fnmatch.translate(key), re.IGNORECASE) for key in globs.move
         }
         self.ignore = OptionalRegexPattern(globs.ignore)
 

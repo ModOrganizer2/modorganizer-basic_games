@@ -100,7 +100,6 @@ from ..basic_game import BasicGame
 
 
 class Witcher3Game(BasicGame):
-
     Name = "Witcher 3 Support Plugin"
     Author = "Holt59"
     Version = "1.0.0a"
@@ -129,7 +128,6 @@ import mobase
 
 
 class Witcher3Game(BasicGame):
-
     Name = "Witcher 3 Support Plugin"
     Author = "Holt59"
 

@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 
 from PyQt6.QtCore import QModelIndex, Qt, pyqtSignal
 from PyQt6.QtGui import QDropEvent

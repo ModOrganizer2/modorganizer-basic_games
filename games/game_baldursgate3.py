@@ -190,7 +190,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         moved: dict[str, str] = {}
         for path in self.utils.overwrite_path.rglob("*.log"):
             try:
-                moved[str(path)] = str((self.utils.log_dir / path.name))
+                moved[str(path)] = str(self.utils.log_dir / path.name)
                 path.replace(self.utils.log_dir / path.name)
             except PermissionError as e:
                 qDebug(str(e))

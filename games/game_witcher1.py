@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import BinaryIO, List
+from typing import BinaryIO
 
 from PyQt6.QtCore import QDir, QFileInfo
 
@@ -82,11 +82,11 @@ class Witcher1Game(BasicGame):
         super().init(organizer)
         return True
 
-    def executables(self) -> List[mobase.ExecutableInfo]:
+    def executables(self) -> list[mobase.ExecutableInfo]:
         path = QFileInfo(self.gameDirectory(), "System/witcher.exe")
         return [mobase.ExecutableInfo("The Witcher", path)]
 
-    def listSaves(self, folder: QDir) -> List[mobase.ISaveGame]:
+    def listSaves(self, folder: QDir) -> list[mobase.ISaveGame]:
         return [
             Witcher1SaveGame(path)
             for path in Path(folder.absolutePath()).glob("*.TheWitcherSave")

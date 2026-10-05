@@ -1,6 +1,7 @@
 import json
+from collections.abc import Iterable
 from json import JSONDecodeError
-from typing import Any, Iterable
+from typing import Any
 
 from PyQt6.QtCore import (
     QDir,
