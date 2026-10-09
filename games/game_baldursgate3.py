@@ -132,7 +132,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
                 self._organizer.virtualFileTree().find("bin")
             )
-            if type(tree) is not mobase.IFileTree:
+            if not isinstance(tree, mobase.IFileTree):
                 return efls
 
             def find_dlls(
@@ -148,12 +148,13 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 return mobase.IFileTree.WalkReturn.CONTINUE
 
             tree.walk(find_dlls)
-            exes = self.executables()
+            exes = {exe.binary().fileName() for exe in self.executables()} & {
+                "bg3.exe",
+                "bg3_dx11.exe",
+            }
             qDebug(f"dlls to force load: {libs}")
             efls = efls + [
-                mobase.ExecutableForcedLoadSetting(
-                    exe.binary().fileName(), lib
-                ).withEnabled(True)
+                mobase.ExecutableForcedLoadSetting(exe, lib).withEnabled(True)
                 for lib in libs
                 for exe in exes
             ]
