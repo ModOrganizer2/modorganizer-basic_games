@@ -12,7 +12,7 @@ import mobase
 
 from ..basic_features import BasicGameSaveGameInfo, BasicLocalSavegames
 from ..basic_game import BasicGame
-from .baldursgate3 import bg3_file_mapper
+from .baldursgate3 import bg3_file_mapper, bg3_utils
 
 
 class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
@@ -37,8 +37,6 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
 
     def __init__(self):
         BasicGame.__init__(self)
-        from .baldursgate3 import bg3_utils
-
         self.utils = bg3_utils.BG3Utils(self.name())
         bg3_file_mapper.BG3FileMapper.__init__(
             self, self.utils, self.documentsDirectory
@@ -223,12 +221,6 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                     f"cleaned the following folders due to them being older than {cutoff_time}: {removed}"
                 )
         for fdir in {self.utils.overwrite_path, self.doc_path}:
-            removed: set[Path] = set()
-            for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
-                try:
-                    folder[0].rmdir()
-                    removed.add(folder[0])
-                except OSError:
-                    pass
+            removed = bg3_utils.remove_empty_dirs(fdir)
             if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
                 qDebug(f"cleaned empty dirs from {fdir} {removed}")

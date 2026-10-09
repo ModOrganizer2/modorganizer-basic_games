@@ -278,3 +278,16 @@ def create_dir_if_needed(path: Path) -> Path:
     else:
         path.parent.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def remove_empty_dirs(root: Path) -> set[Path]:
+    removed: set[Path] = set()
+    for folder, _, _ in root.walk(top_down=False):
+        if folder == root:
+            continue
+        try:
+            folder.rmdir()
+            removed.add(folder)
+        except OSError:
+            pass
+    return removed
