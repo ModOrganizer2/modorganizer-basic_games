@@ -3,6 +3,7 @@ import shutil
 import typing
 from pathlib import Path
 from time import sleep
+from xml.sax.saxutils import escape
 
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -36,6 +37,10 @@ def get_node_string(
     uuid: str = "",
     version64: str = "0",
 ) -> str:
+    folder, md5, name, publish_handle, uuid, version64 = (
+        escape(v, {'"': "&quot;"})
+        for v in (folder, md5, name, publish_handle, uuid, version64)
+    )
     return f"""
                         <node id="ModuleShortDesc">
                             <attribute id="Folder" type="LSString" value="{folder}"/>
