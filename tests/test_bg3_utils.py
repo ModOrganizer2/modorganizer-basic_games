@@ -1,5 +1,7 @@
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 from xml.etree import ElementTree
 
@@ -17,3 +19,16 @@ class NodeStringTest(unittest.TestCase):
             for a in ElementTree.fromstring(node).iter("attribute")
         }
         self.assertEqual((attrs["Folder"], attrs["Name"]), (name, name))
+
+
+class ProfilePathTest(unittest.TestCase):
+    def test_modsettings_path_follows_profile_switch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            organizer = MagicMock()
+            utils = bg3_utils.BG3Utils("Baldur's Gate 3 Plugin")
+            utils.init(organizer)
+            for profile in ("a", "b"):
+                organizer.profilePath.return_value = str(Path(tmp, profile))
+                self.assertEqual(
+                    utils.modsettings_path, Path(tmp, profile, "modsettings.lsx")
+                )
