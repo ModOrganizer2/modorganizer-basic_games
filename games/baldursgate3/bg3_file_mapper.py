@@ -1,4 +1,5 @@
 import functools
+import json
 import os
 from pathlib import Path
 from typing import Callable, Optional
@@ -89,26 +90,21 @@ class BG3FileMapper(mobase.IPluginFileMapper):
             if self._utils.convert_yamls_to_json and (
                 file.name.endswith(".yaml") or file.name.endswith(".yml")
             ):
-                converted_path = file.parent / file.name.replace(
-                    ".yaml", ".json"
-                ).replace(".yml", ".json")
+                import yaml
+
+                converted_path = file.with_suffix(".json")
                 try:
                     if not converted_path.exists() or os.path.getmtime(
                         file
                     ) > os.path.getmtime(converted_path):
-                        import json
-
-                        import yaml
-
-                        with open(file, "r") as yaml_file:
-                            with open(converted_path, "w") as json_file:
-                                json.dump(
-                                    yaml.safe_load(yaml_file), json_file, indent=2
-                                )
+                        data = yaml.safe_load(file.read_text(encoding="utf-8"))
+                        converted_path.write_text(
+                            json.dumps(data, indent=2), encoding="utf-8"
+                        )
                         qDebug(f"Converted {file} to JSON")
                     found_jsons.add(converted_path)
-                except OSError as e:
-                    qWarning(f"Error accessing file {converted_path}: {e}")
+                except (OSError, ValueError, yaml.YAMLError) as e:
+                    qWarning(f"Skipping {file}, conversion to JSON failed: {e}")
             elif file.name.endswith(".json"):
                 found_jsons.add(file)
             elif not only_convert:

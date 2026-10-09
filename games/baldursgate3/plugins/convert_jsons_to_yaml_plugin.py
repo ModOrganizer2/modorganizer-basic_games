@@ -40,19 +40,19 @@ class BG3ToolConvertJsonsToYaml(BG3ToolPlugin):
 
 
 def _convert_jsons_in_dir_to_yaml(path: Path):
+    import yaml
+
     for file in list(path.rglob("*.json")):
-        converted_path = file.parent / file.name.replace(".json", ".yaml")
+        converted_path = file.with_suffix(".yaml")
         try:
             if not converted_path.exists() or os.path.getmtime(file) > os.path.getmtime(
                 converted_path
             ):
-                import yaml
-
-                with open(file, "r") as json_file:
-                    with open(converted_path, "w") as yaml_file:
-                        yaml.dump(
-                            json.load(json_file), yaml_file, indent=2, sort_keys=False
-                        )
+                data = json.loads(file.read_text(encoding="utf-8"))
+                converted_path.write_text(
+                    yaml.dump(data, indent=2, sort_keys=False, allow_unicode=True),
+                    encoding="utf-8",
+                )
                 qInfo(f"Converted {file} to YAML")
-        except OSError as e:
-            qWarning(f"Error accessing file {converted_path}: {e}")
+        except (OSError, ValueError, yaml.YAMLError) as e:
+            qWarning(f"Skipping {file}, conversion to YAML failed: {e}")
