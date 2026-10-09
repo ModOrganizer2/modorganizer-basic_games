@@ -31,28 +31,30 @@ class BG3ModDataChecker(BasicModDataChecker):
     def dataLooksValid(
         self, filetree: mobase.IFileTree
     ) -> mobase.ModDataChecker.CheckReturn:
-        status = mobase.ModDataChecker.INVALID
+        invalid, valid, fixable = (
+            mobase.ModDataChecker.INVALID,
+            mobase.ModDataChecker.VALID,
+            mobase.ModDataChecker.FIXABLE,
+        )
+        rank = (invalid, valid, fixable).index
+        status = invalid
         rp = self._regex_patterns
         for entry in filetree:
             name = entry.name().casefold()
             if rp.unfold.match(name):
                 if utils.is_directory(entry):
-                    status = self.dataLooksValid(entry)
+                    status = max(status, self.dataLooksValid(entry), key=rank)
                 else:
-                    status = mobase.ModDataChecker.INVALID
+                    status = invalid
                     break
             elif rp.valid.match(name):
-                if status is mobase.ModDataChecker.INVALID:
-                    status = mobase.ModDataChecker.VALID
+                status = max(status, valid, key=rank)
             elif isinstance(entry, mobase.IFileTree):
-                status = (
-                    mobase.ModDataChecker.VALID
-                    if all(rp.valid.match(e.pathFrom(filetree)) for e in entry)
-                    else mobase.ModDataChecker.INVALID
-                )
+                if all(rp.valid.match(e.pathFrom(filetree)) for e in entry):
+                    status = max(status, valid, key=rank)
             elif rp.delete.match(name) or rp.move_match(name) is not None:
-                status = mobase.ModDataChecker.FIXABLE
+                status = fixable
             else:
-                status = mobase.ModDataChecker.INVALID
+                status = invalid
                 break
         return status

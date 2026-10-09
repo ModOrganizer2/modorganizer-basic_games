@@ -12,7 +12,7 @@ import mobase
 
 from ..basic_features import BasicGameSaveGameInfo, BasicLocalSavegames
 from ..basic_game import BasicGame
-from .baldursgate3 import bg3_file_mapper
+from .baldursgate3 import bg3_file_mapper, bg3_utils
 
 
 class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
@@ -37,8 +37,6 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
 
     def __init__(self):
         BasicGame.__init__(self)
-        from .baldursgate3 import bg3_utils
-
         self.utils = bg3_utils.BG3Utils(self.name())
         bg3_file_mapper.BG3FileMapper.__init__(
             self, self.utils, self.documentsDirectory
@@ -132,7 +130,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             tree: mobase.IFileTree | mobase.FileTreeEntry | None = (
                 self._organizer.virtualFileTree().find("bin")
             )
-            if type(tree) is not mobase.IFileTree:
+            if not isinstance(tree, mobase.IFileTree):
                 return efls
 
             def find_dlls(
@@ -148,12 +146,13 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                 return mobase.IFileTree.WalkReturn.CONTINUE
 
             tree.walk(find_dlls)
-            exes = self.executables()
+            exes = {exe.binary().fileName() for exe in self.executables()} & {
+                "bg3.exe",
+                "bg3_dx11.exe",
+            }
             qDebug(f"dlls to force load: {libs}")
             efls = efls + [
-                mobase.ExecutableForcedLoadSetting(
-                    exe.binary().fileName(), lib
-                ).withEnabled(True)
+                mobase.ExecutableForcedLoadSetting(exe, lib).withEnabled(True)
                 for lib in libs
                 for exe in exes
             ]
@@ -180,8 +179,8 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             and self.utils.modsettings_path.exists()
         ):
             for x in difflib.unified_diff(
-                self.utils.modsettings_backup.open().readlines(),
-                self.utils.modsettings_path.open().readlines(),
+                self.utils.modsettings_backup.read_text(encoding="utf-8").splitlines(),
+                self.utils.modsettings_path.read_text(encoding="utf-8").splitlines(),
                 fromfile=str(self.utils.modsettings_backup),
                 tofile=str(self.utils.modsettings_path),
                 lineterm="",
@@ -206,7 +205,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         if cat is not None and cat.isDebugEnabled() and len(moved) > 0:
             qDebug(f"moved log files to logs dir: {moved}")
         days = self.utils.get_setting("delete_levelcache_folders_older_than_x_days")
-        if type(days) is int and days >= 0:
+        if isinstance(days, int) and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
             removed: set[Path] = set()
@@ -222,12 +221,6 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
                     f"cleaned the following folders due to them being older than {cutoff_time}: {removed}"
                 )
         for fdir in {self.utils.overwrite_path, self.doc_path}:
-            removed: set[Path] = set()
-            for folder in sorted(list(fdir.walk(top_down=False)))[:-1]:
-                try:
-                    folder[0].rmdir()
-                    removed.add(folder[0])
-                except OSError:
-                    pass
+            removed = bg3_utils.remove_empty_dirs(fdir)
             if cat is not None and cat.isDebugEnabled() and len(removed) > 0:
                 qDebug(f"cleaned empty dirs from {fdir} {removed}")

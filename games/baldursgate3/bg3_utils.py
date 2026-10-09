@@ -3,6 +3,7 @@ import shutil
 import typing
 from pathlib import Path
 from time import sleep
+from xml.sax.saxutils import escape
 
 from PyQt6.QtCore import (
     QCoreApplication,
@@ -36,6 +37,10 @@ def get_node_string(
     uuid: str = "",
     version64: str = "0",
 ) -> str:
+    folder, md5, name, publish_handle, uuid, version64 = (
+        escape(v, {'"': "&quot;"})
+        for v in (folder, md5, name, publish_handle, uuid, version64)
+    )
     return f"""
                         <node id="ModuleShortDesc">
                             <attribute id="Folder" type="LSString" value="{folder}"/>
@@ -111,12 +116,14 @@ class BG3Utils:
 
     @functools.cached_property
     def modsettings_backup(self):
-        return create_dir_if_needed(self.plugin_data_path / "temp" / "modsettings.lsx")
+        return create_dir_if_needed(
+            self.plugin_data_path / "temp" / "modsettings.lsx", is_file=True
+        )
 
-    @functools.cached_property
+    @property
     def modsettings_path(self):
         return create_dir_if_needed(
-            Path(self._organizer.profilePath()) / "modsettings.lsx"
+            Path(self._organizer.profilePath()) / "modsettings.lsx", is_file=True
         )
 
     @functools.cached_property
@@ -267,9 +274,19 @@ class BG3Utils:
             self._pak_parser.get_metadata_for_files_in_mod(mod, True)
 
 
-def create_dir_if_needed(path: Path) -> Path:
-    if "." not in path.name[1:]:
-        path.mkdir(parents=True, exist_ok=True)
-    else:
-        path.parent.mkdir(parents=True, exist_ok=True)
+def create_dir_if_needed(path: Path, is_file: bool = False) -> Path:
+    (path.parent if is_file else path).mkdir(parents=True, exist_ok=True)
     return path
+
+
+def remove_empty_dirs(root: Path) -> set[Path]:
+    removed: set[Path] = set()
+    for folder, _, _ in root.walk(top_down=False):
+        if folder == root:
+            continue
+        try:
+            folder.rmdir()
+            removed.add(folder)
+        except OSError:
+            pass
+    return removed
