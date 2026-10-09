@@ -119,7 +119,7 @@ class BG3FileMapper(mobase.IPluginFileMapper):
             self.create_mapping(file, dest / dest_func(file))
 
     def create_mapping(self, file: Path, dest: Path):
-        bg3_utils.create_dir_if_needed(dest)
+        bg3_utils.create_dir_if_needed(dest, is_file=not file.is_dir())
 
         self.current_mappings.append(
             mobase.Mapping(

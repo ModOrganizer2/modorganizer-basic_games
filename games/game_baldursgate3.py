@@ -179,8 +179,8 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
             and self.utils.modsettings_path.exists()
         ):
             for x in difflib.unified_diff(
-                self.utils.modsettings_backup.open().readlines(),
-                self.utils.modsettings_path.open().readlines(),
+                self.utils.modsettings_backup.read_text(encoding="utf-8").splitlines(),
+                self.utils.modsettings_path.read_text(encoding="utf-8").splitlines(),
                 fromfile=str(self.utils.modsettings_backup),
                 tofile=str(self.utils.modsettings_path),
                 lineterm="",
@@ -205,7 +205,7 @@ class BG3Game(BasicGame, bg3_file_mapper.BG3FileMapper):
         if cat is not None and cat.isDebugEnabled() and len(moved) > 0:
             qDebug(f"moved log files to logs dir: {moved}")
         days = self.utils.get_setting("delete_levelcache_folders_older_than_x_days")
-        if type(days) is int and days >= 0:
+        if isinstance(days, int) and days >= 0:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(days=days)
             qDebug(f"cleaning folders in overwrite/LevelCache older than {cutoff_time}")
             removed: set[Path] = set()
