@@ -34,16 +34,6 @@ class CyberpunkModDataChecker(BasicModDataChecker):
     def __init__(self):
         super().__init__(
             GlobPatterns(
-                delete=[
-                    "*.gif",
-                    "*.jpg",
-                    "*.jpeg",
-                    "*.jxl",
-                    "*.md",
-                    "*.png",
-                    "*.txt",
-                    "*.webp",
-                ],
                 move={
                     # archive and ArchiveXL
                     "*.archive": "archive/pc/mod/",
@@ -200,7 +190,7 @@ class ModListFileManager(dict[_MOD_TYPE, ModListFile]):
 class Cyberpunk2077Game(BasicGame):
     Name = "Cyberpunk 2077 Support Plugin"
     Author = "6788, Zash"
-    Version = "3.0.1"
+    Version = "3.0.0"
 
     GameName = "Cyberpunk 2077"
     GameShortName = "cyberpunk2077"
@@ -233,7 +223,7 @@ class Cyberpunk2077Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self._register_feature(BasicLocalSavegames(self))
+        self._register_feature(BasicLocalSavegames(self.savesDirectory()))
         self._register_feature(
             BasicGameSaveGameInfo(
                 lambda p: Path(p or "", "screenshot.png"),
@@ -256,7 +246,6 @@ class Cyberpunk2077Game(BasicGame):
             ),
         )
         organizer.onAboutToRun(self._onAboutToRun)
-        organizer.onFinishedRun(self._onFinishedRun)
         organizer.onPluginSettingChanged(self._on_settings_changed)
         organizer.modList().onModInstalled(self._check_disable_crashreporter)
         organizer.onUserInterfaceInitialized(self._on_user_interface_initialized)
@@ -430,11 +419,6 @@ class Cyberpunk2077Game(BasicGame):
                 True,
             ),
             mobase.PluginSetting(
-                "crash_message",
-                ("Show a crash message as replacement of disabled CrashReporter"),
-                True,
-            ),
-            mobase.PluginSetting(
                 "show_rootbuilder_conversion",
                 (
                     "Shows a dialog to convert legacy RootBuilder mods to native MO mods,"
@@ -455,22 +439,22 @@ class Cyberpunk2077Game(BasicGame):
         game_dir = self.gameDirectory()
         bin_path = game_dir.absoluteFilePath(self.binaryName())
         skip_start_screen = (
-            "-skipStartScreen" if self._get_setting("skipStartScreen") else ""
+            " -skipStartScreen" if self._get_setting("skipStartScreen") else ""
         )
         return [
             # Default, runs REDmod deploy if necessary
             mobase.ExecutableInfo(
-                f"{game_name} (REDmod)",
+                f"{game_name}",
                 bin_path,
-            ).withArgument(f"--launcher-skip -modded {skip_start_screen}"),
+            ).withArgument(f"--launcher-skip -modded{skip_start_screen}"),
             # Start game without REDmod
             mobase.ExecutableInfo(
-                f"{game_name}",
+                f"{game_name} - skip REDmod deploy",
                 bin_path,
             ).withArgument(f"--launcher-skip {skip_start_screen}"),
             # Deploy REDmods only
             mobase.ExecutableInfo(
-                "REDmod",
+                "Manually deploy REDmod",
                 self._get_redmod_binary(),
             ).withArgument("deploy -reportProgress -force %modlist%"),
             # Launcher
@@ -526,35 +510,6 @@ class Cyberpunk2077Game(BasicGame):
         if self._get_setting("enforce_archive_load_order"):
             self._modlist_files.update_modlist("archive")
         return True
-
-    def _onFinishedRun(self, path: str, exit_code: int) -> None:
-        if not self._get_setting("crash_message"):
-            return
-        if path.endswith(self.binaryName()) and exit_code > 0:
-            crash_message = QMessageBox(
-                QMessageBox.Icon.Critical,
-                "Cyberpunk Crashed",
-                textwrap.dedent(
-                    f"""
-                    Cyberpunk crashed. Tips:
-                    - disable mods (create backup of modlist or use new profile)
-                    - clear overwrite or delete at least overwrite/r6/cache (to keep mod settings)
-                    - check log files of CET/redscript/RED4ext (in overwrite)
-                    - read [FAQ & Troubleshooting]({self.GameSupportURL}#faq--troubleshooting)
-                    """
-                ),
-                QMessageBox.StandardButton.Ok,
-                self._parentWidget,
-            )
-            crash_message.setTextFormat(Qt.TextFormat.MarkdownText)
-            hide_cb = QCheckBox("&Do not show again*", crash_message)
-            hide_cb.setToolTip(f"Settings/Plugins/{self.name()}/crash_message")
-            crash_message.setCheckBox(hide_cb)
-            crash_message.open(  # type: ignore
-                lambda: (
-                    hide_cb.isChecked() and self._set_setting("crash_message", False)
-                )
-            )
 
     def _check_redmod_result(self, result: tuple[bool, int]) -> bool:
         if result == (True, 0):
@@ -649,13 +604,28 @@ class Cyberpunk2077Game(BasicGame):
         Args:
             file: Relative to data dir.
         """
+
         game_file = data_path.absolute() / file
+
         mapped_files = self._organizer.findFiles(file.parent, file.name)
+
+        # guard against missing mapped files early to avoid index/access issues
+        if not mapped_files:
+            return False
+
+        mapped_file = Path(mapped_files[0])
+
+        # ensure both paths exist before any filesystem comparisons
+        # (prevents pathlib.samefile / filecmp from raising FileNotFoundError)
+        if not game_file.exists() or not mapped_file.exists():
+            return False
+
         return bool(
-            mapped_files
-            and (mapped_file := mapped_files[0])
+            mapped_file
             and not (
+                # samefile is only safe after existence checks
                 game_file.samefile(mapped_file)
+                # file comparison only executed when both files exist
                 or filecmp.cmp(game_file, mapped_file)
                 or (  # different backup file
                     (
@@ -663,7 +633,12 @@ class Cyberpunk2077Game(BasicGame):
                             file.parent, f"{file.name}.bk"
                         )
                     )
-                    and filecmp.cmp(game_file, backup_files[0])
+                    and (
+                        # validate backup exists before comparison
+                        Path(backup_files[0]).exists()
+                        and game_file.exists()
+                        and filecmp.cmp(game_file, backup_files[0])
+                    )
                 )
             )
         )
