@@ -38,7 +38,7 @@ class Content(IntEnum):
     BK2 = auto()
 
 
-class SilentHill2ModDataContent(mobase.ModDataContent):
+class GoatSimulator3ModDataContent(mobase.ModDataContent):
     GAMECONTENTS: list[tuple[Content, str, str, bool] | tuple[Content, str, str]] = [
         (Content.UCAS, "UCAS", ":/MO/gui/content/geometries"),
         (Content.UTOC, "UTOC", ":/MO/gui/content/inifile"),
@@ -87,7 +87,7 @@ class ModDetectionCandidate(TypedDict):
     installtype: str
 
 
-class SilentHill2ModDataChecker(mobase.ModDataChecker):
+class GoatSimulator3ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
@@ -162,6 +162,7 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
 
                 for subentry in entry:
                     mod_file = subentry.name()
+
                     if subentry.isDir() and mod_file.casefold() == destination_root:
                         continue
 
@@ -213,10 +214,10 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         selectButtons = QHBoxLayout()
         selectAllButton = QPushButton("Select All")
         selectNoneButton = QPushButton("Select None")
-        selectAllButton.clicked.connect(  # type: ignore # type: ignore
+        selectAllButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, True)
         )
-        selectNoneButton.clicked.connect(  # type: ignore # type: ignore
+        selectNoneButton.clicked.connect(  # type: ignore
             lambda: self.setDialogSelection(listWidget, False)
         )
         selectButtons.addWidget(selectAllButton)
@@ -398,21 +399,21 @@ class SilentHill2ModDataChecker(mobase.ModDataChecker):
         return filetree
 
 
-class SilentHill2Game(BasicGame):
-    Name = "Silent Hill 2 Support Plugin"
+class GoatSimulator3Game(BasicGame):
+    Name = "Goat Simulator 3 Support Plugin"
     Author = "ModWorkshop"
     Version = "1"
-    GameName = "Silent Hill 2 Remake"
-    GameLauncher = "SHProto.exe"
-    GameShortName = "silenthill-2"
-    GameSteamId = 2124490
-    GameBinary = "SHProto/Binaries/Win64/SHProto-Win64-Shipping.exe"
-    GameDataPath = "SHProto"
+    GameName = "Goat Simulator 3"
+    GameLauncher = "Goat2.exe"
+    GameShortName = "GoatSimulator3"
+    GameSteamId = 850190
+    GameBinary = "Goat2/Binaries/Win64/Goat2-Win64-Shipping.exe"
+    GameDataPath = "Goat2"
     GameDataUE4SSRoot = "Binaries/Win64"
     GameDataPakMods = "Content/Paks/~Mods"
     GameDataMovieMods = "Content/Movies"
-    GameDocumentsDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/Config/Windows"
-    GameSavesDirectory = "%LOCALAPPDATA%/SilentHill2/Saved/SaveGames"
+    GameDocumentsDirectory = "%LOCALAPPDATA%/Goat2/Saved/Config/Windows"
+    GameSavesDirectory = "%LOCALAPPDATA%/Goat2/Saved/SaveGames"
     GameSaveExtension = "sav"
     _main_window: QMainWindow
     _ue4ss_tab: UE4SSTabWidget
@@ -420,9 +421,9 @@ class SilentHill2Game(BasicGame):
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
         super().init(organizer)
-        self.dataChecker = SilentHill2ModDataChecker(organizer)
+        self.dataChecker = GoatSimulator3ModDataChecker(organizer)
         self._register_feature(self.dataChecker)
-        self._register_feature(SilentHill2ModDataContent())
+        self._register_feature(GoatSimulator3ModDataContent())
         organizer.onUserInterfaceInitialized(self.initTab)
         return True
 
@@ -446,7 +447,7 @@ class SilentHill2Game(BasicGame):
     def executables(self):
         return [
             mobase.ExecutableInfo(
-                "Silent Hill 2",
+                "Goat Simulator 3",
                 QFileInfo(self.gameDirectory().absoluteFilePath(self.binaryName())),
             )
         ]
