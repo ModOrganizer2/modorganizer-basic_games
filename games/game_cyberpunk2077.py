@@ -228,7 +228,7 @@ class Cyberpunk2077Game(BasicGame):
     _redmod_deploy_args = "deploy -reportProgress"
     """Deploy arguments for `redmod.exe`, -modlist=... is added."""
 
-    _parentWidget: QWidget
+    _parentWidget: QWidget | None = None
     """Set with `_organizer.onUserInterfaceInitialized()`"""
 
     def init(self, organizer: mobase.IOrganizer) -> bool:
@@ -530,6 +530,8 @@ class Cyberpunk2077Game(BasicGame):
     def _onFinishedRun(self, path: str, exit_code: int) -> None:
         if not self._get_setting("crash_message"):
             return
+        if self._parentWidget is None:
+            return  # No main window: MO started from command line or shortcut
         if path.endswith(self.binaryName()) and exit_code > 0:
             crash_message = QMessageBox(
                 QMessageBox.Icon.Critical,
