@@ -110,7 +110,7 @@ class UE4SSTabWidget(QWidget):
             if game.ue4ssDirectory().exists():
                 for dir_info in game.ue4ssDirectory().entryInfoList(
                     QDir.Filter.Dirs | QDir.Filter.NoDotAndDotDot
-                ):
+                ):  # type: ignore
                     if QFileInfo(
                         QDir(dir_info.absoluteFilePath()).absoluteFilePath(
                             "scripts/main.lua"
