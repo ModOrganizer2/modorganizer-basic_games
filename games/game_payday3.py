@@ -95,24 +95,9 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
     def __init__(self, organizer: mobase.IOrganizer):
         super().__init__()
         self.organizer: mobase.IOrganizer = organizer
-        self.organizer.modList().onModInstalled(self.fixInstalledMod)
-        self.needsNameFix = False
         self.modDetectionCandidates: list[ModDetectionCandidate] = []
         self.processedBasenames: set[str] = set()  # Track already-grouped files
         self.category_groups: dict[str, list[mobase.FileTreeEntry]] = {}
-
-    def moveOverwriteMerge(self, source: str, destination: str):
-        if not os.path.exists(destination):
-            shutil.move(source, destination)
-            return
-        if os.path.isfile(source):
-            os.replace(source, destination)
-            return
-        for item in os.listdir(source):
-            s_item = os.path.join(source, item)
-            d_item = os.path.join(destination, item)
-            self.moveOverwriteMerge(s_item, d_item)
-        os.rmdir(source)
 
     def sanitizeFolderName(self, name: str) -> str:
         invalid_chars = '+&<>:"|?*\\/'
@@ -123,25 +108,6 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         if not name:
             name = "FOLDERNAME"
         return name
-
-    def fixInstalledMod(self, mod: mobase.IModInterface):
-        if not self.needsNameFix:
-            return
-        GameDataPDMLMods = getattr(self.organizer.managedGame(), "GameDataPDMLMods", "")
-        filetree: mobase.IFileTree = mod.fileTree()
-        fixed = False
-        modname = mod.name()
-        if filetree.exists(
-            GameDataPDMLMods + "/FOLDERNAME", mobase.IFileTree.DIRECTORY
-        ):
-            path = mod.absolutePath()
-            old_path = os.path.join(path, GameDataPDMLMods + "/FOLDERNAME")
-            new_path = os.path.join(path, GameDataPDMLMods + f"/{modname}")
-            self.moveOverwriteMerge(old_path, new_path)
-            fixed = True
-        if not fixed:
-            return
-        self.needsNameFix = False
 
     def hasLooseInstallableFiles(self, filetree: mobase.IFileTree) -> bool:
         for entry in filetree:
@@ -232,7 +198,11 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
         destination: str,
         installtype: str,
     ) -> None:
-        candidate_name = self.sanitizeFolderName(name)
+        candidate_name = (
+            name
+            if destination.endswith("/FOLDERNAME/")
+            else self.sanitizeFolderName(name)
+        )
 
         self.modDetectionCandidates.append(
             {
@@ -426,9 +396,7 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
                             None,
                         )
                         if uplugin is not None:
-                            sanitized_name = self.sanitizeFolderName(
-                                os.path.splitext(uplugin.name())[0]
-                            )
+                            sanitized_name = os.path.splitext(uplugin.name())[0]
 
                     if group_category == "UE4SS":
                         destination = GameDataUE4SSModsDir + "/"
@@ -509,39 +477,33 @@ class Payday3ModDataChecker(mobase.ModDataChecker):
             if selectedIndexes is None:
                 return None
 
-        # Fallback: handle root-level PDML mods with FOLDERNAME substitution.
-        if not selectedIndexes and any(
-            f.isFile() and f.suffix().casefold() == "uplugin" for f in originaltree
-        ):
+        # Fallback: handle root-level PDML mods using the plugin filename.
+        root_uplugin = next(
+            (
+                f
+                for f in originaltree
+                if f.isFile() and f.suffix().casefold() == "uplugin"
+            ),
+            None,
+        )
+        if not selectedIndexes and root_uplugin is not None:
             GameDataPDMLMods = getattr(
                 self.organizer.managedGame(), "GameDataPDMLMods", ""
             )
-            self.needsNameFix = True
-            self.allMoveTo(originaltree, GameDataPDMLMods + "/FOLDERNAME/")
+            mod_folder = os.path.splitext(root_uplugin.name())[0]
+            self.allMoveTo(originaltree, GameDataPDMLMods + f"/{mod_folder}/")
             return originaltree
 
         if not UnZippedInstallation:
             filetree = newtree
 
         GameDataPDMLMods = getattr(self.organizer.managedGame(), "GameDataPDMLMods", "")
-        selected_native_indexes = {
-            index
-            for index in selectedIndexes
-            if self.modDetectionCandidates[index]["destination"].endswith(
-                "/FOLDERNAME/"
-            )
-        }
-        multiple_native = len(selected_native_indexes) > 1
-
         for index in selectedIndexes:
             candidate = self.modDetectionCandidates[index]
             destination = candidate["destination"]
 
-            if index in selected_native_indexes:
-                if multiple_native:
-                    destination = GameDataPDMLMods + f"/{candidate['name']}/"
-                else:
-                    self.needsNameFix = True
+            if destination.endswith("/FOLDERNAME/"):
+                destination = GameDataPDMLMods + f"/{candidate['name']}/"
 
             self.moveTreeContent(
                 candidate["installtype"],
