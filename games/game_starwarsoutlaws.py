@@ -1,13 +1,14 @@
 """
-  This plugin references the correct Steam ID. I do not have the game on Steam, 
-  I have it on Ubi Connect, and it will silently fail to launch if the Ubi
-  launcher is not open when you press Play in MO
+This plugin references the correct Steam ID. I do not have the game on Steam,
+I have it on Ubi Connect, and it will silently fail to launch if the Ubi
+launcher is not open when you press Play in MO
 """
+
+from pathlib import Path
 
 import mobase
 
 from ..basic_game import BasicGame
-from pathlib      import Path
 
 
 class StarWarsOutlawsGame(BasicGame):
@@ -26,8 +27,11 @@ class StarWarsOutlawsGame(BasicGame):
         "Game:-Star-Wars-Outlaws"
     )
 
-    _forced_libraries = ["version.dll", "dinput8.dll"] # Snowdrop and Raindrop mod loaders (Do *NOT* use both at the same time)
-    
+    _forced_libraries = [
+        "version.dll",
+        "dinput8.dll",
+    ]  # Snowdrop and Raindrop mod loaders (Do *NOT* use both at the same time)
+
     def executables(self) -> list[mobase.ExecutableInfo]:
         game_name = self.gameName()
         game_dir = self.gameDirectory()
